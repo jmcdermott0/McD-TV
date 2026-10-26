@@ -262,6 +262,25 @@ object Relay {
                     }
                 }
             }
+            // Profile photos from the web app (Settings > Profile > Profile photos): {profile, v, part, parts, data},
+            // pieces of one JPEG (PhotoCodec). "v" "" removes the photo. Saved here and sent to the house's other TVs.
+            "profile_photo" -> {
+                val pid = Library.validProfile(cmd.optString("profile")) ?: return
+                val v = cmd.optString("v")
+                if (v.isEmpty()) {
+                    ProfilePhotos.remove(pid)
+                    publishAck(cmd, "Photo removed for ${Prefs.profileName(pid)}")
+                    return
+                }
+                val b64 = photoParts.add(pid, v, cmd.optInt("part", -1), cmd.optInt("parts", 0), cmd.optString("data"), System.currentTimeMillis()) ?: return
+                if (ProfilePhotos.set(pid, b64)) publishAck(cmd, "Photo saved for ${Prefs.profileName(pid)}")
+                else publishAck(cmd, "The TV could not read that photo. Try another one.")
+            }
+            // A phone that lacks a photo the TV has (set from another phone, or on another TV) asks for it.
+            "profile_photo_get" -> {
+                val pid = Library.validProfile(cmd.optString("profile")) ?: return
+                scope.launch { runCatching { publishPhoto(cmd.optString("req"), pid) } }
+            }
             // Progress from "Play here", so Continue Watching on the TV stays in sync.
             "progress" -> runCatching { recordWebProgress(cmd) }
             // Ask Jarvis from the web app. The key stays on the TV; the answer can take up to 30 s,
@@ -333,6 +352,27 @@ object Relay {
         }
     }
 
+    private val photoParts = PhotoAssembler()
+
+    /** [profile]'s photo for the web app, in pieces: {type:"profile_photo", req, profile, v, part, parts, data}. */
+    private suspend fun publishPhoto(req: String, profile: String) {
+        val b64 = ProfilePhotos.base64(profile) ?: return
+        val v = PhotoCodec.version(b64)
+        val pieces = PhotoCodec.split(b64)
+        pieces.forEachIndexed { i, piece ->
+            val o = JSONObject()
+                .put("type", "profile_photo")
+                .put("req", req)
+                .put("ts", System.currentTimeMillis())
+                .put("profile", profile)
+                .put("v", v)
+                .put("part", i)
+                .put("parts", pieces.size)
+                .put("data", piece)
+            Http.postText(BASE + outTopic, encrypt(o.toString()))
+        }
+    }
+
     /** "open" and "play" sent more than 10 minutes ago (TV was off) are dropped, so the TV doesn't jump screens later. */
     private fun isStale(cmd: JSONObject): Boolean {
         val ts = cmd.optLong("ts", 0L)
@@ -377,6 +417,8 @@ object Relay {
         val profiles = JSONArray().apply {
             Prefs.PROFILE_IDS.forEach { id -> put(JSONObject().put("id", id).put("name", Prefs.profileName(id))) }
         }
+        // Photo versions only ("" = none). A phone that lacks one asks with "profile_photo_get".
+        val photos = JSONObject().apply { Prefs.PROFILE_IDS.forEach { id -> put(id, ProfilePhotos.version(id)) } }
         // Addon URLs can be long (their config is in the URL): if they don't fit, they go in follow-up "addons" messages.
         var withAddons = true
         var withSites = true
@@ -388,6 +430,7 @@ object Relay {
                 .put("ts", System.currentTimeMillis())
                 .put("profile", pid)
                 .put("profiles", profiles)
+                .put("photos", photos)
                 // Who this TV is, so the phone can name it and aim commands at it.
                 .put("device_id", Prefs.deviceId)
                 .put("tv_label", Prefs.tvLabel)

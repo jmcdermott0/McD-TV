@@ -12,8 +12,8 @@ How every setting is entered, stored, synced and read across the TV app, the Con
 |---|---|---|
 | Relay `set` (Control page to one TV) | `addon_urls`, `m3u_url`, `custom_stream_url`, `origin_filter`, `us_only`, `slow_connection`, `play_intro`, `wall_url`, `wall_start`, `wall_due`, `wall_baby`, `wall_mode`, `tv_label`. Sent only when typed: `wall_key`, `tmdb_key`, `mdblist_key`, `jarvis_key`. A blank key is ignored, so `set` can never clear a key. | `docs/index.html` `save()`, `data/Relay.kt` `apply()` |
 | HouseSync (TV to TV, house topic) | The `SHARED` list: `addon_urls`, `websites`, `m3u_url`, `custom_stream_url`, `tmdb_key`, `mdblist_key`, `jarvis_key`, `jarvis_model`, `wall_url`, `wall_key`, `wall_due`, `wall_baby`, `origin_filter`, `us_only`, `slow_connection`, `play_intro`, `max_movie_gb`, `max_episode_gb`, `rd_client_id`, `rd_client_secret`, `rd_access`, `rd_refresh`, `rd_expires`. "Copy once" sends the same list without `rd_*`. | `data/HouseSync.kt` |
-| ProfileSync (TV to TV, house topic) | Per-profile history, My List, favorites, Live TV favorites, taste, profile names. Merged entry by entry. | `data/sync/ProfileSync.kt` |
-| `web_init` (TV to phone, relay) | TMDB and MDBList keys, addons, playlist link, websites, origin, profiles and lists, `rd_connected` (never the RD tokens), the house link, the Jarvis key (kept on the phone only while "Use Jarvis on this device" is on). | `data/Relay.kt` |
+| ProfileSync (TV to TV, house topic) | Per-profile history, My List, favorites, Live TV favorites, taste, profile names, profile photos (in pieces). Merged entry by entry. | `data/sync/ProfileSync.kt` |
+| `web_init` (TV to phone, relay) | TMDB and MDBList keys, addons, playlist link, websites, origin, profiles and lists, profile photo versions (`photos`, never the photos), `rd_connected` (never the RD tokens), the house link, the Jarvis key (kept on the phone only while "Use Jarvis on this device" is on). | `data/Relay.kt` |
 | Setup link and invite (phone to phone) | `SETUP_KEYS`: `mcdtv_link`, `mcdtv_web_init`, `mcdtv_web_profile`, `mcdtv_web_plists`, `mcdtv_web_jarvis`, `mcdtv_web_jarvis_local`, `mcdtv_web_rdc`, `mcdtv_web_rdt`, `mcdtv_web_addons_bak`, `mcdtv_web_addons_mine`, `mcdtv_web_extplayer`, `mcdtv_web_tmdb`, `mcdtv_web_mdb`, `mcdtv_web_origin`. Invites leave out `mcdtv_web_rdc`, and leave out `mcdtv_web_rdt` unless it is ticked. | `docs/app/index.html` `setupLink()` |
 
 ## Movies and shows
@@ -55,6 +55,7 @@ How every setting is entered, stored, synced and read across the TV app, the Con
 | Setting | Entered on | Stored as | Synced by | Secret |
 |---|---|---|---|---|
 | Profile names | TV Settings > Profiles | `profile_name_p1` to `p3`; ids `p1`, `p2`, `p3` never change | ProfileSync, `web_init` | no |
+| Profile photos | web Settings > Profile > Profile photos (Choose photo, Change, Remove) | TV file `filesDir/profile_photos/pN.b64` (a 192 px JPEG as base64, never in SharedPreferences); web `mcdtv_web_photos` = `{pN: {v, d, at, ok}}` | relay `profile_photo` (phone to the linked TV, pieces of 1,600 characters), ProfileSync META `photo` and `photo:N`, `web_init` sends versions only; a phone asks for a missing one with `profile_photo_get`. Never in the repo, the house store or setup links | no |
 | Who is watching | TV picker; web Settings > Profile | `active_profile` (this TV); web `mcdtv_web_profile` | none | no |
 | Per-profile data | automatic | `lib_*@pN`, `taste@pN` | ProfileSync | no |
 | House | made automatically | `house_id`, `house_key`, `house_since`, `house_stamp` | the house link `id.key` goes to phones in `web_init` | yes |

@@ -18,8 +18,8 @@
 #
 # What is compiled: the main files the tests use (MAIN_FILES below) plus local-only stubs for the Android
 # pieces they reference (tools/jvm-stubs: Prefs, android.util.Xml, XmlPullParser). StreamSource is copied
-# out of data/Addons.kt at run time so it never drifts. Tests under data/sync/ are skipped (they need
-# other main files); set TEST_GLOB to choose tests yourself.
+# out of data/Addons.kt at run time so it never drifts. Tests under data/sync/ use only the pure store
+# (SYNC_FILES); set TEST_GLOB to choose tests yourself.
 #
 # Usage:  tools/run-unit-tests.sh            (from anywhere; exit code 0 = all passed)
 set -euo pipefail
@@ -30,7 +30,9 @@ MAIN="$ROOT/app/src/main/java/com/mcd/tv/data"
 TEST_ROOT="$ROOT/app/src/test/java"
 STUBS="$ROOT/tools/jvm-stubs"
 OUT="$ROOT/app/build/local-unit-tests"
-MAIN_FILES=(LiveCatalog.kt LiveHome.kt Live.kt Games.kt StreamInfo.kt Epg.kt Http.kt Taste.kt SourceQueue.kt BabyCountdown.kt RdErrors.kt RdFilter.kt RdLimiter.kt SeekAccumulator.kt StillWatching.kt ContinueRules.kt LiveFavMerge.kt TvLink.kt XtreamVod.kt TvIdentity.kt NowPlaying.kt RecentErrors.kt WallCycle.kt KeepAwake.kt WallWatch.kt PlaybackRescue.kt SourceHealth.kt ProgressMerge.kt HistoryEras.kt QualityFallback.kt Wall.kt WallFeed.kt WallSpotlight.kt)
+MAIN_FILES=(LiveCatalog.kt LiveHome.kt Live.kt Games.kt StreamInfo.kt Epg.kt Http.kt Taste.kt SourceQueue.kt BabyCountdown.kt RdErrors.kt RdFilter.kt RdLimiter.kt SeekAccumulator.kt StillWatching.kt ContinueRules.kt LiveFavMerge.kt TvLink.kt XtreamVod.kt TvIdentity.kt NowPlaying.kt RecentErrors.kt WallCycle.kt KeepAwake.kt WallWatch.kt PlaybackRescue.kt SourceHealth.kt ProgressMerge.kt HistoryEras.kt QualityFallback.kt Wall.kt WallFeed.kt WallSpotlight.kt PhotoCodec.kt)
+# Profile sync's pure store (CRDT, packing, budgets) under data/sync/.
+SYNC_FILES=(ProfileStore.kt)
 # Pure UI logic (no Compose) under ui/.
 UI_FILES=(SettingsModel.kt)
 
@@ -117,11 +119,12 @@ grep -q "data class StreamSource" "$OUT/gen/StreamSource.kt" || die "could not e
 SRC=()
 for f in "${MAIN_FILES[@]}"; do SRC+=("$MAIN/$f"); done
 for f in "${UI_FILES[@]}"; do SRC+=("$ROOT/app/src/main/java/com/mcd/tv/ui/$f"); done
+for f in "${SYNC_FILES[@]}"; do SRC+=("$MAIN/sync/$f"); done
 SRC+=("$OUT/gen/StreamSource.kt" "$STUBS/kotlin/PrefsStub.kt")
 if [ -n "${TEST_GLOB:-}" ]; then
   mapfile -t TESTS < <(cd "$TEST_ROOT" && compgen -G "$TEST_GLOB" | sed "s|^|$TEST_ROOT/|")
 else
-  mapfile -t TESTS < <(find "$TEST_ROOT" -name '*.kt' -not -path '*/data/sync/*' | sort)
+  mapfile -t TESTS < <(find "$TEST_ROOT" -name '*.kt' | sort)
 fi
 [ "${#TESTS[@]}" -gt 0 ] || die "no test sources found"
 

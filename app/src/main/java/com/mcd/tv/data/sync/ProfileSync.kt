@@ -3,7 +3,9 @@ package com.mcd.tv.data.sync
 import android.content.Context
 import com.mcd.tv.data.HouseSync
 import com.mcd.tv.data.Library
+import com.mcd.tv.data.PhotoCodec
 import com.mcd.tv.data.Prefs
+import com.mcd.tv.data.ProfilePhotos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -74,7 +76,7 @@ object ProfileSync {
     private const val HISTORY_BLOB_MAX = 200
     private const val EPISODES_BLOB_MAX = 3000
 
-    /** Library/Prefs storage key (before "@profile") of each synced collection. META is the profile name. */
+    /** Library/Prefs storage key (before "@profile") of each synced collection. META: name, taste and photo. */
     private val BLOB = mapOf(
         SyncSpec.HISTORY to "lib_history",
         SyncSpec.EPISODES to "lib_episodes",
@@ -253,6 +255,21 @@ object ProfileSync {
 
     /** Settings > Taste: the profile's liked and avoided genres and topics (JSON, see Prefs.tasteJson). */
     fun onTaste(profile: String, json: String) = recordLocal(profile, SyncSpec.META, "taste", json.ifBlank { null })
+
+    /**
+     * ProfilePhotos: [profile]'s photo changed to version [v] in [pieces], or was removed ([v] null). Pieces are
+     * META entries next to a header; pieces a longer old photo left behind are deleted. A TV shows a photo only
+     * once the header and every piece of that version have arrived (PhotoCodec.join).
+     */
+    fun onProfilePhoto(profile: String, v: String?, pieces: List<String>) {
+        if (profile !in Prefs.PROFILE_IDS || dir == null) return
+        ensureLoaded()
+        val writes = synchronized(lock) {
+            val col = stores[profile]?.collection(SyncSpec.META) ?: return
+            PhotoCodec.writes(v, pieces) { col.get(PhotoCodec.pieceKey(it))?.deleted == false }
+        }
+        writes.forEach { (k, value) -> recordLocal(profile, SyncSpec.META, k, value) }
+    }
 
     private fun recordLocal(p: String, c: String, key: String, value: String?) {
         if (p !in Prefs.PROFILE_IDS || dir == null) return
@@ -473,10 +490,27 @@ object ProfileSync {
                     val taste = if (t.deleted) "" else t.value.orEmpty()
                     if (Prefs.tasteJson(p) != taste) Prefs.applySyncedTaste(p, taste)
                 }
+                materializePhoto(p)
             }
             SyncSpec.LIVE_FAVORITES -> Prefs.withListLock { writeBlob(p, c) }
             else -> Library.withLock { writeBlob(p, c) }
         }
+    }
+
+    /** [p]'s photo from the store: saved once every piece of the newest version is here, removed when deleted. */
+    private fun materializePhoto(p: String) {
+        val h = synchronized(lock) { stores[p]?.collection(SyncSpec.META)?.get(PhotoCodec.HEADER_KEY) } ?: return
+        if (h.deleted) {
+            if (ProfilePhotos.version(p).isNotEmpty()) ProfilePhotos.remove(p, share = false)
+            return
+        }
+        val (v, _) = PhotoCodec.parseHeader(h.value) ?: return
+        if (ProfilePhotos.version(p) == v) return
+        val b64 = synchronized(lock) {
+            val col = stores[p]?.collection(SyncSpec.META) ?: return
+            PhotoCodec.read(false) { k -> col.get(k)?.takeIf { !it.deleted }?.value }
+        }
+        if (!b64.isNullOrEmpty()) ProfilePhotos.set(p, b64, share = false)
     }
 
     /** Caller holds the Library or Prefs list lock, so no local write can slip in between render and save. */
