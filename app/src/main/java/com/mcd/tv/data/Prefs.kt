@@ -16,6 +16,7 @@ object Prefs {
         sp = context.applicationContext.getSharedPreferences("mcdtv_settings", Context.MODE_PRIVATE)
         migrateToProfiles()
         ProfileSync.init(context)
+        ProfilePhotos.init(context)
     }
 
     // ---- Profiles (no login): Dad, Mom, Kids on this TV ----

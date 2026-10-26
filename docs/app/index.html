@@ -505,6 +505,15 @@ nav.tabbar{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-in
 .profpill .lbl{overflow:hidden;text-overflow:ellipsis}
 .pav{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--disp);font-size:10px;color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .pav.kids{color:var(--warn);box-shadow:inset 0 0 0 1.5px var(--warn)}
+/* A profile photo fills the circle; the ring (inset shadow) still draws over it. */
+.pav.photo{background-size:cover;background-position:center;background-repeat:no-repeat;color:transparent}
+/* Off screen but still clickable: iOS Safari won't open the photo picker for a hidden input. */
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+.phlist{list-style:none;margin:10px 0 0;padding:0}
+.phlist li{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)}
+.phlist .pav{width:48px;height:48px;font-size:18px}
+.phlist b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phlist .rowf{flex:0 0 auto;gap:6px}
 @media (max-width:420px){.profpill .lbl{display:none}.profpill{padding:4px}}
 .who{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:26px 0}
 .who button{position:relative;width:min(40vw,210px);border:1px solid var(--line);background:linear-gradient(140deg,var(--raised),rgba(6,23,34,.85));clip-path:var(--cut);padding:22px 12px 18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;transition:border-color .15s,filter .15s}
@@ -799,7 +808,9 @@ function updateProfileUI() {
   if (!S.profile) return;
   const n = profileName(S.profile);
   $("#proflbl").textContent = n;
-  const av = $("#profav"); av.textContent = initial(n); av.classList.toggle("kids", isKids());
+  const av = $("#profav"), u = PH.url(S.profile);
+  av.textContent = u ? "" : initial(n); av.classList.toggle("kids", isKids());
+  av.classList.toggle("photo", !!u); av.style.backgroundImage = u ? "url(" + u + ")" : "";
   pill.setAttribute("aria-label", "Profile: " + n + ". Switch profile");
 }
 function setProfile(id) {
@@ -809,6 +820,127 @@ function setProfile(id) {
   updateProfileUI();
   if (changed) { tcache.clear(); if (S.link) askInit(); }
 }
+/** A profile's circle: its photo when it has one, else its first letter. */
+function pavHTML(p) {
+  const u = PH.url(p.id);
+  return `<span class="pav${p.id === KIDS_PID ? " kids" : ""}${u ? " photo" : ""}"${u ? ` style="background-image:url(${u})"` : ""}>${u ? "" : esc(initial(p.name))}</span>`;
+}
+
+// ---------- profile photos ----------
+// One photo per profile (Settings > Profile > Profile photos): a 192 px square JPEG made here from a photo picked
+// on this device. It is kept on this device (PHOTO_KEY) and sent to the linked TV in pieces, encrypted, over the
+// relay; the TV shares it with the house's other TVs. It is never uploaded anywhere else. Same piece size and
+// version as the TV (app/src/main/java/com/mcd/tv/data/PhotoCodec.kt). web_init says which version each TV has.
+const PHOTO_KEY = "mcdtv_web_photos";
+const PH = (() => {
+  const SIDE = 192, CHUNK = 1600, MAX = 30000, TV_MAX = 32000;
+  const HOLD = 120000; // after a change here, the TV's older answer is ignored this long (it may not have the photo yet)
+  const asked = {}, resent = {}, parts = {};
+  const all = () => { const o = readJSON(PHOTO_KEY); return o && typeof o === "object" ? o : {}; };
+  function save(o) { try { localStorage.setItem(PHOTO_KEY, JSON.stringify(o)); return true; } catch { return false; } }
+  const valid = (d) => typeof d === "string" && d.length >= 8 && d.length <= TV_MAX && d.length % 4 === 0 && d.startsWith("/9j/") && /^[A-Za-z0-9+/]+={0,2}$/.test(d);
+  async function version(d) { return [...(await sha(d)).slice(0, 8)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+  function get(pid) { const r = all()[pid]; return r && valid(r.d) ? r : null; }
+  const url = (pid) => { const r = get(pid); return r ? "data:image/jpeg;base64," + r.d : ""; };
+  const split = (d) => d.match(new RegExp(".{1," + CHUNK + "}", "g")) || [];
+
+  async function load(file) {
+    try { return await createImageBitmap(file); } catch {}
+    return new Promise((ok, no) => {
+      const u = URL.createObjectURL(file), i = new Image();
+      i.onload = () => { URL.revokeObjectURL(u); ok(i); };
+      i.onerror = () => { URL.revokeObjectURL(u); no(new Error("unreadable")); };
+      i.src = u;
+    });
+  }
+  /** A picked file as a small square JPEG (base64). A tall photo is cut a little above the middle, where faces are. */
+  async function shrink(file) {
+    const src = await load(file);
+    const w = src.naturalWidth || src.width, h = src.naturalHeight || src.height;
+    if (!w || !h) throw new Error("unreadable");
+    const side = Math.min(w, h), c = document.createElement("canvas");
+    c.width = c.height = SIDE;
+    const g = c.getContext("2d");
+    g.fillStyle = "#000"; g.fillRect(0, 0, SIDE, SIDE);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(src, (w - side) / 2, (h - side) * (h > w ? 0.3 : 0.5), side, side, 0, 0, SIDE, SIDE);
+    if (src.close) src.close();
+    for (const q of [0.85, 0.75, 0.62, 0.5, 0.4]) {
+      const d = c.toDataURL("image/jpeg", q).split(",")[1] || "";
+      if (valid(d) && d.length <= MAX) return d;
+    }
+    throw new Error("too big");
+  }
+  /** Sends [pid]'s photo (or its removal, d "") to the linked TV. The TV answers once it has every piece. */
+  async function send(pid, v, d) {
+    if (!S.link) return false;
+    const req = newReq(), target = linkedTv(), base = { cmd: "profile_photo", req, profile: pid, v };
+    if (target && target.dev) base.to = target.dev;
+    const pieces = d ? split(d) : [""];
+    pending.set(req, setTimeout(() => { pending.delete(req); toast((linkedTvName() || "Your TV") + " is not answering. The photo is saved here and goes to the TV when Jarvis is on.", "warn"); }, 20000));
+    try {
+      for (let i = 0; i < pieces.length; i++) await relaySend(d ? { ...base, ts: Date.now(), part: i, parts: pieces.length, data: pieces[i] } : { ...base, ts: Date.now() });
+      return true;
+    } catch { clearTimeout(pending.get(req)); pending.delete(req); toast("Couldn't reach the relay. The photo is saved here.", "warn"); return false; }
+  }
+  async function set(pid, file) {
+    const d = await shrink(file), v = await version(d), o = all();
+    o[pid] = { v, d, at: Date.now() };
+    if (!save(o)) throw new Error("storage");
+    await send(pid, v, d);
+    return v;
+  }
+  async function remove(pid) {
+    const o = all(); o[pid] = { v: "", at: Date.now() }; save(o);
+    await send(pid, "", "");
+  }
+  function redraw() {
+    updateProfileUI();
+    const r = parseRoute().path;
+    if (r[0] === "profiles" || (r[0] === "settings" && r[1] === "profile")) route();
+  }
+  /** web_init's "photos" ({p1: version or ""}, newer TVs only). The TV holds the house's copy. */
+  function onTv(photos) {
+    if (!photos || typeof photos !== "object" || !S.link) return;
+    const o = all(), now = Date.now();
+    let changed = false;
+    for (const pid of PIDS) {
+      if (typeof photos[pid] !== "string") continue;
+      const tv = photos[pid], mine = o[pid] || { v: "" }, have = valid(mine.d) ? mine.v : "";
+      if (tv === have) { if (o[pid] && !mine.ok) { mine.ok = true; changed = true; } continue; }
+      if (now - (mine.at || 0) < HOLD) continue; // our own change may still be on its way
+      if (!tv) {
+        // The TV has none. Removed elsewhere (this photo reached a TV before), or the TV never got it: send it again.
+        if (mine.ok) { delete o[pid]; changed = true; }
+        else if (have && !resent[pid]) { resent[pid] = 1; send(pid, have, mine.d); }
+      } else if (now - (asked[pid + tv] || 0) > 300000) {
+        asked[pid + tv] = now;
+        const cmd = { cmd: "profile_photo_get", req: newReq(), ts: now, profile: pid };
+        const target = linkedTv(); if (target && target.dev) cmd.to = target.dev;
+        relaySend(cmd).catch(() => {});
+      }
+    }
+    if (changed) { save(o); redraw(); }
+  }
+  /** A piece of a photo from the TV ({profile, v, part, parts, data}), the answer to "profile_photo_get". */
+  async function onPiece(m) {
+    const pid = m.profile, v = String(m.v || ""), n = +m.parts || 0, i = +m.part;
+    if (!PIDS.includes(pid) || !/^[0-9a-f]{16}$/.test(v) || !(n >= 1 && n <= 20) || !(i >= 0 && i < n) || typeof m.data !== "string" || m.data.length > CHUNK) return;
+    let P = parts[pid];
+    if (!P || P.v !== v || P.n.length !== n) P = parts[pid] = { v, n: new Array(n).fill(null) };
+    P.n[i] = m.data;
+    if (!P.n.every((x) => x !== null)) return;
+    delete parts[pid];
+    const d = P.n.join(""), o = all(), mine = o[pid];
+    if (!valid(d) || (await version(d)) !== v) return;
+    if (mine && mine.v === v && valid(mine.d)) return;
+    if (mine && Date.now() - (mine.at || 0) < HOLD) return; // changed here meanwhile: ours goes to the TV
+    o[pid] = { v, d, at: 0, ok: true };
+    if (save(o)) redraw();
+  }
+  return { url, get, set, remove, onTv, onPiece, version, shrink };
+})();
+
 // Ask Jarvis on this device (no TV needed): the key the TV shares, saved here while the setting is on.
 const jarvisLocalOn = () => LS.get(JLOCAL) !== "0";
 const jarvisKey = () => (jarvisLocalOn() ? LS.get(JKEY) : "");
@@ -1213,6 +1345,7 @@ async function onRelay(raw, live) {
   else if (m.type === "state") applyTvState(m);
   else if (m.type === "addons") applyAddons(m);
   else if (m.type === "web_list") applyWebList(m);
+  else if (m.type === "profile_photo") PH.onPiece(m);
   else if (m.type === "rd_resolve") {
     const w = resWait.get(m.req);
     if (w) w(m);
@@ -1272,6 +1405,7 @@ function applyInit(m) {
   if (S.link) m.relay_id = S.link.id;
   S.init = m; saveInit();
   updateProfileUI();
+  PH.onTv(m.photos);
   if (m3uChanged) LV.reset();
   if (!hadKey && keys().tmdb) { route(); return; }
   if (listsChanged || filtersChanged) onListsChanged();
@@ -2914,6 +3048,19 @@ document.addEventListener("change", (e) => {
   if (!sel) return;
   LS.set(QUALITY_KEY, sel.value);
   toast("Quality: " + QUALITY_NAME[qualityMode()], "ok");
+});
+// Settings > Profile > Profile photos: the picked file becomes the profile's photo.
+document.addEventListener("change", async (e) => {
+  const inp = e.target;
+  if (!inp || inp.id !== "photoIn" || !inp.files || !inp.files[0]) return;
+  const pid = inp.dataset.pid; if (!PIDS.includes(pid)) return;
+  try {
+    await PH.set(pid, inp.files[0]);
+    toast(S.link ? "Photo saved for " + profileName(pid) + ". Sending it to your TV." : "Photo saved for " + profileName(pid) + " on this device.", "ok");
+  } catch (err) {
+    toast(String(err && err.message) === "storage" ? "This device is out of space for photos." : "Jarvis could not read that photo. Try another one.", "warn");
+  }
+  updateProfileUI(); renderSettings($("#view"));
 });
 function backupAddons() {
   const tv = ((S.init && S.init.addon_urls) || []).filter(okUrl);
@@ -5983,7 +6130,7 @@ function renderProfiles(v, next) {
   v.innerHTML = `<div class="page" style="text-align:center"><h1 style="margin-top:20px">Who's watching?</h1>
     <p class="muted">Each profile has its own watchlist, favorites and Continue Watching, the same as on your TV.</p>
     <div class="who">${profiles().map((p) => `<button type="button" class="${p.id === S.profile ? "cur" : ""}" data-act="pickprofile" data-pid="${p.id}" data-next="${esc(next || "")}">
-      <span class="pav${p.id === KIDS_PID ? " kids" : ""}">${esc(initial(p.name))}</span><b>${esc(p.name)}</b><small>${p.id === KIDS_PID ? "Family picks" : p.id === S.profile ? "Watching now" : "&nbsp;"}</small></button>`).join("")}</div>
+      ${pavHTML(p)}<b>${esc(p.name)}</b><small>${p.id === KIDS_PID ? "Family picks" : p.id === S.profile ? "Watching now" : "&nbsp;"}</small></button>`).join("")}</div>
     ${S.link ? "" : `<p class="muted">Link your TV to see your profile names and lists. <a href="#/pair" style="color:var(--bright)">How to link</a></p>`}</div>`;
   const first = $(".who button.cur", v) || $(".who button", v);
   if (first && matchMedia("(min-width:900px)").matches) first.focus({ preventScroll: true });
@@ -6086,6 +6233,14 @@ function setProfileHTML() {
   return `<section class="sgroup"><h2>Who's watching here</h2>
     <p class="muted">Watchlist, favorites and Continue Watching here are ${S.profile ? `<b style="color:#fff">${esc(profileName(S.profile))}</b>'s` : "the chosen profile's"}, the same as on the TV. Switching here doesn't change the TV.</p>
     <div class="profrow" style="margin-top:10px">${profiles().map((p) => `<button class="btn small${p.id === S.profile ? " primary" : ""}" data-act="setprofile" data-pid="${p.id}"${p.id === S.profile ? ' aria-current="true"' : ""}>${esc(p.name)}</button>`).join("")}</div>
+  </section>
+  <section class="sgroup"><h2>Profile photos</h2>
+    <p class="muted">A photo shows in the profile circle here and on your TVs. Jarvis makes it small and keeps it on this device and your TVs only. It goes to your TV encrypted and is never uploaded anywhere else.</p>
+    <ul class="phlist" id="photoList">${profiles().map((p) => `<li data-pid="${p.id}">${pavHTML(p)}<b>${esc(p.name)}</b><span class="rowf">${PH.get(p.id)
+      ? `<button class="btn small" data-act="photopick" data-pid="${p.id}">Change</button><button class="btn small danger" data-act="photodel" data-pid="${p.id}">Remove</button>`
+      : `<button class="btn small" data-act="photopick" data-pid="${p.id}">Choose photo</button>`}</span></li>`).join("")}</ul>
+    ${S.link ? "" : `<p class="muted">Link your TV to show the photos there too.</p>`}
+    <input type="file" accept="image/*" id="photoIn" class="vh" tabindex="-1" aria-hidden="true">
   </section>`;
 }
 function setPlaybackHTML() {
@@ -6543,6 +6698,12 @@ document.addEventListener("click", async (e) => {
       S.manualTmdb = val; LS.set("mcdtv_web_tmdb", val); tcache.clear(); toast("TMDB key saved", "ok"); renderSettings($("#view")); break;
     }
     case "setprofile": setProfile(d.pid); toast("Watching as " + profileName(d.pid), "ok"); renderSettings($("#view")); break;
+    case "photopick": { const inp = $("#photoIn"); if (!inp || !PIDS.includes(d.pid)) break; inp.dataset.pid = d.pid; inp.value = ""; inp.click(); break; }
+    case "photodel":
+      if (PIDS.includes(d.pid) && confirm("Remove " + profileName(d.pid) + "'s photo here and on your TVs?")) {
+        await PH.remove(d.pid); toast("Photo removed for " + profileName(d.pid), "ok"); renderSettings($("#view"));
+      }
+      break;
     case "pickprofile": {
       setProfile(d.pid);
       const next = d.next && d.next.startsWith("#/") && !d.next.startsWith("#/profiles") ? d.next : "#/";
@@ -6606,7 +6767,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-21.2";
+const BUILD = "2026-10-26.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

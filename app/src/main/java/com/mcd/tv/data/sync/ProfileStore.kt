@@ -97,7 +97,7 @@ object SyncSpec {
     const val LIVE_FAVORITES = "live_favorites"
     /** Titles marked "I like this" (taste). Older TVs ignore collections they don't know. */
     const val LIKES = "likes"
-    /** Profile name ("name") and Settings > Taste choices ("taste"). */
+    /** Profile name ("name"), Settings > Taste choices ("taste") and the profile photo ("photo", "photo:N"; PhotoCodec). */
     const val META = "meta"
 
     val COLLECTIONS = listOf(HISTORY, EPISODES, WATCHLIST, FAVORITES, HIDDEN, NOISE, LIVE_FAVORITES, LIKES, META)

@@ -1,5 +1,6 @@
 package com.mcd.tv.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,17 +16,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.mcd.tv.data.Prefs
+import com.mcd.tv.data.ProfilePhotos
 import com.mcd.tv.data.sync.ProfileSync
 
 /** Start-up switch for the profile picker. The automated QA launch ("--ez qa true") skips it. */
@@ -41,6 +48,8 @@ object ProfileStart {
 fun ProfilePickerScreen(onPicked: () -> Unit) {
     val first = remember { FocusRequester() }
     val active = remember { Prefs.activeProfile }
+    // Photos set from the phone; a copy that arrives from another TV while this screen is open shows at once.
+    val photoRev by ProfilePhotos.revision.collectAsState()
     LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
     Column(
         Modifier.fillMaxSize().hudBackground(),
@@ -63,6 +72,7 @@ fun ProfilePickerScreen(onPicked: () -> Unit) {
             Prefs.PROFILE_IDS.forEachIndexed { i, id ->
                 ProfileCard(
                     name = Prefs.profileName(id),
+                    photo = remember(photoRev, id) { ProfilePhotos.bitmap(id) },
                     kids = id == Prefs.KIDS_PROFILE,
                     current = id == active,
                     onClick = { Prefs.activeProfile = id; onPicked() },
@@ -74,7 +84,7 @@ fun ProfilePickerScreen(onPicked: () -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(name: String, kids: Boolean, current: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, current: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     HudCard(onClick = onClick, modifier = modifier.width(220.dp).height(250.dp), focusedScale = 1.08f) { focused ->
         Column(
             Modifier.fillMaxSize().padding(16.dp),
@@ -88,7 +98,12 @@ private fun ProfileCard(name: String, kids: Boolean, current: Boolean, onClick: 
                     .border(if (focused) 3.dp else 2.dp, ring, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(name.trim().take(1).uppercase().ifBlank { "?" }, style = broadcastStyle(48.sp, ring))
+                // The ring (border) draws over the photo, so the circle looks the same with or without one.
+                if (photo != null) {
+                    Image(photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+                } else {
+                    Text(name.trim().take(1).uppercase().ifBlank { "?" }, style = broadcastStyle(48.sp, ring))
+                }
             }
             Spacer(Modifier.height(16.dp))
             Text(

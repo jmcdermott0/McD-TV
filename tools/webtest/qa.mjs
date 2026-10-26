@@ -571,6 +571,90 @@ for (const w of [390,1280]) {
   if(errs.length) fails.push(...errs.map(e=>`source health pageerror ${e}`));
   await ctx.close();
 }
+// Profile photos: Settings > Profile > Profile photos turns a picked file into a 192 px JPEG kept on this device,
+// sends it to the linked TV in pieces (decrypted here and checked) and shows it in every profile circle. Then the
+// TV's "photos" in web_init: the same version confirms it, an old TV changes nothing, a removal elsewhere applies,
+// and a photo set elsewhere is fetched in pieces. The picture is a gradient drawn here, never a real photo.
+{
+  const rb=(n)=>{ const a=new Uint8Array(n); globalThis.crypto.getRandomValues(a); return Buffer.from(a).toString('base64url'); };
+  const LR={id:'photostvaa2222',key:rb(32)};
+  const posts=[];
+  const {ctx,p,errs}=await mk({width:390,height:844});
+  await ctx.route(/^https:\/\/ntfy\.sh\/mcdtv-/,r=>{ const q=r.request();
+    if(q.method()==='POST'){ posts.push({url:q.url(),body:q.postData()}); return r.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'},body:'{}'}); }
+    return r.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/x-ndjson'},body:''}); });
+  p.on('dialog',d=>d.accept());
+  const PROFS=[{id:'p1',name:'Dad'},{id:'p2',name:'Mom'},{id:'p3',name:'Kids'}];
+  await p.goto(B);
+  await p.evaluate(([LR,PROFS])=>{ localStorage.clear(); localStorage.setItem('mcdtv_web_profile','p1');
+    localStorage.setItem('mcdtv_web_init',JSON.stringify({tmdb_key:'x',profiles:PROFS}));
+    localStorage.setItem('mcdtv_tvs',JSON.stringify([{id:LR.id,key:LR.key,name:'Living Room TV',label:'Living Room TV',platform:'Google TV',version:'0.2.212',dev:'devph',seen:Date.now()}]));
+    localStorage.setItem('mcdtv_link',LR.id+'.'+LR.key); },[LR,PROFS]);
+  await p.goto(B+'#/settings/profile'); await p.reload(); await p.waitForTimeout(1200);
+  const decryptPosts=(m)=>p.evaluate(async([bodies,k])=>{ const key=await importKey(k); const o=[]; for(const b of bodies) o.push({len:b.length,m:await decrypt(b,key)}); return o; },[m,LR.key]);
+  const toTv=()=>posts.filter(x=>x.url.includes(LR.id+'-in')).map(x=>x.body);
+  const got={}, want={};
+  got.vector=await p.evaluate(()=>PH.version('/9j/AAAA')); want.vector='978d81e975db561c'; // same as PhotoCodecTest
+  got.choose=await p.$$eval('#photoList [data-act="photopick"]',r=>r.map(x=>x.textContent)); want.choose=['Choose photo','Choose photo','Choose photo'];
+  const png=Buffer.from(await p.evaluate(()=>{ const c=document.createElement('canvas'); c.width=900; c.height=1200; const g=c.getContext('2d');
+    const gr=g.createLinearGradient(0,0,900,1200); gr.addColorStop(0,'#c33'); gr.addColorStop(1,'#33c'); g.fillStyle=gr; g.fillRect(0,0,900,1200);
+    for(let i=0;i<500;i++){ g.fillStyle=`hsl(${i*37%360},70%,${30+i%40}%)`; g.fillRect((i*97)%900,(i*61)%1200,30+i%50,30+i%40); }
+    return c.toDataURL('image/png').split(',')[1]; }),'base64');
+  posts.length=0;
+  const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click('#photoList [data-act="photopick"][data-pid="p2"]')]);
+  await fc.setFiles({name:'test.png',mimeType:'image/png',buffer:png});
+  await p.waitForFunction(()=>{ try{ return JSON.parse(localStorage.mcdtv_web_photos).p2.d.length>0; }catch{ return false; } },null,{timeout:8000}).catch(()=>fails.push('photos: nothing saved'));
+  await p.waitForTimeout(800);
+  const saved=await p.evaluate(async()=>{ const r=JSON.parse(localStorage.mcdtv_web_photos).p2; const i=new Image(); i.src='data:image/jpeg;base64,'+r.d; await i.decode();
+    return {v:r.v,d:r.d,small:r.d.length<=30000,jpeg:r.d.startsWith('/9j/'),size:i.naturalWidth+'x'+i.naturalHeight,vOk:(await PH.version(r.d))===r.v}; });
+  got.saved={small:saved.small,jpeg:saved.jpeg,size:saved.size,vOk:saved.vOk}; want.saved={small:true,jpeg:true,size:'192x192',vOk:true};
+  const pieces=(await decryptPosts(toTv())).filter(x=>x.m&&x.m.cmd==='profile_photo').sort((a,b)=>a.m.part-b.m.part);
+  got.sent={many:pieces.length>=1,parts:[...new Set(pieces.map(x=>x.m.parts))].join(),reqs:new Set(pieces.map(x=>x.m.req)).size,to:[...new Set(pieces.map(x=>x.m.to))].join(),
+    profile:[...new Set(pieces.map(x=>x.m.profile))].join(),v:[...new Set(pieces.map(x=>x.m.v))].join(),join:pieces.map(x=>x.m.data).join('')===saved.d,
+    pieceOk:pieces.every(x=>x.m.data.length<=1600),bodyOk:pieces.every(x=>x.len<4000)};
+  want.sent={many:true,parts:String(pieces.length),reqs:1,to:'devph',profile:'p2',v:saved.v,join:true,pieceOk:true,bodyOk:true};
+  got.list=await p.$$eval('#photoList .pav',r=>r.map(x=>x.classList.contains('photo'))); want.list=[false,true,false];
+  got.buttons=await p.$$eval('#photoList li[data-pid="p2"] button',r=>r.map(x=>x.textContent)); want.buttons=['Change','Remove'];
+  const h=await hsc(p); if(h.sw>h.iw) fails.push(`photos: settings overflow ${h.sw} ${h.wide}`);
+  await p.goto(B+'#/profiles'); await p.waitForTimeout(500);
+  got.picker=await p.$$eval('.who .pav',r=>r.map(x=>(x.classList.contains('photo')?'photo':'letter')+':'+x.textContent.trim()+':'+(/^url\("?data:image\/jpeg;base64,\/9j\//.test(x.style.backgroundImage)?'img':'')));
+  want.picker=['letter:D:','photo::img','letter:K:'];
+  await p.click('.who button[data-pid="p2"]'); await p.waitForTimeout(400);
+  got.pill=await p.$eval('#profav',x=>x.classList.contains('photo')+':'+x.textContent); want.pill='true:';
+  // The TV's answers.
+  let ts=Date.now()+1000;
+  got.sync=await p.evaluate(async([v,PROFS,ts])=>{ const r={}, init=(o)=>applyInit({type:'web_init',profile:'p2',tmdb_key:'x',profiles:PROFS,watchlist:[],favorites:[],continue:[],...o});
+    init({ts:ts++,photos:{p1:'',p2:v,p3:''}}); r.confirmed=JSON.parse(localStorage.mcdtv_web_photos).p2.ok===true;
+    init({ts:ts++}); r.oldTvKeeps=!!PH.get('p2');
+    const o=JSON.parse(localStorage.mcdtv_web_photos); o.p2.at=Date.now()-600000; localStorage.mcdtv_web_photos=JSON.stringify(o);
+    init({ts:ts++,photos:{p1:'',p2:'',p3:''}}); r.removedElsewhere=!PH.get('p2');
+    return r; },[saved.v,PROFS,ts]); ts+=10;
+  want.sync={confirmed:true,oldTvKeeps:true,removedElsewhere:true};
+  // Set on another phone: this one asks the TV, which answers in pieces (out of order here). A damaged copy is refused.
+  posts.length=0;
+  got.fetch=await p.evaluate(async([d,PROFS,ts])=>{ const v=await PH.version(d), n=d.match(/.{1,1600}/g);
+    applyInit({type:'web_init',profile:'p2',tmdb_key:'x',profiles:PROFS,watchlist:[],favorites:[],continue:[],ts,photos:{p1:v,p2:'',p3:''}});
+    await sleep(300);
+    const piece=(pid,i,data)=>encrypt({type:'profile_photo',req:'r1',ts:Date.now(),profile:pid,v,part:i,parts:n.length,data},S.key);
+    for (const i of n.map((_,i)=>i).reverse()) await onRelay(await piece('p3',i,i===0?n[0].slice(0,-4)+'AAAA':n[i]),false);
+    for (const i of n.map((_,i)=>i).reverse()) await onRelay(await piece('p1',i,n[i]),true);
+    await sleep(200);
+    return {p1:(PH.get('p1')||{}).v===v,p3:!PH.get('p3')}; },[saved.d,PROFS,ts]);
+  want.fetch={p1:true,p3:true};
+  const asks=(await decryptPosts(toTv())).filter(x=>x.m&&x.m.cmd==='profile_photo_get').map(x=>x.m.profile+':'+(x.m.to||''));
+  got.asked=asks.join(); want.asked='p1:devph';
+  // Remove (asks first): gone here, and the TV is told.
+  await p.goto(B+'#/settings/profile'); await p.waitForTimeout(600);
+  posts.length=0;
+  await p.click('#photoList [data-act="photodel"][data-pid="p1"]'); await p.waitForTimeout(600);
+  const rm=(await decryptPosts(toTv())).filter(x=>x.m&&x.m.cmd==='profile_photo').map(x=>x.m.profile+':'+JSON.stringify(x.m.v));
+  got.remove={gone:await p.evaluate(()=>!PH.get('p1')),told:rm.join(),circle:await p.$eval('#photoList li[data-pid="p1"] .pav',x=>x.classList.contains('photo')+':'+x.textContent)};
+  want.remove={gone:true,told:'p1:""',circle:'false:D'};
+  for (const k of Object.keys(want)) if (JSON.stringify(got[k])!==JSON.stringify(want[k])) fails.push(`photos ${k}: got ${JSON.stringify(got[k])} want ${JSON.stringify(want[k])}`);
+  log('profile photos', fails.filter(f=>f.startsWith('photos')).length ? 'FAIL' : 'ok', JSON.stringify({pieces:pieces.length,chars:saved.d.length}));
+  if(errs.length) fails.push(...errs.map(e=>`photos pageerror ${e}`));
+  await ctx.close();
+}
 // The real failure, replayed with a real video: web dies at 34:50 on a cut-off file, resumes on a healthy one.
 { const { run } = await import('./interchange.mjs'); await run({ executablePath: process.env.CHROME_PATH, fails, log }); }
 log('FAILS', fails.length); fails.forEach(f=>log(' -',f));
