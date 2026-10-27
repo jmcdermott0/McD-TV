@@ -446,6 +446,63 @@ shot remote-choose-source
 for i in 1 2 3; do adb shell input keyevent KEYCODE_BACK; sleep 2; done
 shot remote-after-back
 
+# 4-home) Home: My List row and Picked for <name> by day. QA-only extras: --ei qa_day pretends today is that date;
+# --es qa_list puts a title on the active profile's My List (inner quotes: adb runs it through the device shell).
+# Each day's row goes to logcat (tag DailyPicks) as "day=N profile=pN kept|new, pool P, ... keys=type:id,...".
+home_open() { # name, extra am args...
+  local n="$1"; shift
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true "$@" >/dev/null
+  sleep 40; shot "home-$n"
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-home-$n.xml" >/dev/null 2>&1
+}
+# The row logged for day $1, $2 lines from the end (1 = the latest). Earlier launches on the real date log too.
+picks_of() { adb logcat -d -s DailyPicks:I | grep "day=$1 " | tail -n "$2" | head -n 1 | sed 's/.*keys=//'; }
+# The top bar has a "MY LIST" tab too: the tab alone is 1, the tab and the row are 2.
+mylist_count() { grep -o 'text="MY LIST"' "qa-out/ui-home-$1.xml" 2>/dev/null | wc -l; }
+home_open day1 --ei qa_day 20261027
+[ "$(mylist_count day1)" -eq 1 ] && pass "Home: no My List row while the list is empty" || fail "Home: no My List row while the list is empty ($(mylist_count day1) \"MY LIST\" labels)"
+home_open day1-again --ei qa_day 20261027
+home_open day2 --ei qa_day 20261028
+adb logcat -d -s DailyPicks:I | sed 's/^/      [picks] /' | cut -c1-400 | tee -a "$R"
+D1=$(picks_of 20261027 2); D1B=$(picks_of 20261027 1); D2=$(picks_of 20261028 1)
+POOL=$(adb logcat -d -s DailyPicks:I | grep "day=20261028 " | tail -n 1 | sed -n 's/.*pool \([0-9]*\).*/\1/p')
+[ -n "$D1" ] && [ "$D1" = "$D1B" ] && pass "Picks: the same row all day (relaunch)" || fail "Picks: the same row all day (relaunch)"
+[ -n "$D2" ] && [ "$D1" != "$D2" ] && pass "Picks: a new row the next day" || fail "Picks: a new row the next day"
+SHARED=$(comm -12 <(echo "$D1" | tr ',' '\n' | sort) <(echo "$D2" | tr ',' '\n' | sort) | grep -c . || true)
+echo "      [picks] pool on day 2: ${POOL:-?}, titles in both rows: $SHARED" | tee -a "$R"
+if [ "${POOL:-0}" -ge 48 ]; then
+  [ "$SHARED" -eq 0 ] && pass "Picks: no title repeats from yesterday" || fail "Picks: no title repeats from yesterday"
+fi
+home_open mylist --ei qa_day 20261028 --es qa_list "'movie|603|The Matrix'"
+[ "$(mylist_count mylist)" -eq 2 ] && pass "Home: My List row shows" || fail "Home: My List row shows ($(mylist_count mylist) \"MY LIST\" labels)"
+grep -q 'content-desc="The Matrix"' qa-out/ui-home-mylist.xml && pass "Home: My List row has the listed title" || fail "Home: My List row has the listed title"
+D2B=$(picks_of 20261028 1)
+echo ",$D2B," | grep -q ",movie:603," && fail "Picks: a title on My List is not picked" || pass "Picks: a title on My List is not picked"
+
+# 4-photo) Profile photos in Who's watching and in the top bar circle. Photos go in through the internet setup link,
+# exactly as the phone sends them (photo_test.py draws them at run time), for Dad (p1) and Mom (p2).
+pip install -q pillow >/dev/null 2>&1
+has() { grep -q "$2" "qa-out/ui-$1.xml" 2>/dev/null; }
+LINK=$(curl -sf -m 10 http://127.0.0.1:8642/qa-relay)
+if [ -n "$LINK" ] && python3 .github/qa/photo_test.py "$LINK" p1 p2; then
+  home_open photo-dad
+  has home-photo-dad 'Dad profile photo' && pass "Top bar: Dad's photo in the circle" || fail "Top bar: Dad's photo in the circle"
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --es screen profiles >/dev/null
+  sleep 12; shot picker-photos
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-picker-photos.xml >/dev/null 2>&1
+  has picker-photos 'Dad profile photo' && has picker-photos 'Mom profile photo' && pass "Who's watching: both photos show" || fail "Who's watching: both photos show"
+  # Focus starts on Dad: RIGHT to Mom, OK picks her and returns to Home.
+  adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 1; adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 15; shot home-photo-mom
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home-photo-mom.xml >/dev/null 2>&1
+  has home-photo-mom 'Mom profile photo' && ! has home-photo-mom 'Dad profile photo' && pass "Top bar: switching to Mom shows her photo" || fail "Top bar: switching to Mom shows her photo"
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --es screen profiles >/dev/null
+  sleep 12; adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 15; shot home-photo-dad-again
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home-photo-dad-again.xml >/dev/null 2>&1
+  has home-photo-dad-again 'Dad profile photo' && pass "Top bar: switching back to Dad shows his photo" || fail "Top bar: switching back to Dad shows his photo"
+else
+  fail "Profile photos sent through the setup link"
+fi
+
 # 4d) Fresh install: app data cleared, the playlist sent again through the setup page, nothing else set (no favorites,
 # no recents, no teams chosen). Live TV must show the same What's On rows and pin the Eagles game for Dad (p1).
 adb shell pm clear com.mcd.tv >/dev/null

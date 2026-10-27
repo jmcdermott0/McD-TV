@@ -269,6 +269,16 @@ class MainActivity : ComponentActivity() {
                 runCatching { com.mcd.tv.data.HistoryHub.qaWatch(qaWatched) }
             }
         }
+        // Automated QA only: "--ei qa_day 20261028" makes Picked for <name> use that day, so the run can compare two days;
+        // "--es qa_list 'movie|603|The Matrix'" puts a title on the active profile's My List (Home's My List row).
+        if (intent?.getBooleanExtra("qa_mode", false) == true) {
+            intent?.getIntExtra("qa_day", 0)?.takeIf { it > 0 }?.let { com.mcd.tv.data.Recommender.qaDay = it }
+            intent?.getStringExtra("qa_list")?.split("|")?.takeIf { it.size >= 3 }?.let { p ->
+                p[1].toIntOrNull()?.let { id ->
+                    com.mcd.tv.data.Library.setWatchlist(com.mcd.tv.data.Title(id, p[0], p[2], "", null, null, 0.0, ""), true)
+                }
+            }
+        }
         // Rebuilt while the Wall was up: open the Wall again. This wins over a deep link, because a rebuilt
         // activity gets its first launch intent again, which is old news by then.
         // A rebuild gets its old launch intent again, so the Wall wins there. After Jarvis ended in front, a fresh

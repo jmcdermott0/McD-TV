@@ -100,7 +100,7 @@ private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, curren
             ) {
                 // The ring (border) draws over the photo, so the circle looks the same with or without one.
                 if (photo != null) {
-                    Image(photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+                    Image(photo, contentDescription = "${name.trim()} profile photo", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
                 } else {
                     Text(name.trim().take(1).uppercase().ifBlank { "?" }, style = broadcastStyle(48.sp, ring))
                 }

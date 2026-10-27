@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,7 +46,10 @@ import com.mcd.tv.Nav
 import com.mcd.tv.Screen
 import com.mcd.tv.data.Channel
 import com.mcd.tv.data.ContinueRules
+import com.mcd.tv.data.DailyPicks
 import com.mcd.tv.data.Library
+import com.mcd.tv.data.LibraryEvents
+import com.mcd.tv.data.WatchListRow
 import com.mcd.tv.data.LiveOrganizer
 import com.mcd.tv.data.M3u
 import com.mcd.tv.data.Prefs
@@ -67,7 +71,7 @@ private data class HomeData(
 )
 
 /**
- * Home: at most 8 rows. Continue Watching, Live TV favorites (when a playlist is set), Suggested for You, History (profiles that like
+ * Home: at most 8 rows. Continue Watching, My List (the profile's watchlist, when it has titles), Live TV favorites (when a playlist is set), Suggested for You, History (profiles that like
  * history; its See all opens Browse > History), Trending This Week, Popular on <service>, Top Rated, New Releases, then a small
  * "More" row (Ask Jarvis, Browse, Live TV, Websites, Background Noise).
  * Everything else lives under Browse. Each catalog row ends in a "See all" tile that opens its full grid.
@@ -81,7 +85,9 @@ fun HomeScreen(nav: Nav) {
 
 @Composable
 private fun HomeContent(nav: Nav, kids: Boolean) {
-    val hidden = remember { Library.hidden().map { "${it.type}-${it.id}" }.toSet() }
+    // Goes up on every My List / "Not for me" change, here or on another TV: those rows re-read without a restart.
+    val libVersion by LibraryEvents.version.collectAsState()
+    val hidden = remember(libVersion) { Library.hidden().map { "${it.type}-${it.id}" }.toSet() }
     fun List<Title>.visible() = filterNot { "${it.type}-${it.id}" in hidden }
     val service = SERVICES.first()
 
@@ -114,8 +120,18 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
     val focus = rememberSaveable(saver = FocusMemory.Saver) { FocusMemory() }
     val restoring = remember { focus.pending }
     val favorites = remember { Library.favorites() }
+    // My List: the active profile's own watchlist (synced between TVs by ProfileSync). No titles, no row.
+    val myList = remember(libVersion, hidden) { WatchListRow.items(Library.watchlist(), { "${it.type}-${it.id}" }, hidden) }
+    val listed = remember(libVersion) { Library.watchlist().map { "${it.type}-${it.id}" }.toSet() }
     // Picked for <name>: learned from this profile's history, favorites, likes, "Not for me" and Settings > Taste.
-    val suggestions by rememberLoad(Prefs.activeProfile) { com.mcd.tv.data.Recommender.forYou() }
+    // A new row each day (DailyPicks): a Home left open past midnight loads the new day's row.
+    val day by produceState(DailyPicks.dayOf(System.currentTimeMillis())) {
+        while (true) {
+            kotlinx.coroutines.delay(DailyPicks.msUntilNextDay(System.currentTimeMillis()) + 1_000)
+            value = DailyPicks.dayOf(System.currentTimeMillis())
+        }
+    }
+    val suggestions by rememberLoad(Prefs.activeProfile, day) { com.mcd.tv.data.Recommender.forYou() }
     // Because You Watched: More Like This for the latest title this profile finished.
     val because by rememberLoad(Prefs.activeProfile) { com.mcd.tv.data.Recommender.becauseYouWatched() }
     // History: Ken Burns, for profiles whose Taste likes history (Dad). Never built from what was watched.
@@ -148,8 +164,8 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
             else -> null
         }
     }
-    // Home stays at 8 rows or fewer: with Continue Watching and the hero both showing, the live row takes Top Rated's place.
-    val dropTopRated = (liveRow != null && continueWatching.isNotEmpty()) || (because as? Load.Ok)?.value != null
+    // Home stays at 8 rows or fewer: when Continue Watching and the live row both show, or Because You Watched or My List shows, Top Rated gives up its place.
+    val dropTopRated = (liveRow != null && continueWatching.isNotEmpty()) || (because as? Load.Ok)?.value != null || myList.isNotEmpty()
     val openTitle: (Title) -> Unit = { nav.push(Screen.Detail(it.type, it.id)) }
     val heroes = (data as? Load.Ok<HomeData>)?.value?.trending?.visible()?.filter { it.backdrop != null }?.take(6) ?: emptyList()
     // Nothing to resume: the hero goes full-bleed at the very top of the page, behind the transparent
@@ -214,11 +230,14 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
         if (continueWatching.isNotEmpty()) item(key = "continue") {
             Box(pinTop) { HistoryRow("Continue Watching", continueWatching, nav, firstFocus, focus) }
         }
+        if (myList.isNotEmpty()) item(key = "mylist") {
+            TitleRail(WatchListRow.LABEL, myList, { nav.tab(NavTab.Library) }, openTitle, focus, "mylist")
+        }
         liveRow?.let { (label, channels) -> item(key = "live") { Box(rowFocus("live")) { LiveChannelsRow(label, channels, nav) } } }
         if (!heroOnTop && heroes.isNotEmpty()) item(key = "hero") { Box(rowFocus("hero")) { Hero(heroes, nav, heroFocus, takeFocus = false) } }
         item(key = "suggested") {
             val sg = suggestions
-            if (sg is Load.Ok && sg.value.isNotEmpty()) TitleRail("Picked for ${Prefs.activeProfileName}", sg.value.visible(), null, openTitle, focus, "suggested")
+            if (sg is Load.Ok && sg.value.isNotEmpty()) TitleRail("Picked for ${Prefs.activeProfileName}", sg.value.visible().filterNot { "${it.type}-${it.id}" in listed }, null, openTitle, focus, "suggested")
         }
         item(key = "because") {
             val b = (because as? Load.Ok)?.value

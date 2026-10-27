@@ -76,6 +76,7 @@ object Library {
         val has = list.any { it.id == t.id && it.type == t.type }
         saveTitles(key, if (has) list.filterNot { it.id == t.id && it.type == t.type } else listOf(t) + list, pid)
         ProfileSync.onTitleList(pid, key, "${t.type}:${t.id}", if (has) null else t.toJson().toString())
+        LibraryEvents.changed()
         !has
     }
 

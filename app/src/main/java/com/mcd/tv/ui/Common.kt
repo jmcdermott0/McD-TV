@@ -1,6 +1,7 @@
 package com.mcd.tv.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -56,6 +59,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import com.mcd.tv.data.Library
+import com.mcd.tv.data.Prefs
+import com.mcd.tv.data.ProfilePhotos
 import com.mcd.tv.data.Ratings
 import com.mcd.tv.data.RatingsSource
 import com.mcd.tv.data.Title
@@ -513,7 +518,14 @@ private fun NavItem(label: String, selected: Boolean, onClick: () -> Unit, modif
 
 /** Profile / settings button: a thin cyan ring with a person glyph. [badge]: an amber dot (an update is ready). */
 @Composable
-private fun ProfileCircle(selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, badge: Boolean = false) {
+private fun ProfileCircle(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badge: Boolean = false,
+    photo: ImageBitmap? = null,
+    photoLabel: String? = null,
+) {
     var focused by remember { mutableStateOf(false) }
     Box {
         Box(
@@ -526,17 +538,15 @@ private fun ProfileCircle(selected: Boolean, onClick: () -> Unit, modifier: Modi
                 .background(if (focused) McdColors.Accent.copy(alpha = 0.18f) else McdColors.Ink.copy(alpha = 0.4f))
                 .clickable(onClick = onClick),
         ) {
+            // The active profile's photo (set from the phone) fills the circle; the ring draws over it.
+            if (photo != null) {
+                Image(photo, contentDescription = photoLabel, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+            }
             Canvas(Modifier.fillMaxSize()) {
                 val ring = if (focused) McdColors.AccentBright else McdColors.Accent
                 val sw = (if (focused) 2.dp else 1.5.dp).toPx()
                 drawCircle(ring, radius = size.minDimension / 2f - sw / 2f, style = Stroke(sw))
-                val c = ring.copy(alpha = 0.95f)
-                drawCircle(c, radius = size.minDimension * 0.13f, center = Offset(size.width / 2, size.height * 0.39f))
-                drawArc(
-                    c, startAngle = 180f, sweepAngle = 180f, useCenter = true,
-                    topLeft = Offset(size.width * 0.27f, size.height * 0.58f),
-                    size = Size(size.width * 0.46f, size.height * 0.34f),
-                )
+                if (photo == null) drawPersonIcon(ring.copy(alpha = 0.95f))
             }
         }
         if (badge) {
@@ -546,6 +556,16 @@ private fun ProfileCircle(selected: Boolean, onClick: () -> Unit, modifier: Modi
             )
         }
     }
+}
+
+/** The person icon in the top bar's circle, for a profile without a photo. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPersonIcon(c: Color) {
+    drawCircle(c, radius = size.minDimension * 0.13f, center = Offset(size.width / 2, size.height * 0.39f))
+    drawArc(
+        c, startAngle = 180f, sweepAngle = 180f, useCenter = true,
+        topLeft = Offset(size.width * 0.27f, size.height * 0.58f),
+        size = Size(size.width * 0.46f, size.height * 0.34f),
+    )
 }
 
 /**
@@ -567,6 +587,11 @@ fun TopNav(
         LaunchedEffect(Unit) { withFrameNanos { }; runCatching { currentFocus.requestFocus() } }
     }
     val shown = current.barTab()
+    // The circle shows the active profile's photo from the same store as Who's watching; it redraws when a photo
+    // arrives (from the phone or another TV) and follows the profile (Home is rebuilt when the profile changes).
+    val photoRev by ProfilePhotos.revision.collectAsState()
+    val active = Prefs.activeProfile
+    val photo = remember(photoRev, active) { ProfilePhotos.bitmap(active) }
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -588,6 +613,8 @@ fun TopNav(
             current == NavTab.Settings, { onSelect(NavTab.Settings) },
             if (current == NavTab.Settings) Modifier.focusRequester(currentFocus) else Modifier,
             badge = com.mcd.tv.data.Updater.available != null,
+            photo = photo,
+            photoLabel = "${Prefs.profileName(active)} profile photo",
         )
     }
 }
