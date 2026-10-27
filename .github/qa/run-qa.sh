@@ -457,8 +457,10 @@ home_open() { # name, extra am args...
 }
 # The row logged for day $1, $2 lines from the end (1 = the latest). Earlier launches on the real date log too.
 picks_of() { adb logcat -d -s DailyPicks:I | grep "day=$1 " | tail -n "$2" | head -n 1 | sed 's/.*keys=//'; }
+# The top bar has a "MY LIST" tab too: the tab alone is 1, the tab and the row are 2.
+mylist_count() { grep -o 'text="MY LIST"' "qa-out/ui-home-$1.xml" 2>/dev/null | wc -l; }
 home_open day1 --ei qa_day 20261027
-if grep -q '"MY LIST"' qa-out/ui-home-day1.xml; then fail "Home: no My List row while the list is empty"; else pass "Home: no My List row while the list is empty"; fi
+[ "$(mylist_count day1)" -eq 1 ] && pass "Home: no My List row while the list is empty" || fail "Home: no My List row while the list is empty ($(mylist_count day1) \"MY LIST\" labels)"
 home_open day1-again --ei qa_day 20261027
 home_open day2 --ei qa_day 20261028
 adb logcat -d -s DailyPicks:I | sed 's/^/      [picks] /' | cut -c1-400 | tee -a "$R"
@@ -472,7 +474,7 @@ if [ "${POOL:-0}" -ge 48 ]; then
   [ "$SHARED" -eq 0 ] && pass "Picks: no title repeats from yesterday" || fail "Picks: no title repeats from yesterday"
 fi
 home_open mylist --ei qa_day 20261028 --es qa_list "'movie|603|The Matrix'"
-grep -q '"MY LIST"' qa-out/ui-home-mylist.xml && pass "Home: My List row shows" || fail "Home: My List row shows"
+[ "$(mylist_count mylist)" -eq 2 ] && pass "Home: My List row shows" || fail "Home: My List row shows ($(mylist_count mylist) \"MY LIST\" labels)"
 grep -q 'content-desc="The Matrix"' qa-out/ui-home-mylist.xml && pass "Home: My List row has the listed title" || fail "Home: My List row has the listed title"
 D2B=$(picks_of 20261028 1)
 echo ",$D2B," | grep -q ",movie:603," && fail "Picks: a title on My List is not picked" || pass "Picks: a title on My List is not picked"
