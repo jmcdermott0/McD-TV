@@ -477,6 +477,30 @@ grep -q 'content-desc="The Matrix"' qa-out/ui-home-mylist.xml && pass "Home: My 
 D2B=$(picks_of 20261028 1)
 echo ",$D2B," | grep -q ",movie:603," && fail "Picks: a title on My List is not picked" || pass "Picks: a title on My List is not picked"
 
+# 4-photo) Profile photos in Who's watching and in the top bar circle. Photos go in through the internet setup link,
+# exactly as the phone sends them (photo_test.py draws them at run time), for Dad (p1) and Mom (p2).
+pip install -q pillow >/dev/null 2>&1
+has() { grep -q "$2" "qa-out/ui-$1.xml" 2>/dev/null; }
+LINK=$(curl -sf -m 10 http://127.0.0.1:8642/qa-relay)
+if [ -n "$LINK" ] && python3 .github/qa/photo_test.py "$LINK" p1 p2; then
+  home_open photo-dad
+  has home-photo-dad 'Dad profile photo' && pass "Top bar: Dad's photo in the circle" || fail "Top bar: Dad's photo in the circle"
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --es screen profiles >/dev/null
+  sleep 12; shot picker-photos
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-picker-photos.xml >/dev/null 2>&1
+  has picker-photos 'Dad profile photo' && has picker-photos 'Mom profile photo' && pass "Who's watching: both photos show" || fail "Who's watching: both photos show"
+  # Focus starts on Dad: RIGHT to Mom, OK picks her and returns to Home.
+  adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 1; adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 15; shot home-photo-mom
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home-photo-mom.xml >/dev/null 2>&1
+  has home-photo-mom 'Mom profile photo' && ! has home-photo-mom 'Dad profile photo' && pass "Top bar: switching to Mom shows her photo" || fail "Top bar: switching to Mom shows her photo"
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --es screen profiles >/dev/null
+  sleep 12; adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 15; shot home-photo-dad-again
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home-photo-dad-again.xml >/dev/null 2>&1
+  has home-photo-dad-again 'Dad profile photo' && pass "Top bar: switching back to Dad shows his photo" || fail "Top bar: switching back to Dad shows his photo"
+else
+  fail "Profile photos sent through the setup link"
+fi
+
 # 4d) Fresh install: app data cleared, the playlist sent again through the setup page, nothing else set (no favorites,
 # no recents, no teams chosen). Live TV must show the same What's On rows and pin the Eagles game for Dad (p1).
 adb shell pm clear com.mcd.tv >/dev/null
