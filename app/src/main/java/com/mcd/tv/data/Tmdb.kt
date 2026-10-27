@@ -79,6 +79,12 @@ data class Person(
     val acting: List<Title>,
     val crew: List<Pair<Title, String>>, // title + job (Director, Writer, ...)
 )
+/** A person in search results. [department] is TMDB's "known for" ("Acting", "Directing"). */
+data class PersonHit(val id: Int, val name: String, val department: String, val photo: String?)
+
+/** One search: matching titles (origin setting applied) and matching people. */
+data class SearchHits(val titles: List<Title>, val people: List<PersonHit>)
+
 data class SeasonInfo(val number: Int, val name: String, val episodeCount: Int)
 data class Episode(
     val season: Int,
@@ -407,6 +413,56 @@ object Tmdb {
     }
     suspend fun nowPlaying(page: Int = 1) = list("/movie/now_playing", "movie", region() + ("page" to page.toString()))
     suspend fun search(q: String) = list("/search/multi", null, mapOf("query" to q, "include_adult" to "false"))
+
+    /** TMDB TV genres for News, Reality and Talk. */
+    private val GUEST_GENRES = setOf(10763, 10764, 10767)
+
+    /** Titles and people for [q] in one request (the Search tab), so a name finds the person too. */
+    suspend fun searchAll(q: String): SearchHits {
+        val arr = get("/search/multi", mapOf("query" to q, "include_adult" to "false")).optJSONArray("results")
+        return SearchHits(parseList(arr, null), parsePeople(arr))
+    }
+
+    /** People only, most popular first. */
+    suspend fun searchPeople(q: String): List<PersonHit> =
+        parsePeople(get("/search/person", mapOf("query" to q, "include_adult" to "false")).optJSONArray("results"))
+
+    private fun parsePeople(arr: JSONArray?): List<PersonHit> {
+        if (arr == null) return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            if (o.optBoolean("adult", false)) return@mapNotNull null
+            val media = o.s("media_type")
+            if (media != null && media != "person") return@mapNotNull null
+            val name = o.s("name") ?: return@mapNotNull null
+            PersonHit(o.optInt("id"), name, o.s("known_for_department") ?: "", o.s("profile_path")).takeIf { it.id > 0 }
+        }
+    }
+
+    /**
+     * The person [name] means, or null: first among [hits] (a search already made), then a person search
+     * for each spelling ("Daniel day Lewis", then "Daniel day-Lewis").
+     */
+    suspend fun personByName(name: String, hits: List<PersonHit> = emptyList()): PersonHit? {
+        JarvisReplyParser.pickPerson(name, hits.map { it.name }).let { if (it >= 0) return hits[it] }
+        if (!JarvisReplyParser.looksLikeName(name)) return null
+        for (v in JarvisReplyParser.nameVariants(name)) {
+            val people = searchPeople(v)
+            JarvisReplyParser.pickPerson(name, people.map { it.name }).let { if (it >= 0) return people[it] }
+        }
+        return null
+    }
+
+    /**
+     * A person's best-known titles, most voted first: directed titles for a director, roles for everyone else.
+     * Talk, news and reality shows are left out (guest spots, not their work).
+     */
+    fun knownFor(p: Person, max: Int = 20): List<Title> {
+        val directed = p.crew.filter { "Director" in it.second }.map { it.first }
+        val main = if (p.department == "Directing" && directed.isNotEmpty()) directed + p.acting else p.acting + directed
+        return main.filter { t -> t.genreIds.none { it in GUEST_GENRES } }
+            .distinctBy { "${it.type}-${it.id}" }.sortedByDescending { it.votes }.take(max)
+    }
 
     /**
      * Best TMDB match for one title of a known [type] ("movie"/"tv"), used by Ask Jarvis.
