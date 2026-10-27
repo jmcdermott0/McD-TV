@@ -51,6 +51,7 @@ import androidx.tv.material3.Text
 import com.mcd.tv.Nav
 import com.mcd.tv.Screen
 import com.mcd.tv.data.Addons
+import com.mcd.tv.data.JarvisReplyParser
 import com.mcd.tv.data.Library
 import com.mcd.tv.data.PlayMeta
 import com.mcd.tv.data.Resolver
@@ -172,10 +173,57 @@ fun SearchScreen(nav: Nav) {
                 }
             } else {
             val describe = looksLikeDescription(submitted)
-            val titles by rememberLoad(submitted) { Tmdb.search(submitted) }
-            val noTitles = (titles as? Load.Ok)?.value?.isEmpty() == true
-            // Ask Jarvis when it reads like a description, when asked to, or when no title matches the name.
+            val hits by rememberLoad(submitted) { Tmdb.searchAll(submitted) }
+            val titles = when (val h = hits) {
+                is Load.Ok -> Load.Ok(h.value.titles)
+                is Load.Err -> h
+                is Load.Loading -> Load.Loading
+            }
+            // A name ("Daniel day Lewis"): that person's best-known titles straight from TMDB, no Jarvis needed.
+            // The search reply is cached, so this adds only the person's own page.
+            val known by rememberLoad(submitted) {
+                if (!JarvisReplyParser.looksLikeName(submitted)) null
+                else Tmdb.personByName(submitted, Tmdb.searchAll(submitted).people)?.let { hit ->
+                    val p = Tmdb.person(hit.id)
+                    (p to Tmdb.knownFor(p)).takeIf { it.second.isNotEmpty() }
+                }
+            }
+            val person = (known as? Load.Ok)?.value
+            val noTitles = (hits as? Load.Ok)?.value?.let { it.titles.isEmpty() && it.people.isEmpty() } == true &&
+                known !is Load.Loading && person == null
+            // Ask Jarvis when it reads like a description, when asked to, or when nothing matches the name.
             val ask = hasKey && (describe || forceAsk || noTitles)
+
+            @Composable
+            fun PersonPart() {
+                val p = person ?: return
+                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RailHeader(p.first.name)
+                    Spacer(Modifier.width(14.dp))
+                    ActionButton("All titles", { nav.push(Screen.Person(p.first.id)) })
+                }
+                LazyRow(
+                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    items(p.second, key = { "${it.type}-${it.id}" }) { t ->
+                        PosterCard(t, onClick = { nav.push(Screen.Detail(t.type, t.id)) }, width = 150.dp)
+                    }
+                }
+            }
+
+            @Composable
+            fun PeoplePart() {
+                val people = (hits as? Load.Ok)?.value?.people.orEmpty().filter { it.id != person?.first?.id }.take(12)
+                if (people.isEmpty()) return
+                RailHeader("People", Modifier.padding(top = 8.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(people, key = { it.id }) { h -> CastBubble(h.name, h.department, h.photo) { nav.push(Screen.Person(h.id)) } }
+                }
+            }
 
             @Composable
             fun JarvisPart() {
@@ -196,7 +244,7 @@ fun SearchScreen(nav: Nav) {
                     is Load.Loading -> StatusText("Searching…")
                     is Load.Err -> StatusText(r.message)
                     is Load.Ok -> if (r.value.isEmpty()) {
-                        if (!hasKey) Text("No titles match \"$submitted\".", color = McdColors.Muted, fontSize = 16.sp)
+                        if (!hasKey && noTitles) Text("No titles match \"$submitted\".", color = McdColors.Muted, fontSize = 16.sp)
                     } else {
                         RailHeader("Titles", Modifier.padding(top = 8.dp))
                         LazyRow(
@@ -213,12 +261,16 @@ fun SearchScreen(nav: Nav) {
 
             if (ask && (describe || forceAsk)) {
                 JarvisPart()
+                PersonPart()
                 TitlesPart()
+                PeoplePart()
             } else {
+                PersonPart()
                 TitlesPart()
+                PeoplePart()
                 if (ask) {
                     JarvisPart()
-                } else if (hasKey && titles is Load.Ok) {
+                } else if (hasKey && hits is Load.Ok) {
                     Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Not what you meant?", color = McdColors.Muted, fontSize = 15.sp)
                         Spacer(Modifier.width(14.dp))

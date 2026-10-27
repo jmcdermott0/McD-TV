@@ -246,7 +246,7 @@ internal fun JarvisResults(a: JarvisAnswer, onOpen: (JarvisMatch) -> Unit) {
         if (a.clarify.isBlank()) JarvisLine("I'm afraid that one eludes me, sir. An actor, a year or a scene would help.")
         return
     }
-    RailHeader(if (a.matches.size == 1) "Best match" else "Best guesses", Modifier.padding(top = 6.dp))
+    RailHeader(if (a.plain) "Direct matches" else if (a.matches.size == 1) "Best match" else "Best guesses", Modifier.padding(top = 6.dp))
     LazyRow(
         contentPadding = PaddingValues(vertical = 10.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp),

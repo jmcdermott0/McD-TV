@@ -14,11 +14,11 @@ import java.util.Locale
 /** One Ask Jarvis result: the TMDB title, Jarvis's one-line reason and its confidence (0..100). */
 data class JarvisMatch(val title: Title, val why: String, val confidence: Int)
 
-/** Everything Jarvis answered: matched titles (most likely first) and an optional follow-up question. */
-data class JarvisAnswer(val matches: List<JarvisMatch>, val clarify: String)
-
-/** An Ask Jarvis failure whose message is ready to show on screen. */
-class JarvisException(message: String) : Exception(message)
+/**
+ * Everything Jarvis answered: matched titles (most likely first) and an optional spoken line.
+ * [plain] = Jarvis's own answer could not be used, so these come from a plain name search.
+ */
+data class JarvisAnswer(val matches: List<JarvisMatch>, val clarify: String, val plain: Boolean = false)
 
 /**
  * Ask Jarvis: the user describes a movie or show in plain words and gets back best guesses.
@@ -30,8 +30,11 @@ object Jarvis {
     private const val API_VERSION = "2023-06-01"
     const val DEFAULT_MODEL = "claude-sonnet-5-5"
     private const val FALLBACK_MODEL = "claude-haiku-5-5"
-    private const val TIMEOUT_MS = 30_000
-    private const val MAX_GUESSES = 6
+    private const val TIMEOUT_MS = 20_000
+    /** The one retry only runs when the first try failed within this time, so the wait stays short. */
+    private const val RETRY_WITHIN_MS = 12_000L
+    private const val MAX_TOKENS = 1200
+    private const val MAX_PLAIN = 12
     private const val MAX_QUESTION = 600
 
     const val NO_KEY = "Add your Jarvis key on the Control page to use Ask Jarvis."
@@ -40,7 +43,6 @@ object Jarvis {
     private const val OFFLINE = "Jarvis could not be reached. Check the TV's internet connection."
     private const val SLOW = "Jarvis took too long to answer. Try again."
     private const val DOWN = "Jarvis is unavailable right now. Try again in a moment."
-    private const val CONFUSED = "Jarvis could not read that answer. Try again, or describe it another way."
 
     private val SYSTEM_PROMPT = """
         You are Jarvis, the user's home media assistant. You speak like a refined British butler who
@@ -49,7 +51,7 @@ object Jarvis {
         Your task: identify films and TV series from vague descriptions (half-remembered plots, actors,
         scenes, quotes, settings).
         Return ONLY a JSON object, no prose and no code fences, exactly in this shape:
-        {"guesses":[{"title":"Iron Man","year":2008,"type":"movie","confidence":92,"why":"one short sentence"}],"clarify":"one short spoken line"}
+        {"guesses":[{"title":"Iron Man","year":2008,"type":"movie","confidence":92,"why":"one short sentence"}],"person":"","clarify":"one short spoken line"}
         Rules:
         - Up to 6 guesses, ordered from most to least likely.
         - "title" is the official English release title. "year" is the release year (first air year for TV).
@@ -57,6 +59,9 @@ object Jarvis {
         - "why" is one short sentence, in your voice, saying how the title matches the description.
         - Never invent titles. Only list real, released films and series.
         - If the description names a person or asks for a genre or mood, return the most fitting titles.
+        - If the question is just a person's name (actor, director), set "person" to their full, correctly
+          spelled name and list their best-known titles. Otherwise "person" is "".
+        - Never put double quotes inside a "why" or "clarify" text.
         - "clarify" is ALWAYS one short spoken line in your voice (under 25 words). If you are confident,
           present your top pick with a touch of wit. If the description is too vague, ask one polite
           follow-up question instead.
@@ -77,7 +82,9 @@ object Jarvis {
     private fun cacheKey(q: String) = q.lowercase(Locale.US).replace(Regex("\\s+"), " ").trim()
 
     /**
-     * Asks Jarvis about [question]. Throws [JarvisException] with a friendly message on any failure.
+     * Asks Jarvis about [question]. Throws [JarvisException] with a friendly message only when nothing at all
+     * can be shown. An answer Jarvis cannot read, or no answer, falls back to a plain TMDB search: a person's
+     * best-known titles, else titles by name. The reason is kept in Settings > About and help.
      * The origin setting is not applied to the results (the user asked for them); adult titles never appear.
      */
     suspend fun ask(question: String): JarvisAnswer {
@@ -88,24 +95,81 @@ object Jarvis {
         val ck = cacheKey(q)
         synchronized(cache) { cache[ck] }?.let { return it }
 
-        val text = call(key, q)
-        val parsed = parse(text)
-        val matches = resolve(parsed.first)
-        val answer = JarvisAnswer(matches, parsed.second)
-        if (matches.isNotEmpty() || answer.clarify.isNotBlank()) synchronized(cache) { cache[ck] = answer }
+        val out = JarvisFlow.run(
+            q,
+            askAi = { call(key, q) },
+            resolve = { resolve(it) },
+            plain = { hint -> plainSearch(q, hint) },
+            note = { msg ->
+                android.util.Log.w("Jarvis", msg)
+                RecentErrors.note(msg)
+            },
+        )
+        val answer = JarvisAnswer(out.matches, out.clarify, out.fallback)
+        // Only a real answer is kept: a fallback should try Jarvis again next time.
+        if (!out.fallback && (out.matches.isNotEmpty() || out.clarify.isNotBlank())) synchronized(cache) { cache[ck] = answer }
         return answer
+    }
+
+    /** The plain search behind Ask Jarvis: the person [hint] (or [q]) names, else titles by name. */
+    private suspend fun plainSearch(q: String, hint: String): List<JarvisMatch> {
+        val hits = Tmdb.searchAll(q)
+        val who = hint.ifBlank { q }
+        val person = Tmdb.personByName(who, hits.people)
+            ?: if (hint.isNotBlank()) Tmdb.personByName(q, hits.people) else null
+        if (person != null) {
+            val p = Tmdb.person(person.id)
+            val films = Tmdb.knownFor(p, MAX_PLAIN)
+            if (films.isNotEmpty()) return films.map { JarvisMatch(it, "One of ${p.name}'s best-known titles.", 70) }
+        }
+        return hits.titles.distinctBy { "${it.type}:${it.id}" }.take(MAX_PLAIN).map { JarvisMatch(it, "Matches the name you typed.", 60) }
     }
 
     // ---------------- API call ----------------
 
-    private suspend fun call(key: String, q: String): String {
+    /**
+     * One API call with one retry: on a timeout, a dropped connection, a busy or failing server, or a reply that
+     * cannot be read. A bad key is never retried. The retry is skipped when the first try already took long.
+     */
+    private suspend fun call(key: String, q: String): JarvisRaw {
+        val started = System.currentTimeMillis()
+        val first = try {
+            callOnce(key, q)
+        } catch (e: RetryableException) {
+            if (System.currentTimeMillis() - started > RETRY_WITHIN_MS) throw JarvisException(e.message.orEmpty())
+            return retry(key, q, e.message.orEmpty())
+        }
+        if (first.problem.isBlank()) {
+            val r = JarvisReplyParser.parse(first.text, first.stopReason)
+            if (r.usable || r.clarify.isNotBlank()) return first
+        }
+        if (System.currentTimeMillis() - started > RETRY_WITHIN_MS) return first
+        return runCatching { retry(key, q, first.problem) }.getOrElse { e ->
+            if (e is CancellationException) throw e
+            first
+        }.let { second -> if (second.problem.isBlank()) second else first }
+    }
+
+    private suspend fun retry(key: String, q: String, why: String): JarvisRaw {
+        android.util.Log.w("Jarvis", "retrying once: $why")
+        return try {
+            callOnce(key, q)
+        } catch (e: RetryableException) {
+            throw JarvisException(e.message.orEmpty())
+        }
+    }
+
+    /** A failure worth one more try (timeout, network, busy or failing server). The message is ready to show. */
+    private class RetryableException(message: String) : Exception(message)
+
+    private suspend fun callOnce(key: String, q: String): JarvisRaw {
         var model = modelOverride ?: Prefs.jarvisModel.ifBlank { DEFAULT_MODEL }
         var withTemperature = true
         var triedFallback = false
         var triedNoTemp = false
         while (true) {
             try {
-                return post(key, q, model, withTemperature)
+                return JarvisReplyParser.content(post(key, q, model, withTemperature))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: HttpException) {
@@ -123,13 +187,14 @@ object Jarvis {
                     withTemperature = false
                     continue
                 }
+                if (e.code == 429 || e.code == 529 || e.code in 500..599) throw RetryableException(friendly(e.code))
                 throw JarvisException(friendly(e.code))
             } catch (e: SocketTimeoutException) {
-                throw JarvisException(SLOW)
+                throw RetryableException(SLOW)
             } catch (e: UnknownHostException) {
                 throw JarvisException(OFFLINE)
             } catch (e: IOException) {
-                throw JarvisException(OFFLINE)
+                throw RetryableException(OFFLINE)
             }
         }
     }
@@ -141,87 +206,25 @@ object Jarvis {
         else -> "Jarvis could not answer that (error $code). Try describing it another way."
     }
 
+    /** The raw reply body. */
     private suspend fun post(key: String, q: String, model: String, withTemperature: Boolean): String {
         val body = JSONObject()
             .put("model", model)
-            .put("max_tokens", 800)
+            .put("max_tokens", MAX_TOKENS)
             .put("system", SYSTEM_PROMPT)
             .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", q)))
         if (withTemperature) body.put("temperature", 0.2)
-        val reply = Http.postJson(
+        return Http.postJson(
             API_URL,
             body.toString(),
             headers = mapOf("x-api-key" to key, "anthropic-version" to API_VERSION),
             timeoutMs = TIMEOUT_MS,
         )
-        val o = runCatching { JSONObject(reply) }.getOrNull() ?: throw JarvisException(CONFUSED)
-        val content = o.optJSONArray("content") ?: throw JarvisException(CONFUSED)
-        val sb = StringBuilder()
-        for (i in 0 until content.length()) {
-            val block = content.optJSONObject(i) ?: continue
-            if (block.optString("type") == "text") sb.append(block.optString("text"))
-        }
-        return sb.toString()
-    }
-
-    // ---------------- Parsing ----------------
-
-    private data class Guess(val title: String, val year: Int?, val type: String?, val confidence: Int, val why: String)
-
-    /** The first balanced {...} block in [s] (braces inside JSON strings are skipped), or null. */
-    internal fun firstJsonObject(s: String): String? {
-        val start = s.indexOf('{')
-        if (start < 0) return null
-        var depth = 0
-        var inString = false
-        var escaped = false
-        for (i in start until s.length) {
-            val c = s[i]
-            if (inString) {
-                when {
-                    escaped -> escaped = false
-                    c == '\\' -> escaped = true
-                    c == '"' -> inString = false
-                }
-                continue
-            }
-            when (c) {
-                '"' -> inString = true
-                '{' -> depth++
-                '}' -> {
-                    depth--
-                    if (depth == 0) return s.substring(start, i + 1)
-                }
-            }
-        }
-        return null
-    }
-
-    private fun parse(text: String): Pair<List<Guess>, String> {
-        val json = firstJsonObject(text) ?: throw JarvisException(CONFUSED)
-        val o = runCatching { JSONObject(json) }.getOrNull() ?: throw JarvisException(CONFUSED)
-        val arr = o.optJSONArray("guesses") ?: JSONArray()
-        val guesses = (0 until arr.length()).mapNotNull { i ->
-            val g = arr.optJSONObject(i) ?: return@mapNotNull null
-            val title = g.optString("title").trim()
-            if (title.isEmpty()) return@mapNotNull null
-            val year = g.opt("year")?.toString()?.trim()?.take(4)?.toIntOrNull()?.takeIf { it in 1870..2100 }
-            val type = when (g.optString("type").trim().lowercase(Locale.US)) {
-                "movie", "film" -> "movie"
-                "tv", "show", "series", "tv series", "tv show", "miniseries" -> "tv"
-                else -> null
-            }
-            val raw = g.optDouble("confidence", 50.0).let { if (it.isNaN()) 50.0 else it }
-            val conf = (if (raw > 0.0 && raw <= 1.0) raw * 100.0 else raw).toInt().coerceIn(0, 100)
-            Guess(title, year, type, conf, g.optString("why").trim().take(200))
-        }.take(MAX_GUESSES)
-        val clarify = o.optString("clarify").trim().take(240).let { if (it.equals("null", ignoreCase = true)) "" else it }
-        return guesses to clarify
     }
 
     // ---------------- TMDB lookup ----------------
 
-    private suspend fun resolve(guesses: List<Guess>): List<JarvisMatch> {
+    private suspend fun resolve(guesses: List<JarvisGuess>): List<JarvisMatch> {
         if (guesses.isEmpty()) return emptyList()
         var firstError: Throwable? = null
         val found = coroutineScope {
