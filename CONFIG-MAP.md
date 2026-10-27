@@ -58,6 +58,7 @@ How every setting is entered, stored, synced and read across the TV app, the Con
 | Profile photos | web Settings > Profile > Profile photos (Choose photo, Change, Remove) | TV file `filesDir/profile_photos/pN.b64` (a 192 px JPEG as base64, never in SharedPreferences); web `mcdtv_web_photos` = `{pN: {v, d, at, ok}}` | relay `profile_photo` (phone to the linked TV, pieces of 1,600 characters), ProfileSync META `photo` and `photo:N`, `web_init` sends versions only; a phone asks for a missing one with `profile_photo_get`. Never in the repo, the house store or setup links | no |
 | Who is watching | TV picker; web Settings > Profile | `active_profile` (this TV); web `mcdtv_web_profile` | none | no |
 | Per-profile data | automatic | `lib_*@pN`, `taste@pN` | ProfileSync | no |
+| Picked for <name>, today's row | automatic, once a day | `picks_daily@pN` = `{day: yyyymmdd, titles: [...]}` (the day's row, kept so a relaunch shows the same titles; tomorrow it is left out) | this TV only. Every TV draws the same row from the same date and profile | no |
 | House | made automatically | `house_id`, `house_key`, `house_since`, `house_stamp` | the house link `id.key` goes to phones in `web_init` | yes |
 | Join my other TVs | TV Settings > Network shows a code; phone Settings > House and devices > Add a TV | short-lived ntfy topic from the code | ntfy | short-lived |
 | Connect a phone | TV Settings > Network shows a code; phone Settings > House and devices > Connect with a code | `/house` blob, 15 minutes | hands over the house link | short-lived |
@@ -110,3 +111,6 @@ Added: TV pref `bad_sources` and web key `mcdtv_badsrc`, a map from title key (`
 
 Added: `fav_teams` in `web_init` (read only; nothing new stored on the TV). The web guide cache `mcdtv_web_epg` now keeps each programme's description (first 120 characters) so the rows can classify it; the key and format are otherwise unchanged. No storage key was renamed or removed. Favorites, recents, teams, hidden leagues, the playlist link and every key and token stay as they were.
 
+## Home: My List and daily picks (October 27, 2026)
+
+Added: `picks_daily@p1` to `@p3` on the TV (device only, not in HouseSync's `SHARED` list, not in ProfileSync). Home's My List row reads the existing `lib_watchlist@pN`; nothing about it is stored. No storage key was renamed or removed. Keys, Real-Debrid, playlists and addons are untouched.

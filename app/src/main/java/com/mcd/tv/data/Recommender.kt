@@ -333,33 +333,101 @@ object Recommender {
 
     // ---------------------------------------------------------------- Picked for You
 
-    /** Home's "Picked for <name>": from the profile's strongest likes and liked genres, ranked by taste. */
+    /**
+     * Home's "Picked for <name>": a new row each day. A wide pool from the profile's strongest likes and liked genres is
+     * ranked by taste, then [DailyPicks] draws the day's row from it (seeded by date and profile, yesterday's row left out).
+     * The row is kept for the day (pref `picks_daily@<profile>`, this TV only), so a relaunch shows the same titles.
+     * Titles on My List, watched, or marked "Not for me" since then drop out when the row is read.
+     */
     suspend fun forYou(profile: String = Prefs.activeProfile, max: Int = 24): List<Title> = try {
-        forYouInner(profile, max)
+        val today = qaDay.takeIf { it > 0 } ?: DailyPicks.dayOf(System.currentTimeMillis())
+        val cached = readPicks(profile)
+        if (cached != null && cached.day == today && cached.titles.isNotEmpty()) {
+            val ex = forYouExcluded(profile)
+            cached.titles.filter { keyOf(it) !in ex }.also { qaLog(today, profile, "kept", it) }
+        } else {
+            val ranked = forYouInner(profile, max, today)
+            val ex = forYouExcluded(profile)
+            val byKey = ranked.associateBy(::keyOf)
+            // Yesterday's row (or the last one this TV showed) stays out today when the pool allows.
+            val shown = cached?.titles?.map(::keyOf)?.toSet() ?: emptySet()
+            val picks = DailyPicks.choose(ranked.map(::keyOf), today, profile, ex, shown, max).mapNotNull { byKey[it] }
+            if (picks.isNotEmpty()) savePicks(profile, today, picks)
+            picks.also { qaLog(today, profile, "new, pool ${ranked.size}, left out ${shown.size}", it) }
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
         emptyList()
     }
 
-    private suspend fun forYouInner(profile: String, max: Int): List<Title> = coroutineScope {
+    /** Automated QA only ("--ei qa_day 20261028"): the day Picked for <name> uses instead of today. 0 = today. */
+    @Volatile var qaDay = 0
+
+    /** QA runs compare these lines between two mocked days (logcat tag DailyPicks). */
+    private fun qaLog(day: Int, profile: String, how: String, picks: List<Title>) {
+        if (!Prefs.qaMode) return
+        android.util.Log.i("DailyPicks", "day=$day profile=$profile $how keys=${picks.joinToString(",") { keyOf(it) }}")
+    }
+
+    /** Never picked: "Not for me", already on My List, or watched (15% or more). */
+    private fun forYouExcluded(profile: String): Set<String> =
+        excluded(profile) + Library.watchlist(profile).map(::keyOf) +
+            Library.history(profile).filter { it.progress >= 0.15 }.map { "${it.meta.type}:${it.meta.tmdbId}" }
+
+    private class DayPicks(val day: Int, val titles: List<Title>)
+
+    private fun readPicks(profile: String): DayPicks? {
+        val raw = Prefs.json("picks_daily@$profile")
+        if (raw.isBlank()) return null
+        return runCatching { parsePicks(JSONObject(raw)) }.getOrNull()
+    }
+
+    private fun parsePicks(o: JSONObject): DayPicks {
+        val a = o.optJSONArray("titles") ?: JSONArray()
+        val titles = (0 until a.length()).mapNotNull { i ->
+            val t = a.optJSONObject(i) ?: return@mapNotNull null
+            Title(
+                t.optInt("id"), t.optString("type"), t.optString("name"), t.optString("overview"),
+                t.optString("poster").ifBlank { null }, t.optString("backdrop").ifBlank { null },
+                t.optDouble("rating", 0.0), t.optString("year"),
+            ).takeIf { it.id > 0 && it.type.isNotBlank() }
+        }
+        return DayPicks(o.optInt("day"), titles)
+    }
+
+    private fun savePicks(profile: String, day: Int, titles: List<Title>) {
+        val a = JSONArray()
+        titles.forEach { t ->
+            a.put(
+                JSONObject().put("id", t.id).put("type", t.type).put("name", t.name).put("overview", t.overview.take(400))
+                    .put("poster", t.poster ?: "").put("backdrop", t.backdrop ?: "").put("rating", t.rating).put("year", t.year),
+            )
+        }
+        Prefs.putJson("picks_daily@$profile", JSONObject().put("day", day).put("titles", a).toString())
+    }
+
+    /** The ranked pool (best first, up to [max] x 4) the day's row is drawn from. */
+    private suspend fun forYouInner(profile: String, max: Int, today: Int): List<Title> = coroutineScope {
         val ct = tasteWithSignals(profile)
         val taste = ct.taste
         val now = System.currentTimeMillis()
         val kids = profile == Prefs.KIDS_PROFILE
-        // Seeds: up to 4 of the strongest recent likes from watching, the rest from the starter favorites
-        // (a different handful each day, so the row changes).
+        val poolSize = max * 4
+        // Seeds: 4 of the 10 strongest recent likes from watching, the rest from the starter favorites.
+        // A different handful each day (drawn by date and profile), so the pool moves too.
         val liked = ct.signals.filter { it.weight > 0.5 }.sortedByDescending { it.weight * Taste.decay(it.at, now) }
-        val own = liked.filter { it.f.key !in ct.starters }.take(4)
-        val day = now / 86_400_000L
-        val fromStarters = liked.filter { it.f.key in ct.starters }
-            .shuffled(kotlin.random.Random(day * 31 + profile.hashCode()))
-            .take(6 - own.size)
+        val ownTop = liked.filter { it.f.key !in ct.starters }.take(10).map { it.f.key }
+        val own = DailyPicks.choose(ownTop, today, "$profile:seeds", emptySet(), emptySet(), 4)
+        val fromStarters = DailyPicks.choose(
+            liked.filter { it.f.key in ct.starters }.map { it.f.key }, today, "$profile:starters", emptySet(), emptySet(), 6 - own.size,
+        )
         val seeds = (own + fromStarters)
-            .map { it.f.key.substringBefore(':') to it.f.key.substringAfter(':').toInt() }
-        // Genres to explore: chosen likes first, then the top learned ones.
+            .map { it.substringBefore(':') to it.substringAfter(':').toInt() }
+        // Genres to explore: every chosen like (Dad: war, crime, comedy and history), then the top learned ones.
         val learned = taste.genres.entries.filter { it.value > 0.15 }.sortedByDescending { it.value }.map { it.key }
-        val genres = (taste.choices.likeGenres.toList() + learned).distinct().filter { it !in taste.choices.avoidGenres }.take(3)
+        val genres = (taste.choices.likeGenres.toList() + learned).distinct().filter { it !in taste.choices.avoidGenres }
+            .take(taste.choices.likeGenres.size.coerceIn(3, 5))
         val fromSeeds = seeds.map { (t, id) -> async { runCatching { net.withPermit { Tmdb.recommendations(t, id, 1) } }.getOrDefault(emptyList()) } }
         val fromGenres = genres.flatMap { g ->
             listOf("movie", "tv").map { type ->
@@ -383,17 +451,16 @@ object Recommender {
             pool.putIfAbsent(keyOf(t), t)
             cands.add(Taste.Candidate(t.basicFeatures()))
         }
-        val seen = Library.history(profile).filter { it.progress >= 0.15 }.map { "${it.meta.type}:${it.meta.tmdbId}" }.toSet()
-        val ex = excluded(profile) + seen + ct.starters + seeds.map { "${it.first}:${it.second}" }
-        // Full features (avoided topics, liked people) for the best 40 on a first pass.
-        val prelim = Taste.rankForYou(cands, taste, ex, 40)
+        val ex = forYouExcluded(profile) + ct.starters + seeds.map { "${it.first}:${it.second}" }
+        // Full features (avoided topics, liked people) for the best of a first pass.
+        val prelim = Taste.rankForYou(cands, taste, ex, poolSize)
         val full = featuresAll(prelim.map { k -> k.substringBefore(':') to k.substringAfter(':').toInt() })
         val counts = cands.groupingBy { it.f.key }.eachCount()
         val second = prelim.flatMap { k ->
             val f = full[k] ?: pool.getValue(k).basicFeatures()
             List(counts[k] ?: 1) { Taste.Candidate(f) } // keep "suggested by several seeds"
         }
-        Taste.rankForYou(second, taste, ex, max).mapNotNull { pool[it] }
+        Taste.rankForYou(second, taste, ex, poolSize).mapNotNull { pool[it] }
     }
 
     /** A movie genre's TV equivalent (TV uses combined genres), or null when TV has none. */

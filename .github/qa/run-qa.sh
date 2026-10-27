@@ -446,6 +446,37 @@ shot remote-choose-source
 for i in 1 2 3; do adb shell input keyevent KEYCODE_BACK; sleep 2; done
 shot remote-after-back
 
+# 4-home) Home: My List row and Picked for <name> by day. QA-only extras: --ei qa_day pretends today is that date;
+# --es qa_list puts a title on the active profile's My List (inner quotes: adb runs it through the device shell).
+# Each day's row goes to logcat (tag DailyPicks) as "day=N profile=pN kept|new, pool P, ... keys=type:id,...".
+home_open() { # name, extra am args...
+  local n="$1"; shift
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true "$@" >/dev/null
+  sleep 40; shot "home-$n"
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-home-$n.xml" >/dev/null 2>&1
+}
+# The row logged for day $1, $2 lines from the end (1 = the latest). Earlier launches on the real date log too.
+picks_of() { adb logcat -d -s DailyPicks:I | grep "day=$1 " | tail -n "$2" | head -n 1 | sed 's/.*keys=//'; }
+home_open day1 --ei qa_day 20261027
+if grep -q '"MY LIST"' qa-out/ui-home-day1.xml; then fail "Home: no My List row while the list is empty"; else pass "Home: no My List row while the list is empty"; fi
+home_open day1-again --ei qa_day 20261027
+home_open day2 --ei qa_day 20261028
+adb logcat -d -s DailyPicks:I | sed 's/^/      [picks] /' | cut -c1-400 | tee -a "$R"
+D1=$(picks_of 20261027 2); D1B=$(picks_of 20261027 1); D2=$(picks_of 20261028 1)
+POOL=$(adb logcat -d -s DailyPicks:I | grep "day=20261028 " | tail -n 1 | sed -n 's/.*pool \([0-9]*\).*/\1/p')
+[ -n "$D1" ] && [ "$D1" = "$D1B" ] && pass "Picks: the same row all day (relaunch)" || fail "Picks: the same row all day (relaunch)"
+[ -n "$D2" ] && [ "$D1" != "$D2" ] && pass "Picks: a new row the next day" || fail "Picks: a new row the next day"
+SHARED=$(comm -12 <(echo "$D1" | tr ',' '\n' | sort) <(echo "$D2" | tr ',' '\n' | sort) | grep -c . || true)
+echo "      [picks] pool on day 2: ${POOL:-?}, titles in both rows: $SHARED" | tee -a "$R"
+if [ "${POOL:-0}" -ge 48 ]; then
+  [ "$SHARED" -eq 0 ] && pass "Picks: no title repeats from yesterday" || fail "Picks: no title repeats from yesterday"
+fi
+home_open mylist --ei qa_day 20261028 --es qa_list "'movie|603|The Matrix'"
+grep -q '"MY LIST"' qa-out/ui-home-mylist.xml && pass "Home: My List row shows" || fail "Home: My List row shows"
+grep -q 'content-desc="The Matrix"' qa-out/ui-home-mylist.xml && pass "Home: My List row has the listed title" || fail "Home: My List row has the listed title"
+D2B=$(picks_of 20261028 1)
+echo ",$D2B," | grep -q ",movie:603," && fail "Picks: a title on My List is not picked" || pass "Picks: a title on My List is not picked"
+
 # 4d) Fresh install: app data cleared, the playlist sent again through the setup page, nothing else set (no favorites,
 # no recents, no teams chosen). Live TV must show the same What's On rows and pin the Eagles game for Dad (p1).
 adb shell pm clear com.mcd.tv >/dev/null

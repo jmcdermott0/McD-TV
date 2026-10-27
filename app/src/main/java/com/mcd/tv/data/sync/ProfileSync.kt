@@ -3,6 +3,7 @@ package com.mcd.tv.data.sync
 import android.content.Context
 import com.mcd.tv.data.HouseSync
 import com.mcd.tv.data.Library
+import com.mcd.tv.data.LibraryEvents
 import com.mcd.tv.data.PhotoCodec
 import com.mcd.tv.data.Prefs
 import com.mcd.tv.data.ProfilePhotos
@@ -521,6 +522,7 @@ object ProfileSync {
         if (cur == text) return
         if (cur.isBlank() && (text == "[]" || text == "{}")) return
         Prefs.putJson(key, text)
+        LibraryEvents.changed() // Home's My List row re-reads
     }
 
     /** The blob text for one collection, in the order Library uses. */
