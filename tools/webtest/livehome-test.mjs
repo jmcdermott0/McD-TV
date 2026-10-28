@@ -4,6 +4,7 @@
 // must build the same rows from the same playlist and guide. UPDATE=1 rewrites the file (review the diff).
 // Run: node tools/webtest/livehome-test.mjs
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 import { loadEngine, readText, parseM3u, parseXmltv, prepare } from '../livehome/load.mjs';
 
 const fx = (f) => new URL('../livehome/fixture/' + f, import.meta.url);
@@ -34,6 +35,24 @@ const IDENT = [
   ['Pluto TV: Westerns', 'US| PLUTO TV'], ['Samsung TV Plus: Bob Ross', 'US| SAMSUNG TV PLUS'], ['Tubi: Top Gear', 'US| TUBI'], ['24/7 Friends', '24/7 CHANNELS'],
   ['Music Choice 07', 'US| MUSIC'], ['UK| Sky Sports Main Event FHD', 'UK| SPORTS'], ['UK| BBC One HD', 'UK| GENERAL'], ['CA| TSN 1 HD', 'CA| SPORTS'], ['LATINO| Univision', 'LATINO| GENERAL'],
   ['|UK| SKY SPORTS F1 ᴴᴰ', '|UK| SPORTS'], ['US| Cartoon Network HD', 'US| KIDS'], ['US| Hallmark Channel', 'US| ENTERTAINMENT'], ['US| Hallmark Movies', 'US| PREMIUM'],
+  // Real-format names from a large provider playlist (Oct 2026 accuracy pass).
+  ['US: COMEDY CENTRAL HD', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: COMEDY TV HD', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: E! ENTERTAINMENT WEST HD', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: Magnolia Network West (Y) HD', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: FASHION ONE ³⁸⁴⁰ᴾ 3840P', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: THE WEATHER CHANNEL HD', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: : NATIONAL GEOGRAPHIC WILD HD', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: GAME SHOW CENTRAL', 'US| ENTERTAINMENT ᴿᴬᵂ'], ["US: REAL AMERICA'S VOICE HD", 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: C-SPAN 2 HD', 'US| NEWS ᴿᴬᵂ'], ['US: NBC NEWS NOW (D) ᴿᴬᵂ', 'US| NBC ᴿᴬᵂ'], ['US: NBC MS NOW ᴿᴬᵂ', 'US| NBC ᴿᴬᵂ'], ['US: CBS SPORTS USA', 'US| CBS ᴿᴬᵂ'],
+  ['US: STADIUM 2 HD', 'US| SPORT ᴿᴬᵂ'], ['US: ESPN U HD', 'US| SPORT ᴿᴬᵂ'], ['US: CBS SPORTS GALAZO NETWORK 4K', 'US| SPORT ᴿᴬᵂ'],
+  ['US: NBC SPORTS PHILADELPHIA (D) ᴿᴬᵂ', 'US| NBC ᴿᴬᵂ'], ['US: CSN PHILADELPHIA HD', 'US| NEWS ᴿᴬᵂ'], ['US: NBC SPORTS PHILADELFIA', 'US| SPORT ᴿᴬᵂ'],
+  ['US: (GT) MSG (Zone1) ᴿᴬᵂ', 'US| SPORT ᴿᴬᵂ'], ['US: (GT) Yes Network Latin ᴿᴬᵂ', 'US| SPORT ᴿᴬᵂ'], ['US: FOX SPORTS DETROIT HD', 'US| FOX ᴿᴬᵂ'], ['US: PAC 12 OREGON HD', 'US| SPORT ᴿᴬᵂ'],
+  ['US: HBO ZONE HD', 'US| MOVIES ᴿᴬᵂ'], ['US: MOREMAX HD', 'US| MOVIES ᴿᴬᵂ'], ['US: EPIX 2', 'US| MOVIES ᴿᴬᵂ'], ['US: STARZ ENCORE WESTERNS HD', 'US| MOVIES ᴿᴬᵂ'],
+  ['US: MUSIC CHOICE POP HITS', 'US| ENTERTAINMENT ᴿᴬᵂ'], ['US: DAZN COMBAT', 'US| SPORT ᴿᴬᵂ'], ['US: PETER GRIFFIN 24H', 'US| MOVIES ᴿᴬᵂ'],
+  ['US: TELEMUNDO 51 (WSCV) MIAMI ᴿᴬᵂ', 'US| TELEMUNDO NETWORK ᴿᴬᵂ'], ['US: Univision23 (WLTV) Miami (A) HS HD', 'US| MIAMI ᴿᴬᵂ'], ['US: MY 9 WWOR NEW YORK', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: NBC BOSTON NEWS (PC) ᴿᴬᵂ', 'US| NBC ᴿᴬᵂ'], ['US: FOX 5 PLUS HD [WASHINGTON]', 'US| FOX ᴿᴬᵂ'], ['US: KIRO 7 NEWS', 'US| NEWS ᴿᴬᵂ'], ['US: WGN9', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: ABC TAMPA NEWS (WFTS)', 'US| ABC ᴿᴬᵂ'], ['US: NEWS 12 BROOKLYN', 'US| NEWS ᴿᴬᵂ'], ['US: IT| 20THCENTURYFOX 4K', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['BG: DIEMA SPORT 1 ᴴᴰ', '8K| SPORT ON AIR'], ['HR: MAX SPORT 1 ᴴᴰ', '8K| SPORT ON AIR'], ['FL: V SPORT GOLF ᴴᴰ', '8K| SPORT ON AIR'], ['PPV: UFC MAIN EVENT', '8K| SPORT ON AIR'],
+  ['HR: ATG Live 4K', 'HR| HORSE RACING HD/4K'], ['HR: FOX SPORTS RACING', 'HR| HORSE RACING HD/4K'], ['4K: BEIN 4K ³⁸⁴⁰ᴾ', '4K| ³⁸⁴⁰ᴾ'], ['4K: TF1 4K ³⁸⁴⁰ᴾ', '4K| ³⁸⁴⁰ᴾ'],
+  ['4K: QVC 4K ³⁸⁴⁰ᴾ', '4K| ³⁸⁴⁰ᴾ'], ['US: HULU ORIGINALS INFO ᴿᴬᵂ', 'US| \uFE0FHULU NETWORK ᴿᴬᵂ'], ['US: NEW JERSEY 12 NEWS', 'US| NEWS ᴿᴬᵂ'], ['US: TVG NETWORK 2', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['US: FORMULA 1 CHANNEL (FM1TV) ᴿᴬᵂ', 'US| SPORT ᴿᴬᵂ'], ['US: BLAZE TV', 'US| ENTERTAINMENT ᴿᴬᵂ'],
+  ['TUBI: NFL CHANNEL ᴿᴬᵂ', 'US| TUBI ᴿᴬᵂ'], ['US: C HOLLYWOOD PREMIERE 10 4K', 'US| CINEMANIA HOLLYWOOD ᴿᴬᵂ'],
 ];
 const PROGS = [
   { title: 'NFL Football: Philadelphia Eagles at New York Giants', cats: ['Sports event', 'Football', 'NFL'] },
@@ -70,9 +89,17 @@ const PROGS = [
 ];
 
 const out = { catalog: LH.CATALOG.trim().split('\n'), identify: [], programmes: [], snapshots: {} };
+// Organizer rules the TV mirrors in LiveOrganizerTest (separators, name-only country codes).
+assert.ok(E.LO.isSeparator('## ENTERTAINMENT ᴿᴬᵂ/⁶⁰ᶠᵖˢ ##') && E.LO.isSeparator('## 24/7 COMEDY ᴿᴬᵂ ##') && !E.LO.isSeparator('#1 Hits'));
+assert.equal(E.LO.country('8K| SPORT ON AIR', 'BG: DIEMA SPORT 1'), 'Bulgaria');
+assert.equal(E.LO.country('8K| SPORT ON AIR', 'HR: MAX SPORT 1'), 'Balkans');
+assert.equal(E.LO.country('8K| SPORT ON AIR', 'LV: GO3 SPORT 1'), 'Baltics');
+assert.equal(E.LO.country('HR| HORSE RACING HD/4K', 'HR: ATG Live 4K'), '');
+// Every catalog key is already a network key, so a lookup can find it ("A AND E" is an older alias netKey never produces).
+for (const line of out.catalog) for (const key of line.split('|')[4].split(',')) if (key !== 'A AND E') assert.equal(LH.netKey(key), key, line);
 for (const [n, g] of IDENT) {
   const id = LH.identify(n, g, E.LO.country(g, n), E.LO.sectionTV(g, n));
-  out.identify.push([n, g, id.key + (id.region && id.region !== 'national' ? ' (' + id.region + ')' : '')]);
+  out.identify.push([n, g, id.key + (id.region && id.region !== 'national' ? ' (' + id.region + ')' : '') + (id.fold ? ' -> ' + id.fold.key : '')]);
 }
 for (const p of PROGS) {
   const g = LH.gameOf(p), t = LH.topics(p);

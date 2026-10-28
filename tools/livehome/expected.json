@@ -18,7 +18,7 @@
   "hgtv|HGTV|ent|prime|HGTV",
   "food|Food Network|ent|prime|FOOD",
   "tlc|TLC|ent|prime|TLC",
-  "paramount|Paramount Network|ent|prime|PARAMOUNT",
+  "paramount|Paramount Network|ent|prime|PARAMOUNT,SPIKE",
   "comedy|Comedy Central|ent|prime|COMEDY CENTRAL",
   "syfy|Syfy|ent|prime|SYFY,SCI FI",
   "discovery|Discovery|docs|prime,docs|DISCOVERY",
@@ -29,7 +29,7 @@
   "freeform|Freeform|ent|prime|FREEFORM",
   "trutv|truTV|ent|prime|TRUTV,TRU",
   "tvland|TV Land|ent|prime|TV LAND",
-  "e|E!|ent|prime|E!",
+  "e|E!|ent|prime|E!,E! ENTERTAINMENT",
   "bet|BET|ent|prime|BET",
   "hbo|HBO|movies|prime|HBO",
   "showtime|Showtime|movies|prime|SHOWTIME",
@@ -38,29 +38,29 @@
   "we|WE tv|ent||WE",
   "ifc|IFC|ent||IFC",
   "sundance|Sundance TV|ent||SUNDANCE",
-  "magnolia|Magnolia Network|ent||MAGNOLIA",
+  "magnolia|Magnolia Network|ent||MAGNOLIA,DIY",
   "oxygen|Oxygen|ent||OXYGEN",
-  "id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID",
-  "ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC",
+  "id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID,ID INVESTIGATION DISCOVERY",
+  "ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC,AMERICA HEROES",
   "mhc|Military History Channel|docs|docs,military|MILITARY HISTORY",
   "smithsonian|Smithsonian Channel|docs|docs,military|SMITHSONIAN",
-  "science|Science Channel|docs|docs,tech|SCIENCE",
-  "natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD",
+  "science|Science Channel|docs|docs,tech|SCIENCE,DISCOVERY SCIENCE",
+  "natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD,NATIONAL GEOGRAPHIC WILD",
   "animalplanet|Animal Planet|docs|docs|ANIMAL PLANET",
-  "vice|Vice|docs|docs|VICE",
+  "vice|Vice|docs|docs|VICE,VICELAND",
   "curiosity|CuriosityStream|docs|docs,tech|CURIOSITYSTREAM,CURIOSITY",
   "cnn|CNN|news||CNN",
   "foxnews|Fox News|news||FOX NEWS",
-  "msnbc|MSNBC|news||MSNBC",
+  "msnbc|MSNBC|news||MSNBC,MS NOW,NBC MS NOW",
   "cnbc|CNBC|news|tech|CNBC",
   "bloomberg|Bloomberg TV|news|tech|BLOOMBERG",
-  "espn|ESPN|sports||ESPN",
+  "espn|ESPN|sports||ESPN,ESPN USA",
   "espn2|ESPN2|sports||ESPN2,ESPN 2",
-  "espnu|ESPNU|sports||ESPNU",
+  "espnu|ESPNU|sports||ESPNU,ESPN U",
   "secn|SEC Network|sports||SEC",
   "accn|ACC Network|sports||ACC",
   "btn|Big Ten Network|sports||BIG TEN,BTN,BIG 10",
-  "cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN",
+  "cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN,CBS SPORTS USA",
   "fs1|FS1|sports||FS1,FOX SPORTS 1",
   "fs2|FS2|sports||FS2,FOX SPORTS 2",
   "nfln|NFL Network|sports||NFL,NFL NET,NFLN",
@@ -69,8 +69,200 @@
   "nhln|NHL Network|sports||NHL,NHLN,NHL NET",
   "nbatv|NBA TV|sports||NBA,NBATV",
   "golf|Golf Channel|sports||GOLF",
-  "nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP",
-  "nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+"
+  "nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP,NBC SPORTS PHILADELFIA,CSN PHILADELPHIA",
+  "nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+,CSN PHILADELPHIA PLUS",
+  "telemundo|Telemundo|local||TELEMUNDO",
+  "univision|Univision|local||UNIVISION",
+  "mynet|MyNetworkTV|local||MYNETWORKTV",
+  "amcplus|AMC+|ent||AMC PLUS,AMC+",
+  "amcthrillers|AMC Thrillers|movies||AMC THRILLERS",
+  "antenna|Antenna TV|ent||ANTENNA",
+  "aspire|Aspire|ent||ASPIRE",
+  "awe|AWE|ent||AWE,A WEALTH OF ENTERTAINMENT,A WEALTH OF ENTERTAINMENT AWE",
+  "afv|AFV|ent||AFV,AFV FAMILY",
+  "abtv|Angels Broadcast Television|ent||ANGELS BROADCAST TELEVISION,ANGELS BROADCAST TELEVISION ABTV",
+  "antena3|Antena 3 Internacional|ent||ANTENA 3 INTERNACIONAL",
+  "bbcamerica|BBC America|ent||BBC AMERICA",
+  "bether|BET Her|ent||BET HER",
+  "betgospel|BET Gospel|ent||BET GOSPEL",
+  "betjams|BET Jams|music||BET JAMS",
+  "betsoul|BET Soul|music||BET SOUL",
+  "bigbrother|Big Brother Live Feeds|ent||BIG BROTHER,BIG BROTHER QUAD VIEW",
+  "bounce|Bounce TV|ent||BOUNCE",
+  "bouncexl|Bounce XL|ent||BOUNCE XL",
+  "buzzr|Buzzr|ent||BUZZR",
+  "byutv|BYUtv|ent||BYU,BYUTV",
+  "catchy|Catchy Comedy|ent||CATCHY COMEDY",
+  "charge|Charge!|ent||CHARGE!",
+  "circle|Circle|ent||CIRCLE",
+  "cleo|Cleo TV|ent||CLEO",
+  "cnc3|CNC3 Trinidad|ent||CNC 3 TRINIDAD,CNC3",
+  "comedytv|Comedy.TV|ent||COMEDY",
+  "comet|Comet|ent||COMET",
+  "cooking|Cooking Channel|ent||COOKING",
+  "courttv|Court TV|ent||COURT",
+  "cozi|Cozi TV|ent||COZI",
+  "crimeinv|Crime & Investigation|ent||CRIME & INVESTIGATION",
+  "dabl|Dabl|ent||DABL",
+  "daystar|Daystar|ent||DAYSTAR",
+  "destamerica|Destination America|docs||DESTINATION AMERICA",
+  "discfamily|Discovery Family|kids||DISCOVERY FAMILY",
+  "disclife|Discovery Life|docs||DISCOVERY LIFE",
+  "dogtv|DOGTV|ent||DOG,DOGTV",
+  "elrey|El Rey Network|ent||EL REY",
+  "ewtn|EWTN|ent||EWTN,EWTN CATHOLIC",
+  "fashionone|Fashion One|ent||FASHION ONE",
+  "fetv|FETV|ent||FETV",
+  "foxsoul|Fox Soul|ent||FOX SOUL",
+  "fxm|FXM|movies||FXM,FX MOVIES",
+  "fyi|FYI|ent||FYI",
+  "gameshowcentral|Game Show Central|ent||GAME SHOW CENTRAL",
+  "gametv|Game TV|ent||GAME",
+  "gettv|getTV|ent||GET,GETTV",
+  "gaf|Great American Family|ent||GREAT AMERICAN FAMILY,GREAT AMERICAN COUNTRY",
+  "gafl|Great American Faith & Living|ent||GREAT AMERICAN FAITH & LIVING",
+  "grit|Grit|ent||GRIT",
+  "gsn|Game Show Network|ent||GSN,GAME SHOW",
+  "hallmarkfamily|Hallmark Family|ent||HALLMARK FAMILY,HALLMARK DRAMA",
+  "hallmarkmystery|Hallmark Mystery|ent||HALLMARK MYSTERY,HALLMARK MOVIES MYSTERIES,HALLMARK M & M",
+  "heroesicons|Heroes & Icons|ent||HEROES & ICONS",
+  "hope|Hope Channel|ent||HOPE",
+  "hsn|HSN|ent||HSN",
+  "infowars|Infowars|news||INFOWARS",
+  "blaze|BlazeTV|news||BLAZE,BLAZETV",
+  "insp|INSP|ent||INSP",
+  "ionmystery|ION Mystery|ent||ION MYSTERY",
+  "ionplus|ION Plus|ent||ION PLUS",
+  "jewelry|Jewelry TV|ent||JEWELRY",
+  "justicecentral|Justice Central|ent||JUSTICE CENTRAL",
+  "laff|Laff|ent||LAFF",
+  "pasiones|Pasiones|ent||PASIONES,LATIN PASIONES",
+  "lawcrime|Law & Crime|ent||LAW & CRIME",
+  "lmn|Lifetime Movies|movies||LMN,LIFETIME MOVIE,LIFETIME MOVIES",
+  "lrw|Lifetime Real Women|ent||LIFETIME REAL WOMEN",
+  "localnow|Local Now|news||LOCAL NOW",
+  "logo|Logo|ent||LOGO",
+  "mega|Mega TV|ent||MEGA",
+  "metv|MeTV|ent||METV,ME",
+  "metvtoons|MeTV Toons|kids||METV TOONS",
+  "motortrend|MotorTrend|ent||MOTORTREND",
+  "mtv|MTV|music||MTV",
+  "mtv2|MTV2|music||MTV2,MTV 2",
+  "mtvlive|MTV Live|music||MTV LIVE",
+  "cmt|CMT|music||CMT",
+  "vh1|VH1|music||VH1,VH 1",
+  "fuse|Fuse|music||FUSE,FUSE MUSIC",
+  "revolt|Revolt|music||REVOLT",
+  "axs|AXS TV|music||AXS,AXS TV NOW",
+  "ovation|Ovation|ent||OVATION",
+  "pixl|PixL|movies||PIXL",
+  "pop|Pop TV|ent||POP",
+  "qvc|QVC|ent||QVC,QVC 2",
+  "shoplc|Shop LC|ent||SHOP LC",
+  "rav|Real America's Voice|news||REAL AMERICA S VOICE",
+  "reelz|Reelz|ent||REELZ,REELZ FAMUS",
+  "retrotv|Retro TV|ent||RETRO",
+  "rfdtv|RFD-TV|ent||RFD",
+  "tastemade|Tastemade|ent||TASTEMADE",
+  "tbn|TBN|ent||TBN",
+  "tcm|TCM|movies||TCM,TURNER CLASSIC MOVIES",
+  "victory|The Victory Channel|ent||VICTORY,THE VICTORY",
+  "travel|Travel Channel|ent||TRAVEL",
+  "tvone|TV One|ent||TV ONE",
+  "uptv|UPtv|ent||UP,UPTV",
+  "starttv|Start TV|ent||START",
+  "zeetv|Zee TV|ent||ZEE",
+  "sonymovie|Sony Movie Channel|movies||SONY MOVIE",
+  "tmc|The Movie Channel|movies||THE MOVIE,TMC",
+  "hdnetmovies|HDNet Movies|movies||NET MOVIES,HDNET MOVIES",
+  "cinemax|Cinemax|movies||CINEMAX",
+  "mgmplus|MGM+|movies||MGM+,MGM,EPIX",
+  "cinesony|Cine Sony|movies||CINE SONY",
+  "cineclub|Cine Club|movies||CINE CLUB",
+  "cinemadinamita|Cinema Dinamita|movies||CINEMA DINAMITA",
+  "weather|The Weather Channel|news||THE WEATHER,WEATHER",
+  "foxweather|Fox Weather|news||FOX WEATHER",
+  "foxbusiness|Fox Business|news||FOX BUSINESS",
+  "hln|HLN|news||HLN",
+  "abcnews|ABC News Live|news||ABC NEWS,ABC NEWS LIVE,ABC NEWS 2,ABC NEWS INTERNATIONAL",
+  "cbsnews|CBS News 24/7|news||CBS NEWS,CBSN",
+  "nbcnewsnow|NBC News Now|news||NBC NEWS NOW",
+  "newsnation|NewsNation|news||NEWS NATION,NEWSNATION,WGN AMERICA",
+  "newsmax|Newsmax|news||NEWSMAX",
+  "newsy|Newsy|news||NEWSY,NEWS Y",
+  "oan|One America News|news||OAN,ONE AMERICA NEWS,ONE AMERICAN NEWS",
+  "necn|NECN|news||NECN,NBC NEW ENGLAND CABLE NEWS,NBC NEW ENGLAND CABLE NEWS NECN",
+  "cheddar|Cheddar News|news||CHEDDAR,CHEDDAR NEWS,CHEDDAR BUSINESS",
+  "cnbcworld|CNBC World|news||CNBC WORLD",
+  "cspan|C-SPAN|news||C SPAN,C SPAN 1",
+  "cspan2|C-SPAN2|news||C SPAN 2",
+  "cspan3|C-SPAN3|news||C SPAN 3",
+  "bbcnews|BBC News|news||BBC NEWS,BBC WORLD NEWS",
+  "aljazeera|Al Jazeera English|news||AL JAZEERA,AL JAZEERA ENGLISH",
+  "euronews|Euronews|news||EURONEWS",
+  "trtworld|TRT World|news||TRT WORLD",
+  "rtnews|RT|news||RT,RT NEWS",
+  "rtdoc|RT Documentary|docs||RT DOCUMENTARY",
+  "thefirst|The First|news||THE FIRST",
+  "cartoon|Cartoon Network|kids||CARTOON",
+  "adultswim|Adult Swim|kids||ADULT SWIM",
+  "boomerang|Boomerang|kids||BOOMERANG",
+  "disney|Disney Channel|kids||DISNEY",
+  "disneyjr|Disney Junior|kids||DISNEY JR,DISNEY JUNIOR",
+  "disneyxd|Disney XD|kids||DISNEY XD",
+  "nick|Nickelodeon|kids||NICKELODEON,NICK",
+  "nickjr|Nick Jr.|kids||NICK JR",
+  "nicktoons|Nicktoons|kids||NICKTOONS,NICK TOONS",
+  "teennick|TeenNick|kids||TEENNICK,TEEN NICK",
+  "pbskids|PBS Kids|kids||PBS KIDS",
+  "babyfirst|BabyFirst|kids||BABYFIRST,BABY FIRST",
+  "babytv|BabyTV|kids||BABYTV,BABY",
+  "threeabnkids|3ABN Kids|kids||3ABN KIDS",
+  "espnews|ESPNews|sports||ESPNEWS,ESPN NEWS",
+  "nbcsn|NBCSN|sports||NBC SPORTS,NBCSN",
+  "nbcsportsnow|NBC Sports Now|sports||NBC SPORTS NOW",
+  "foxdeportes|Fox Deportes|sports||FOX DEPORTES,FOX SPORTS DEPORTES",
+  "foxsoccer|Fox Soccer Plus|sports||FOX SOCCER PLUS,FOX SPORTS SOCCER",
+  "cbsgolazo|CBS Sports Golazo|sports||CBS SPORTS GOLAZO,CBS SPORTS GALAZO",
+  "bein|beIN Sports|sports||BEIN,BEIN SPORTS",
+  "eleven|Eleven Sports|sports||ELEVEN,ELEVEN SPORTS,ELEVEN SPORTS 1",
+  "tudn|TUDN|sports||TUDN,TUDN ZONA",
+  "goltv|GolTV|sports||GOL,GOLTV",
+  "tennis|Tennis Channel|sports||TENNIS",
+  "sstennis|SuperSport Tennis|sports||SUPERSPORT TENNIS",
+  "premierleague|Premier League TV|sports||PREMIER LEAGUE",
+  "willow|Willow|sports||WILLOW,WILLOW CRICKET",
+  "willowxtra|Willow Xtra|sports||WILLOW CRICKET EXTRA,WILLOW XTRA",
+  "f1channel|F1 Channel|sports||FORMULA 1,FORMULA 1 CHANNEL FM1TV",
+  "motoamerica|MotoAmerica TV|sports||MOTO AMERICA",
+  "mavtv|MAVTV|sports||MAV,MAVTV",
+  "redbull|Red Bull TV|sports||RED BULL",
+  "ufc|UFC Fight Pass|sports||UFC",
+  "wwe|WWE|sports||WWE",
+  "fightnet|Fight Network|sports||FIGHT",
+  "boxingtv|Boxing TV|sports||BOXING",
+  "billiard|Billiard TV|sports||BILLIARD",
+  "padel|Padeltime TV|sports||PADELTIME",
+  "pickleball|Pickleball TV|sports||PICKLEBALL,PICKLEBALL PBTV",
+  "mlbstrikezone|MLB Strike Zone|sports||MLB STRIKE ZONE",
+  "stadium|Stadium|sports||STADIUM",
+  "stadium1|Stadium 1|sports||STADIUM 1",
+  "stadium2|Stadium 2|sports||STADIUM 2",
+  "stadium3|Stadium 3|sports||STADIUM 3",
+  "fubosports|Fubo Sports|sports||FUBO SPORTS",
+  "fantasysports|Fantasy Sports Network|sports||FANTASY SPORTS",
+  "ginx|GINX Esports|sports||GINX ESPORTS",
+  "yahoosports|Yahoo Sports|sports||YAHOO SPORTS",
+  "afn|AFN Sports|sports||AFN SPORT,AFN SPORTS",
+  "cowboy|The Cowboy Channel|sports||COWBOY",
+  "outdoor|Outdoor Channel|sports||OUTDOOR",
+  "outside|Outside TV|sports||OUTSIDE",
+  "pursuit|Pursuit Channel|sports||PURSUIT",
+  "sportsman|Sportsman Channel|sports||SPORTSMAN",
+  "wfn|World Fishing Network|sports||WORLD FISHING",
+  "wired2fish|Wired2Fish|sports||WIRED2FISH",
+  "tvg|TVG|sports||TVG,TVG 2,TVG NETWORK 2",
+  "fanduel|FanDuel TV|sports||FANDUEL"
  ],
  "identify": [
   [
@@ -116,7 +308,7 @@
   [
    "US| AMC+",
    "US| ENTERTAINMENT",
-   "AMC+"
+   "amcplus"
   ],
   [
    "US| FX HD",
@@ -141,12 +333,12 @@
   [
    "US| Travel Channel",
    "US| ENTERTAINMENT",
-   "TRAVEL"
+   "travel"
   ],
   [
    "US| Discovery Science",
    "US| ENTERTAINMENT",
-   "DISCOVERY SCIENCE"
+   "science"
   ],
   [
    "US| National Geographic HD",
@@ -256,12 +448,12 @@
   [
    "US| NBC Sports Boston",
    "US| SPORTS",
-   "NBC SPORTS BOSTON"
+   "f:rsn"
   ],
   [
    "US| FanDuel Sports South",
    "US| SPORTS",
-   "FANDUEL SPORTS SOUTH"
+   "f:rsn"
   ],
   [
    "US| FOX 54 WZDX Huntsville",
@@ -326,7 +518,7 @@
   [
    "US| PBS Kids",
    "US| KIDS",
-   "PBS KIDS"
+   "pbskids"
   ],
   [
    "US| FOX NEWS HD",
@@ -336,7 +528,7 @@
   [
    "US| FOX BUSINESS",
    "US| NEWS",
-   "FOX BUSINESS"
+   "foxbusiness"
   ],
   [
    "US| CNBC",
@@ -356,7 +548,7 @@
   [
    "US| ABC News Live",
    "US| NEWS",
-   "ABC NEWS LIVE"
+   "abcnews"
   ],
   [
    "US| Bloomberg TV HD",
@@ -366,7 +558,7 @@
   [
    "US| HBO 2 FHD",
    "US| PREMIUM",
-   "HBO 2"
+   "pm:HBO"
   ],
   [
    "US| HBO East",
@@ -436,7 +628,7 @@
   [
    "Music Choice 07",
    "US| MUSIC",
-   "MUSIC CHOICE 07"
+   "br:MUSIC CHOICE"
   ],
   [
    "UK| Sky Sports Main Event FHD",
@@ -466,7 +658,7 @@
   [
    "US| Cartoon Network HD",
    "US| KIDS",
-   "CARTOON"
+   "cartoon"
   ],
   [
    "US| Hallmark Channel",
@@ -477,6 +669,286 @@
    "US| Hallmark Movies",
    "US| PREMIUM",
    "HALLMARK MOVIES"
+  ],
+  [
+   "US: COMEDY CENTRAL HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "comedy"
+  ],
+  [
+   "US: COMEDY TV HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "comedytv"
+  ],
+  [
+   "US: E! ENTERTAINMENT WEST HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "e"
+  ],
+  [
+   "US: Magnolia Network West (Y) HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "magnolia"
+  ],
+  [
+   "US: FASHION ONE ³⁸⁴⁰ᴾ 3840P",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "fashionone"
+  ],
+  [
+   "US: THE WEATHER CHANNEL HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "weather"
+  ],
+  [
+   "US: : NATIONAL GEOGRAPHIC WILD HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "natgeowild"
+  ],
+  [
+   "US: GAME SHOW CENTRAL",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "gameshowcentral"
+  ],
+  [
+   "US: REAL AMERICA'S VOICE HD",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "rav"
+  ],
+  [
+   "US: C-SPAN 2 HD",
+   "US| NEWS ᴿᴬᵂ",
+   "cspan2"
+  ],
+  [
+   "US: NBC NEWS NOW (D) ᴿᴬᵂ",
+   "US| NBC ᴿᴬᵂ",
+   "nbcnewsnow"
+  ],
+  [
+   "US: NBC MS NOW ᴿᴬᵂ",
+   "US| NBC ᴿᴬᵂ",
+   "msnbc"
+  ],
+  [
+   "US: CBS SPORTS USA",
+   "US| CBS ᴿᴬᵂ",
+   "cbssn"
+  ],
+  [
+   "US: STADIUM 2 HD",
+   "US| SPORT ᴿᴬᵂ",
+   "stadium2"
+  ],
+  [
+   "US: ESPN U HD",
+   "US| SPORT ᴿᴬᵂ",
+   "espnu"
+  ],
+  [
+   "US: CBS SPORTS GALAZO NETWORK 4K",
+   "US| SPORT ᴿᴬᵂ",
+   "cbsgolazo"
+  ],
+  [
+   "US: NBC SPORTS PHILADELPHIA (D) ᴿᴬᵂ",
+   "US| NBC ᴿᴬᵂ",
+   "nbcsp"
+  ],
+  [
+   "US: CSN PHILADELPHIA HD",
+   "US| NEWS ᴿᴬᵂ",
+   "nbcsp"
+  ],
+  [
+   "US: NBC SPORTS PHILADELFIA",
+   "US| SPORT ᴿᴬᵂ",
+   "nbcsp"
+  ],
+  [
+   "US: (GT) MSG (Zone1) ᴿᴬᵂ",
+   "US| SPORT ᴿᴬᵂ",
+   "f:rsn"
+  ],
+  [
+   "US: (GT) Yes Network Latin ᴿᴬᵂ",
+   "US| SPORT ᴿᴬᵂ",
+   "f:rsn"
+  ],
+  [
+   "US: FOX SPORTS DETROIT HD",
+   "US| FOX ᴿᴬᵂ",
+   "f:rsn"
+  ],
+  [
+   "US: PAC 12 OREGON HD",
+   "US| SPORT ᴿᴬᵂ",
+   "f:rsn"
+  ],
+  [
+   "US: HBO ZONE HD",
+   "US| MOVIES ᴿᴬᵂ",
+   "pm:HBO"
+  ],
+  [
+   "US: MOREMAX HD",
+   "US| MOVIES ᴿᴬᵂ",
+   "pm:Cinemax"
+  ],
+  [
+   "US: EPIX 2",
+   "US| MOVIES ᴿᴬᵂ",
+   "pm:MGM+"
+  ],
+  [
+   "US: STARZ ENCORE WESTERNS HD",
+   "US| MOVIES ᴿᴬᵂ",
+   "pm:Starz Encore"
+  ],
+  [
+   "US: MUSIC CHOICE POP HITS",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "br:MUSIC CHOICE"
+  ],
+  [
+   "US: DAZN COMBAT",
+   "US| SPORT ᴿᴬᵂ",
+   "br:DAZN"
+  ],
+  [
+   "US: PETER GRIFFIN 24H",
+   "US| MOVIES ᴿᴬᵂ",
+   "f:247"
+  ],
+  [
+   "US: TELEMUNDO 51 (WSCV) MIAMI ᴿᴬᵂ",
+   "US| TELEMUNDO NETWORK ᴿᴬᵂ",
+   "telemundo (market)"
+  ],
+  [
+   "US: Univision23 (WLTV) Miami (A) HS HD",
+   "US| MIAMI ᴿᴬᵂ",
+   "univision (market)"
+  ],
+  [
+   "US: MY 9 WWOR NEW YORK",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "mynet (market)"
+  ],
+  [
+   "US: NBC BOSTON NEWS (PC) ᴿᴬᵂ",
+   "US| NBC ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: FOX 5 PLUS HD [WASHINGTON]",
+   "US| FOX ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: KIRO 7 NEWS",
+   "US| NEWS ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: WGN9",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: ABC TAMPA NEWS (WFTS)",
+   "US| ABC ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: NEWS 12 BROOKLYN",
+   "US| NEWS ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: IT| 20THCENTURYFOX 4K",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "intl:Italy"
+  ],
+  [
+   "BG: DIEMA SPORT 1 ᴴᴰ",
+   "8K| SPORT ON AIR",
+   "intl:Bulgaria"
+  ],
+  [
+   "HR: MAX SPORT 1 ᴴᴰ",
+   "8K| SPORT ON AIR",
+   "intl:Balkans"
+  ],
+  [
+   "FL: V SPORT GOLF ᴴᴰ",
+   "8K| SPORT ON AIR",
+   "intl:Nordic"
+  ],
+  [
+   "PPV: UFC MAIN EVENT",
+   "8K| SPORT ON AIR",
+   "ev:PPV"
+  ],
+  [
+   "HR: ATG Live 4K",
+   "HR| HORSE RACING HD/4K",
+   "ATG LIVE -> f:racing"
+  ],
+  [
+   "HR: FOX SPORTS RACING",
+   "HR| HORSE RACING HD/4K",
+   "FOX SPORTS RACING -> f:racing"
+  ],
+  [
+   "4K: BEIN 4K ³⁸⁴⁰ᴾ",
+   "4K| ³⁸⁴⁰ᴾ",
+   "bein"
+  ],
+  [
+   "4K: TF1 4K ³⁸⁴⁰ᴾ",
+   "4K| ³⁸⁴⁰ᴾ",
+   "TF1 -> f:4k"
+  ],
+  [
+   "4K: QVC 4K ³⁸⁴⁰ᴾ",
+   "4K| ³⁸⁴⁰ᴾ",
+   "qvc"
+  ],
+  [
+   "US: HULU ORIGINALS INFO ᴿᴬᵂ",
+   "US| ️HULU NETWORK ᴿᴬᵂ",
+   "HULU ORIGINALS INFO -> svc:Hulu"
+  ],
+  [
+   "US: NEW JERSEY 12 NEWS",
+   "US| NEWS ᴿᴬᵂ",
+   "f:stations"
+  ],
+  [
+   "US: TVG NETWORK 2",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "tvg"
+  ],
+  [
+   "US: FORMULA 1 CHANNEL (FM1TV) ᴿᴬᵂ",
+   "US| SPORT ᴿᴬᵂ",
+   "f1channel"
+  ],
+  [
+   "US: BLAZE TV",
+   "US| ENTERTAINMENT ᴿᴬᵂ",
+   "blaze"
+  ],
+  [
+   "TUBI: NFL CHANNEL ᴿᴬᵂ",
+   "US| TUBI ᴿᴬᵂ",
+   "fast:TUBI"
+  ],
+  [
+   "US: C HOLLYWOOD PREMIERE 10 4K",
+   "US| CINEMANIA HOLLYWOOD ᴿᴬᵂ",
+   "C HOLLYWOOD PREMIERE 10"
   ]
  ],
  "programmes": [
@@ -864,6 +1336,7 @@
      "Food Network | Diners, Drive-Ins and Dives | Tonight 7:00 PM CT | US| Food Network FHD | 7",
      "TLC | 90 Day Fiance | Tonight 7:00 PM CT | US| TLC FHD | 9",
      "Paramount Network | Yellowstone | Tonight 7:00 PM CT | US| Paramount Network FHD | 8",
+     "Comedy Central | The Daily Show | Tonight 7:00 PM CT | US| Comedy Central FHD | 8",
      "Syfy | Star Trek | Tonight 7:00 PM CT | US| Syfy FHD | 8",
      "Discovery | Gold Rush | Tonight 7:00 PM CT | US| Discovery FHD | 10",
      "History | Pawn Stars | Tonight 7:00 PM CT | US| History FHD | 10",
@@ -949,6 +1422,7 @@
      "Food Network | Diners, Drive-Ins and Dives | Tonight 7:00 PM CT | US| Food Network FHD | 7",
      "TLC | 90 Day Fiance | Tonight 7:00 PM CT | US| TLC FHD | 9",
      "Paramount Network | Yellowstone | Tonight 7:00 PM CT | US| Paramount Network FHD | 8",
+     "Comedy Central | The Daily Show | Tonight 7:00 PM CT | US| Comedy Central FHD | 8",
      "Syfy | Star Trek | Tonight 7:00 PM CT | US| Syfy FHD | 8",
      "Discovery | Gold Rush | Tonight 7:00 PM CT | US| Discovery FHD | 10",
      "History | Pawn Stars | Tonight 7:00 PM CT | US| History FHD | 10",
@@ -1029,6 +1503,7 @@
      "Food Network | Chopped | On now · until 8:00 PM CT | US| Food Network FHD | 7",
      "TLC | 90 Day Fiance | On now · until 8:00 PM CT | US| TLC FHD | 9",
      "Paramount Network | Bar Rescue | On now · until 8:00 PM CT | US| Paramount Network FHD | 8",
+     "Comedy Central | South Park | On now · until 8:00 PM CT | US| Comedy Central FHD | 8",
      "Syfy | Star Trek | On now · until 8:00 PM CT | US| Syfy FHD | 8",
      "Discovery | Deadliest Catch | On now · until 8:00 PM CT | US| Discovery FHD | 10",
      "History | The Civil War: A Nation Divided | On now · until 9:00 PM CT | US| History FHD | 10",
@@ -1109,6 +1584,7 @@
      "Food Network | Diners, Drive-Ins and Dives | Tonight 7:00 PM CT | US| Food Network FHD | 7",
      "TLC | 90 Day Fiance | Tonight 7:00 PM CT | US| TLC FHD | 9",
      "Paramount Network | Yellowstone | Tonight 7:00 PM CT | US| Paramount Network FHD | 8",
+     "Comedy Central | The Daily Show | Tonight 7:00 PM CT | US| Comedy Central FHD | 8",
      "Syfy | Star Trek | Tonight 7:00 PM CT | US| Syfy FHD | 8",
      "Discovery | Gold Rush | Tonight 7:00 PM CT | US| Discovery FHD | 10",
      "History | Pawn Stars | Tonight 7:00 PM CT | US| History FHD | 10",
@@ -1128,7 +1604,7 @@
   ]
  },
  "groups": {
-  "count": 269,
+  "count": 228,
   "channels": 12520,
   "labels": [
    "24/7 channels [247, 115]",
@@ -1139,7 +1615,6 @@
    "ACCNX event channels [events, 40]",
    "Africa channels [intl, 215]",
    "Albania channels [intl, 128]",
-   "Altitude [sports, 2]",
    "AMC [ent, 11]",
    "American Heroes Channel [docs, 10]",
    "Animal Planet [docs, 9]",
@@ -1147,10 +1622,10 @@
    "Australia channels [intl, 173]",
    "Austria channels [intl, 128]",
    "B1G+ event channels [events, 60]",
-   "Baby TV [kids, 8]",
+   "BabyTV [kids, 8]",
    "Balkans channels [intl, 455]",
    "BBC America [ent, 9]",
-   "BBC World News [news, 8]",
+   "BBC News [news, 8]",
    "beIN Sports [sports, 8]",
    "Belgium channels [intl, 128]",
    "BET [ent, 7]",
@@ -1162,7 +1637,7 @@
    "Bounce TV [ent, 9]",
    "Bravo [ent, 9]",
    "C-SPAN [news, 7]",
-   "C-SPAN 2 [news, 6]",
+   "C-SPAN2 [news, 6]",
    "Canada channels [intl, 259]",
    "Caribbean channels [intl, 128]",
    "Cartoon Network [kids, 7]",
@@ -1171,9 +1646,9 @@
    "CBS Sports Network [sports, 6]",
    "Charge! [ent, 10]",
    "Cheddar News [news, 8]",
-   "Chicago Sports Network [sports, 2]",
    "China channels [intl, 128]",
    "Cinemax [movies, 11]",
+   "Cinemax channels [movies, 8]",
    "CMT [music, 9]",
    "CNBC [news, 8]",
    "CNN [news, 6]",
@@ -1185,15 +1660,14 @@
    "Crime + Investigation [ent, 10]",
    "Czech & Slovak channels [intl, 128]",
    "DAZN event channels [events, 30]",
-   "Destination America [ent, 8]",
+   "Destination America [docs, 8]",
    "Discovery [docs, 10]",
-   "Discovery Life [ent, 11]",
+   "Discovery Life [docs, 11]",
    "Disney Channel [kids, 7]",
    "Disney Junior [kids, 7]",
    "Disney XD [kids, 8]",
    "Distro (free channels) [free, 50]",
    "E! [ent, 9]",
-   "Epix Drive-In [movies, 4]",
    "ESPN [sports, 9]",
    "ESPN2 [sports, 8]",
    "ESPN Deportes [sports, 6]",
@@ -1201,24 +1675,6 @@
    "ESPN+ event channels [events, 320]",
    "ESPNews [sports, 5]",
    "ESPNU [sports, 9]",
-   "FanDuel Sports Arizona [sports, 2]",
-   "FanDuel Sports Detroit [sports, 2]",
-   "FanDuel Sports Florida [sports, 2]",
-   "FanDuel Sports Great Lakes [sports, 2]",
-   "FanDuel Sports Indiana [sports, 2]",
-   "FanDuel Sports Kansas City [sports, 2]",
-   "FanDuel Sports Midwest [sports, 2]",
-   "FanDuel Sports New Orleans [sports, 3]",
-   "FanDuel Sports North [sports, 2]",
-   "FanDuel Sports Ohio [sports, 2]",
-   "FanDuel Sports Oklahoma [sports, 3]",
-   "FanDuel Sports SoCal [sports, 2]",
-   "FanDuel Sports South [sports, 2]",
-   "FanDuel Sports Southeast [sports, 3]",
-   "FanDuel Sports Southwest [sports, 2]",
-   "FanDuel Sports Sun [sports, 2]",
-   "FanDuel Sports West [sports, 2]",
-   "FanDuel Sports Wisconsin [sports, 2]",
    "Flix [movies, 4]",
    "FLOSPORTS event channels [events, 40]",
    "Food Network [ent, 7]",
@@ -1233,25 +1689,21 @@
    "Freevee (free channels) [free, 90]",
    "FS1 [sports, 9]",
    "FS2 [sports, 8]",
-   "Fuse [ent, 8]",
+   "Fuse [music, 8]",
    "FX [ent, 7]",
    "FXM [movies, 11]",
    "FXX [ent, 10]",
+   "Game Show Network [ent, 10]",
    "Germany channels [intl, 331]",
    "Golf Channel [sports, 8]",
    "Great American Family [ent, 10]",
    "Greece channels [intl, 128]",
    "Grit [ent, 9]",
-   "GSN [ent, 10]",
    "Hallmark Channel [ent, 7]",
    "Hallmark Movies [movies, 4]",
    "Hallmark Mystery [ent, 10]",
    "HBO [movies, 9]",
-   "HBO 2 [movies, 10]",
-   "HBO Comedy [movies, 8]",
-   "HBO Family [movies, 10]",
-   "HBO Signature [movies, 9]",
-   "HBO Zone [movies, 11]",
+   "HBO channels [movies, 48]",
    "Heroes & Icons [ent, 9]",
    "HGTV [ent, 9]",
    "History [docs, 10]",
@@ -1259,11 +1711,10 @@
    "Hungary channels [intl, 128]",
    "IFC [ent, 10]",
    "India channels [intl, 503]",
-   "IndiePlex [ent, 4]",
    "INSP [ent, 11]",
    "Investigation Discovery [ent, 11]",
    "ION [local, 1]",
-   "Ion Mystery [local, 9]",
+   "ION Mystery [ent, 9]",
    "Iran channels [intl, 128]",
    "Israel channels [intl, 128]",
    "Italy channels [intl, 273]",
@@ -1278,21 +1729,15 @@
    "Logo [ent, 10]",
    "Longhorn Network [sports, 7]",
    "Magnolia Network [ent, 10]",
-   "Marquee Sports Network [sports, 3]",
-   "MASN [sports, 2]",
-   "MASN 2 [sports, 3]",
    "MeTV [ent, 7]",
    "MGM+ [movies, 4]",
+   "MGM+ channels [movies, 4]",
    "Military History Channel [docs, 11]",
    "MLB event channels [events, 15]",
    "MLB Network [sports, 6]",
    "MLS event channels [events, 30]",
-   "Monumental Sports [sports, 3]",
-   "MoreMax [ent, 8]",
    "MotorTrend [ent, 10]",
-   "Movieplex [movies, 4]",
-   "MSG [sports, 2]",
-   "MSG Sportsnet [sports, 2]",
+   "MoviePlex channels [movies, 12]",
    "MSNBC [news, 9]",
    "MTV [music, 11]",
    "Music Choice channels [music, 60]",
@@ -1302,14 +1747,10 @@
    "NBA TV [sports, 9]",
    "NBC [local, 65]",
    "NBC News Now [news, 8]",
-   "NBC Sports Bay Area [sports, 2]",
-   "NBC Sports Boston [sports, 2]",
-   "NBC Sports Chicago [sports, 2]",
    "NBC Sports Philadelphia [sports, 7]",
    "NBC Sports Philadelphia Plus [sports, 3]",
    "NCAAB event channels [events, 60]",
    "NCAAF event channels [events, 120]",
-   "NESN [sports, 2]",
    "Netherlands channels [intl, 174]",
    "Newsmax [news, 7]",
    "NewsNation [news, 8]",
@@ -1318,7 +1759,7 @@
    "NFL RedZone [sports, 6]",
    "NHL event channels [events, 16]",
    "NHL Network [sports, 6]",
-   "Nick Jr [kids, 8]",
+   "Nick Jr. [kids, 8]",
    "Nickelodeon [kids, 7]",
    "Nicktoons [kids, 7]",
    "Nordic channels [intl, 512]",
@@ -1337,14 +1778,13 @@
    "Plex (free channels) [free, 140]",
    "Pluto TV (free channels) [free, 300]",
    "Poland channels [intl, 215]",
-   "POP [ent, 9]",
+   "Pop TV [ent, 9]",
    "Portuguese channels [intl, 259]",
    "PPV event channels [events, 40]",
    "Reelz [ent, 8]",
-   "RetroPlex [ent, 4]",
+   "Regional sports networks [sports, 78]",
    "Roku (free channels) [free, 170]",
    "Romania channels [intl, 128]",
-   "Root Sports [sports, 2]",
    "Russia channels [intl, 128]",
    "Samsung TV Plus (free channels) [free, 200]",
    "Science Channel [docs, 10]",
@@ -1353,19 +1793,15 @@
    "SEC Network Plus [sports, 9]",
    "SEC+ event channels [events, 50]",
    "Showtime [movies, 8]",
-   "Showtime 2 [movies, 11]",
-   "Showtime Extreme [movies, 4]",
+   "Showtime channels [movies, 15]",
    "Smithsonian Channel [docs, 10]",
-   "SNY [sports, 2]",
    "Sony Movies [movies, 4]",
-   "Space City Home Network [sports, 3]",
-   "Spectrum SportsNet LA [sports, 2]",
-   "Sportsman Channel [ent, 10]",
+   "Sportsman Channel [sports, 10]",
    "Stadium [sports, 8]",
    "Start TV [ent, 9]",
    "Starz [movies, 4]",
-   "Starz Edge [movies, 4]",
-   "Starz Encore [movies, 4]",
+   "Starz channels [movies, 4]",
+   "Starz Encore channels [movies, 4]",
    "Stirr (free channels) [free, 60]",
    "Story Television [ent, 8]",
    "Sundance TV [ent, 7]",
@@ -1377,6 +1813,7 @@
    "Tennis Channel [sports, 8]",
    "Thailand channels [intl, 128]",
    "The CW [local, 62]",
+   "The Weather Channel [news, 9]",
    "TLC [ent, 9]",
    "TNT [ent, 9]",
    "Travel Channel [ent, 9]",
@@ -1387,7 +1824,7 @@
    "TV Land [ent, 10]",
    "UK channels [intl, 399]",
    "Universal Kids [kids, 5]",
-   "Up TV [ent, 11]",
+   "UPtv [ent, 11]",
    "USA Network [ent, 9]",
    "VH1 [music, 8]",
    "Vice [docs, 9]",
@@ -1395,11 +1832,9 @@
    "Vietnam channels [intl, 128]",
    "Vizio (free channels) [free, 80]",
    "WE tv [ent, 9]",
-   "Weather Channel [news, 9]",
    "Willow [sports, 9]",
    "WNBA event channels [events, 12]",
-   "Xumo (free channels) [free, 120]",
-   "YES Network [sports, 3]"
+   "Xumo (free channels) [free, 120]"
   ]
  }
 }
