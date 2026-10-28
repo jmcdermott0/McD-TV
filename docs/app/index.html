@@ -4429,6 +4429,9 @@ const LO = (() => {
   reg("New Zealand", "NZ"); reg("Belgium", "BE", "BEL"); reg("Switzerland", "CH", "SUI"); reg("Austria", "AT", "AUT"); reg("Hungary", "HU", "HUN");
   reg("Czech & Slovak", "CZ", "SK", "CZE"); reg("Israel", "IL", "ISR", "ISRAEL"); reg("Kurdish", "KU", "KURD", "KURDISH"); reg("Thailand", "TH", "THAI");
   reg("Africa", "NG", "ZA"); reg("Caribbean", "JM");
+  // Name prefixes from mixed sports groups ("8K| SPORT ON AIR": "BG: DIEMA SPORT 1", "HR: MAX SPORT 1", "FL: V SPORT GOLF").
+  const NAME_COUNTRY = { BG: "Bulgaria", BH: "Balkans", BA: "Balkans", HR: "Balkans", SI: "Balkans", SR: "Balkans", RS: "Balkans", ME: "Balkans", MK: "Balkans",
+    LV: "Baltics", LT: "Baltics", EE: "Baltics", CL: "Latino", FL: "Nordic" };
   const PROVIDERS = new Set(["AT&T", "ATT", "PRIME", "AMAZON", "TUBI", "PLUTO", "PLUTO TV", "PLUTOTV", "SLING", "DIRECTV", "DTV", "ROKU", "SAMSUNG",
     "SAMSUNG TV PLUS", "XUMO", "PEACOCK", "FUBO", "FUBOTV", "HULU", "PHILO", "DISH", "SPECTRUM", "VERIZON", "FIOS", "XFINITY", "YOUTUBE TV", "YTTV",
     "VIZIO", "PLEX", "STIRR", "DISTRO", "FREEVEE", "LG", "TVE", "VIP", "FAST"]);
@@ -4438,6 +4441,8 @@ const LO = (() => {
     const g = prefixToken(group); if (g && COUNTRY[g.tok]) return COUNTRY[g.tok];
     for (const t of tokens(group.toUpperCase())) if ((t.length >= 5 || t === "UK") && COUNTRY[t]) return COUNTRY[t];
     const n = prefixToken(name); if (n && COUNTRY[n.tok]) return COUNTRY[n.tok];
+    // Codes trusted only as a name prefix, and not when the group carries the same tag ("HR| HORSE RACING" / "HR: ATG LIVE").
+    if (n && NAME_COUNTRY[n.tok] && !(g && g.tok === n.tok)) return NAME_COUNTRY[n.tok];
     return "";
   }
   const CALL_SIGN = /(?:^|[^A-Z0-9])(?:[KW][A-Z]{2,3}(?:-(?:TV|DT|CD|LD)\d?|\s?\d{1,2})(?![A-Z0-9])|\([KW][A-Z]{2,3}\))/;
@@ -4487,6 +4492,7 @@ const LO = (() => {
   function looksLikeSeparator(t) {
     if (!t) return true;
     if (t.length >= 3 && ((DECO.includes(t[0]) && t[1] === t[0] && t[2] === t[0]) || (DECO.includes(t[t.length - 1]) && t[t.length - 2] === t[t.length - 1] && t[t.length - 3] === t[t.length - 1]))) return true;
+    if (t.length >= 5 && t.startsWith("##") && t.endsWith("##")) return true; // "## ENTERTAINMENT ##"
     const alnum = (t.match(/[\p{L}\p{N}]/gu) || []).length;
     return alnum === 0 || alnum * 10 < t.length * 4;
   }
@@ -4522,7 +4528,7 @@ ae|A&E|ent|prime|A&E,A AND E,AE
 hgtv|HGTV|ent|prime|HGTV
 food|Food Network|ent|prime|FOOD
 tlc|TLC|ent|prime|TLC
-paramount|Paramount Network|ent|prime|PARAMOUNT
+paramount|Paramount Network|ent|prime|PARAMOUNT,SPIKE
 comedy|Comedy Central|ent|prime|COMEDY CENTRAL
 syfy|Syfy|ent|prime|SYFY,SCI FI
 discovery|Discovery|docs|prime,docs|DISCOVERY
@@ -4533,7 +4539,7 @@ lifetime|Lifetime|ent|prime|LIFETIME
 freeform|Freeform|ent|prime|FREEFORM
 trutv|truTV|ent|prime|TRUTV,TRU
 tvland|TV Land|ent|prime|TV LAND
-e|E!|ent|prime|E!
+e|E!|ent|prime|E!,E! ENTERTAINMENT
 bet|BET|ent|prime|BET
 hbo|HBO|movies|prime|HBO
 showtime|Showtime|movies|prime|SHOWTIME
@@ -4542,29 +4548,29 @@ own|OWN|ent||OWN
 we|WE tv|ent||WE
 ifc|IFC|ent||IFC
 sundance|Sundance TV|ent||SUNDANCE
-magnolia|Magnolia Network|ent||MAGNOLIA
+magnolia|Magnolia Network|ent||MAGNOLIA,DIY
 oxygen|Oxygen|ent||OXYGEN
-id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID
-ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC
+id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID,ID INVESTIGATION DISCOVERY
+ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC,AMERICA HEROES
 mhc|Military History Channel|docs|docs,military|MILITARY HISTORY
 smithsonian|Smithsonian Channel|docs|docs,military|SMITHSONIAN
-science|Science Channel|docs|docs,tech|SCIENCE
-natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD
+science|Science Channel|docs|docs,tech|SCIENCE,DISCOVERY SCIENCE
+natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD,NATIONAL GEOGRAPHIC WILD
 animalplanet|Animal Planet|docs|docs|ANIMAL PLANET
-vice|Vice|docs|docs|VICE
+vice|Vice|docs|docs|VICE,VICELAND
 curiosity|CuriosityStream|docs|docs,tech|CURIOSITYSTREAM,CURIOSITY
 cnn|CNN|news||CNN
 foxnews|Fox News|news||FOX NEWS
-msnbc|MSNBC|news||MSNBC
+msnbc|MSNBC|news||MSNBC,MS NOW,NBC MS NOW
 cnbc|CNBC|news|tech|CNBC
 bloomberg|Bloomberg TV|news|tech|BLOOMBERG
-espn|ESPN|sports||ESPN
+espn|ESPN|sports||ESPN,ESPN USA
 espn2|ESPN2|sports||ESPN2,ESPN 2
-espnu|ESPNU|sports||ESPNU
+espnu|ESPNU|sports||ESPNU,ESPN U
 secn|SEC Network|sports||SEC
 accn|ACC Network|sports||ACC
 btn|Big Ten Network|sports||BIG TEN,BTN,BIG 10
-cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN
+cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN,CBS SPORTS USA
 fs1|FS1|sports||FS1,FOX SPORTS 1
 fs2|FS2|sports||FS2,FOX SPORTS 2
 nfln|NFL Network|sports||NFL,NFL NET,NFLN
@@ -4573,8 +4579,200 @@ mlbn|MLB Network|sports||MLB,MLBN,MLB NET
 nhln|NHL Network|sports||NHL,NHLN,NHL NET
 nbatv|NBA TV|sports||NBA,NBATV
 golf|Golf Channel|sports||GOLF
-nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP
-nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
+nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP,NBC SPORTS PHILADELFIA,CSN PHILADELPHIA
+nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+,CSN PHILADELPHIA PLUS
+telemundo|Telemundo|local||TELEMUNDO
+univision|Univision|local||UNIVISION
+mynet|MyNetworkTV|local||MYNETWORKTV
+amcplus|AMC+|ent||AMC PLUS,AMC+
+amcthrillers|AMC Thrillers|movies||AMC THRILLERS
+antenna|Antenna TV|ent||ANTENNA
+aspire|Aspire|ent||ASPIRE
+awe|AWE|ent||AWE,A WEALTH OF ENTERTAINMENT,A WEALTH OF ENTERTAINMENT AWE
+afv|AFV|ent||AFV,AFV FAMILY
+abtv|Angels Broadcast Television|ent||ANGELS BROADCAST TELEVISION,ANGELS BROADCAST TELEVISION ABTV
+antena3|Antena 3 Internacional|ent||ANTENA 3 INTERNACIONAL
+bbcamerica|BBC America|ent||BBC AMERICA
+bether|BET Her|ent||BET HER
+betgospel|BET Gospel|ent||BET GOSPEL
+betjams|BET Jams|music||BET JAMS
+betsoul|BET Soul|music||BET SOUL
+bigbrother|Big Brother Live Feeds|ent||BIG BROTHER,BIG BROTHER QUAD VIEW
+bounce|Bounce TV|ent||BOUNCE
+bouncexl|Bounce XL|ent||BOUNCE XL
+buzzr|Buzzr|ent||BUZZR
+byutv|BYUtv|ent||BYU,BYUTV
+catchy|Catchy Comedy|ent||CATCHY COMEDY
+charge|Charge!|ent||CHARGE!
+circle|Circle|ent||CIRCLE
+cleo|Cleo TV|ent||CLEO
+cnc3|CNC3 Trinidad|ent||CNC 3 TRINIDAD,CNC3
+comedytv|Comedy.TV|ent||COMEDY
+comet|Comet|ent||COMET
+cooking|Cooking Channel|ent||COOKING
+courttv|Court TV|ent||COURT
+cozi|Cozi TV|ent||COZI
+crimeinv|Crime & Investigation|ent||CRIME & INVESTIGATION
+dabl|Dabl|ent||DABL
+daystar|Daystar|ent||DAYSTAR
+destamerica|Destination America|docs||DESTINATION AMERICA
+discfamily|Discovery Family|kids||DISCOVERY FAMILY
+disclife|Discovery Life|docs||DISCOVERY LIFE
+dogtv|DOGTV|ent||DOG,DOGTV
+elrey|El Rey Network|ent||EL REY
+ewtn|EWTN|ent||EWTN,EWTN CATHOLIC
+fashionone|Fashion One|ent||FASHION ONE
+fetv|FETV|ent||FETV
+foxsoul|Fox Soul|ent||FOX SOUL
+fxm|FXM|movies||FXM,FX MOVIES
+fyi|FYI|ent||FYI
+gameshowcentral|Game Show Central|ent||GAME SHOW CENTRAL
+gametv|Game TV|ent||GAME
+gettv|getTV|ent||GET,GETTV
+gaf|Great American Family|ent||GREAT AMERICAN FAMILY,GREAT AMERICAN COUNTRY
+gafl|Great American Faith & Living|ent||GREAT AMERICAN FAITH & LIVING
+grit|Grit|ent||GRIT
+gsn|Game Show Network|ent||GSN,GAME SHOW
+hallmarkfamily|Hallmark Family|ent||HALLMARK FAMILY,HALLMARK DRAMA
+hallmarkmystery|Hallmark Mystery|ent||HALLMARK MYSTERY,HALLMARK MOVIES MYSTERIES,HALLMARK M & M
+heroesicons|Heroes & Icons|ent||HEROES & ICONS
+hope|Hope Channel|ent||HOPE
+hsn|HSN|ent||HSN
+infowars|Infowars|news||INFOWARS
+blaze|BlazeTV|news||BLAZE,BLAZETV
+insp|INSP|ent||INSP
+ionmystery|ION Mystery|ent||ION MYSTERY
+ionplus|ION Plus|ent||ION PLUS
+jewelry|Jewelry TV|ent||JEWELRY
+justicecentral|Justice Central|ent||JUSTICE CENTRAL
+laff|Laff|ent||LAFF
+pasiones|Pasiones|ent||PASIONES,LATIN PASIONES
+lawcrime|Law & Crime|ent||LAW & CRIME
+lmn|Lifetime Movies|movies||LMN,LIFETIME MOVIE,LIFETIME MOVIES
+lrw|Lifetime Real Women|ent||LIFETIME REAL WOMEN
+localnow|Local Now|news||LOCAL NOW
+logo|Logo|ent||LOGO
+mega|Mega TV|ent||MEGA
+metv|MeTV|ent||METV,ME
+metvtoons|MeTV Toons|kids||METV TOONS
+motortrend|MotorTrend|ent||MOTORTREND
+mtv|MTV|music||MTV
+mtv2|MTV2|music||MTV2,MTV 2
+mtvlive|MTV Live|music||MTV LIVE
+cmt|CMT|music||CMT
+vh1|VH1|music||VH1,VH 1
+fuse|Fuse|music||FUSE,FUSE MUSIC
+revolt|Revolt|music||REVOLT
+axs|AXS TV|music||AXS,AXS TV NOW
+ovation|Ovation|ent||OVATION
+pixl|PixL|movies||PIXL
+pop|Pop TV|ent||POP
+qvc|QVC|ent||QVC,QVC 2
+shoplc|Shop LC|ent||SHOP LC
+rav|Real America's Voice|news||REAL AMERICA S VOICE
+reelz|Reelz|ent||REELZ,REELZ FAMUS
+retrotv|Retro TV|ent||RETRO
+rfdtv|RFD-TV|ent||RFD
+tastemade|Tastemade|ent||TASTEMADE
+tbn|TBN|ent||TBN
+tcm|TCM|movies||TCM,TURNER CLASSIC MOVIES
+victory|The Victory Channel|ent||VICTORY,THE VICTORY
+travel|Travel Channel|ent||TRAVEL
+tvone|TV One|ent||TV ONE
+uptv|UPtv|ent||UP,UPTV
+starttv|Start TV|ent||START
+zeetv|Zee TV|ent||ZEE
+sonymovie|Sony Movie Channel|movies||SONY MOVIE
+tmc|The Movie Channel|movies||THE MOVIE,TMC
+hdnetmovies|HDNet Movies|movies||NET MOVIES,HDNET MOVIES
+cinemax|Cinemax|movies||CINEMAX
+mgmplus|MGM+|movies||MGM+,MGM,EPIX
+cinesony|Cine Sony|movies||CINE SONY
+cineclub|Cine Club|movies||CINE CLUB
+cinemadinamita|Cinema Dinamita|movies||CINEMA DINAMITA
+weather|The Weather Channel|news||THE WEATHER,WEATHER
+foxweather|Fox Weather|news||FOX WEATHER
+foxbusiness|Fox Business|news||FOX BUSINESS
+hln|HLN|news||HLN
+abcnews|ABC News Live|news||ABC NEWS,ABC NEWS LIVE,ABC NEWS 2,ABC NEWS INTERNATIONAL
+cbsnews|CBS News 24/7|news||CBS NEWS,CBSN
+nbcnewsnow|NBC News Now|news||NBC NEWS NOW
+newsnation|NewsNation|news||NEWS NATION,NEWSNATION,WGN AMERICA
+newsmax|Newsmax|news||NEWSMAX
+newsy|Newsy|news||NEWSY,NEWS Y
+oan|One America News|news||OAN,ONE AMERICA NEWS,ONE AMERICAN NEWS
+necn|NECN|news||NECN,NBC NEW ENGLAND CABLE NEWS,NBC NEW ENGLAND CABLE NEWS NECN
+cheddar|Cheddar News|news||CHEDDAR,CHEDDAR NEWS,CHEDDAR BUSINESS
+cnbcworld|CNBC World|news||CNBC WORLD
+cspan|C-SPAN|news||C SPAN,C SPAN 1
+cspan2|C-SPAN2|news||C SPAN 2
+cspan3|C-SPAN3|news||C SPAN 3
+bbcnews|BBC News|news||BBC NEWS,BBC WORLD NEWS
+aljazeera|Al Jazeera English|news||AL JAZEERA,AL JAZEERA ENGLISH
+euronews|Euronews|news||EURONEWS
+trtworld|TRT World|news||TRT WORLD
+rtnews|RT|news||RT,RT NEWS
+rtdoc|RT Documentary|docs||RT DOCUMENTARY
+thefirst|The First|news||THE FIRST
+cartoon|Cartoon Network|kids||CARTOON
+adultswim|Adult Swim|kids||ADULT SWIM
+boomerang|Boomerang|kids||BOOMERANG
+disney|Disney Channel|kids||DISNEY
+disneyjr|Disney Junior|kids||DISNEY JR,DISNEY JUNIOR
+disneyxd|Disney XD|kids||DISNEY XD
+nick|Nickelodeon|kids||NICKELODEON,NICK
+nickjr|Nick Jr.|kids||NICK JR
+nicktoons|Nicktoons|kids||NICKTOONS,NICK TOONS
+teennick|TeenNick|kids||TEENNICK,TEEN NICK
+pbskids|PBS Kids|kids||PBS KIDS
+babyfirst|BabyFirst|kids||BABYFIRST,BABY FIRST
+babytv|BabyTV|kids||BABYTV,BABY
+threeabnkids|3ABN Kids|kids||3ABN KIDS
+espnews|ESPNews|sports||ESPNEWS,ESPN NEWS
+nbcsn|NBCSN|sports||NBC SPORTS,NBCSN
+nbcsportsnow|NBC Sports Now|sports||NBC SPORTS NOW
+foxdeportes|Fox Deportes|sports||FOX DEPORTES,FOX SPORTS DEPORTES
+foxsoccer|Fox Soccer Plus|sports||FOX SOCCER PLUS,FOX SPORTS SOCCER
+cbsgolazo|CBS Sports Golazo|sports||CBS SPORTS GOLAZO,CBS SPORTS GALAZO
+bein|beIN Sports|sports||BEIN,BEIN SPORTS
+eleven|Eleven Sports|sports||ELEVEN,ELEVEN SPORTS,ELEVEN SPORTS 1
+tudn|TUDN|sports||TUDN,TUDN ZONA
+goltv|GolTV|sports||GOL,GOLTV
+tennis|Tennis Channel|sports||TENNIS
+sstennis|SuperSport Tennis|sports||SUPERSPORT TENNIS
+premierleague|Premier League TV|sports||PREMIER LEAGUE
+willow|Willow|sports||WILLOW,WILLOW CRICKET
+willowxtra|Willow Xtra|sports||WILLOW CRICKET EXTRA,WILLOW XTRA
+f1channel|F1 Channel|sports||FORMULA 1,FORMULA 1 CHANNEL FM1TV
+motoamerica|MotoAmerica TV|sports||MOTO AMERICA
+mavtv|MAVTV|sports||MAV,MAVTV
+redbull|Red Bull TV|sports||RED BULL
+ufc|UFC Fight Pass|sports||UFC
+wwe|WWE|sports||WWE
+fightnet|Fight Network|sports||FIGHT
+boxingtv|Boxing TV|sports||BOXING
+billiard|Billiard TV|sports||BILLIARD
+padel|Padeltime TV|sports||PADELTIME
+pickleball|Pickleball TV|sports||PICKLEBALL,PICKLEBALL PBTV
+mlbstrikezone|MLB Strike Zone|sports||MLB STRIKE ZONE
+stadium|Stadium|sports||STADIUM
+stadium1|Stadium 1|sports||STADIUM 1
+stadium2|Stadium 2|sports||STADIUM 2
+stadium3|Stadium 3|sports||STADIUM 3
+fubosports|Fubo Sports|sports||FUBO SPORTS
+fantasysports|Fantasy Sports Network|sports||FANTASY SPORTS
+ginx|GINX Esports|sports||GINX ESPORTS
+yahoosports|Yahoo Sports|sports||YAHOO SPORTS
+afn|AFN Sports|sports||AFN SPORT,AFN SPORTS
+cowboy|The Cowboy Channel|sports||COWBOY
+outdoor|Outdoor Channel|sports||OUTDOOR
+outside|Outside TV|sports||OUTSIDE
+pursuit|Pursuit Channel|sports||PURSUIT
+sportsman|Sportsman Channel|sports||SPORTSMAN
+wfn|World Fishing Network|sports||WORLD FISHING
+wired2fish|Wired2Fish|sports||WIRED2FISH
+tvg|TVG|sports||TVG,TVG 2,TVG NETWORK 2
+fanduel|FanDuel TV|sports||FANDUEL
 `;
   const NET = new Map(), BY_KEY = new Map(), ORDER = [];
   for (const line of CATALOG.trim().split("\n")) {
@@ -4592,9 +4790,44 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
   const FAST_RE = new RegExp("^\\s*[|\\[(]?\\s*(?:US\\s*[|:]\\s*)?(" + FAST.join("|") + ")\\s*[|:\\])]", "i");
   const EVENT_RE = /^(NFL SUNDAY TICKET|NBA LEAGUE PASS|NHL CENTER ICE|MLB EXTRA INNINGS|ESPN EVENTS|ESPN\+|NFL|NCAAF|NCAAB|NBA|NHL|MLB|WNBA|MLS|PEACOCK|PARAMOUNT\+|DAZN|FLOSPORTS|B1G\+|SEC\+|ACCNX|VICTORY\+|PPV|UFC)\s*(?:EVENTS?\s*)?#?\s*(\d{1,3})(?!\d)\s*(?:$|[:|\-–])/i;
   const SUFFIX_TAG = /\s*(?:[([]\s*(?:HULU|PHILO|SLING|FUBO|DTV|DIRECTV|AT&T|ATT|YTTV|YOUTUBE TV|PLUTO|TUBI|XUMO|ROKU|PLEX|VIZIO|STIRR|US|USA|COPY|ALT)\s*[)\]]|\s[|\-–]\s*(?:HULU|PHILO|SLING|FUBO|DTV|DIRECTV|AT&T|YTTV))\s*$/i;
-  const FEED_MARKS = /[([]\s*(?:\d{1,2}|E|W|EAST|WEST|PACIFIC)\s*[)\]]|#\d{1,2}\b/gi;
-  const QUALITY = /(^|[^\p{L}\p{N}])(?:RAW|\d{2,3}\s?FPS|FHD|UHD|HD|SD|HQ|4K|8K|2160P|1080P|1080I|720P|480P|HEVC|H\.?26[45]|HDR10\+?|HDR|BACKUP|VIP|LOW|MULTI-?AUDIO)(?![\p{L}\p{N}])/giu;
-  const FEED_WORDS = new Set(["EAST", "WEST", "PACIFIC", "MOUNTAIN", "CENTRAL", "ALT", "ALTERNATE", "FEED", "BACKUP", "OPT", "OPTION"]);
+  // Lineup and league tags some playlists put before the name ("TV: A&E", "RK: 48 HOURS", "MLB: MLB NETWORK", "(GT) MSG").
+  const NAME_TAG = /^\s*(?:(?:TV|RK|ROKU|PRIME|NF|NETFLIX|AT&T|ATT|NBA|MLB|NHL|WNBA|HR|RX|4K|8K)\s*:\s*|\(\s*[A-Z]{2,3}\s*\)\s+)/i;
+  // Small raised letters and digits providers put in names and groups ("ᴿᴬᵂ", "⁶⁰ᶠᵖˢ", "³⁸⁴⁰ᴾ").
+  const RAISED = /[ɐ-˿ᴀ-ᶿ⁰-₟ⱼⱽꟸꟹ¹²³]+/g;
+  // A provider group, plain: "US| FLO ⱽᴵᴾ PPV" -> "FLO VIP PPV", "US| AT&T ᴿᴬᵂ ⁶⁰ᶠᵖˢ" -> "AT&T", "US| MILB PPV ⁽ᴮᴷ⁾" -> "MILB PPV".
+  const GROUP_TAGS = /(^|[^\p{L}\p{N}])(?:RAW|\d{2,3}\s?FPS|FHD|UHD|HD|SD|4K|8K|3840P|2160P|1080P|BK)(?![\p{L}\p{N}])/giu;
+  function plainGroup(group) {
+    let g = String(group || "").replace(/ⱽᴵᴾ/g, " VIP ").replace(RAISED, " ").replace(/[\p{So}\p{Cf}\uFE00-\uFE0F]/gu, " ").replace(/^\s*[|[(]?\s*(?:US|USA|8K|4K|RX|HR)\s*[|:\])]\s*/i, "");
+    g = g.replace(GROUP_TAGS, "$1 ").replace(/[()[\]/|]+/g, " ").replace(/\s{2,}/g, " ").trim().toUpperCase();
+    return g;
+  }
+  // Event and pay-per-view groups ("FLO VIP PPV", "ESPN+ PPV", "MLB TEAM PPV", "NFL REPLAY"): a folder per provider.
+  const EVENT_GROUP = /(?:^| )(?:PPV|EVENTS?|REPLAY)(?: |$)/;
+  // Streaming lineups ("AT&T", "ROKU", "PRIME", "NETFLIX ON AIR", "DISNEY+ NETWORK"): a folder per service for the
+  // channels that are not a catalog network.
+  const SERVICE_GROUP = /^(AT&T|ATT|ROKU|TV|PRIME|NETFLIX|PEACOCK|DISNEY\+|PARAMOUNT\+|HBO MAX|HULU|SPECTRUM)(?: (?:NETWORK|ON AIR|ORIGINALS?|CITY))?$/;
+  const SERVICE_LABEL = { "AT&T": "AT&T", ATT: "AT&T", ROKU: "Roku", TV: "US TV", PRIME: "Prime Video", NETFLIX: "Netflix", PEACOCK: "Peacock", "DISNEY+": "Disney+", "PARAMOUNT+": "Paramount+", "HBO MAX": "HBO Max", HULU: "Hulu", SPECTRUM: "Spectrum" };
+  // Regional sports networks, old and new names ("FOX SPORTS DETROIT", "CSN BOSTON", "MSG ZONE1", "PAC 12 OREGON"): one folder.
+  const RSN = /^(?:FOX SPORTS (?!1(?: |$)|2(?: |$)|ONE|RACING|SOCCER|DEPORTES|NEWS)|NBC SPORTS (?!NETWORK|NOW|NEWS)|CSN |AT&T SPORTSNET|ROOT SPORTS|FANDUEL (?:SPORTS|MIDWEST)|BALLY SPORTS|SPECTRUM SPORTSNET|SPORTSNET (?:LA|NEW YORK|PITTSBURGH)|SNY(?: |$)|MSG|NESN|YES(?: |$)|MARQUEE|MONUMENTAL|ALTITUDE|MASN|MASSN|SPACE CITY|CHICAGO SPORTS|PAC 12 )/;
+  // Premium movie channels beyond the main one ("HBO ZONE", "STARZ ENCORE WESTERNS", "MOREMAX"): a folder per brand.
+  const PREMIUM = /^(STARZ ENCORE|ENCORE|HBO|CINEMAX|MOREMAX|OUTERMAX|MOVIEMAX|THRILLERMAX|ACTION MAX|5 STARMAX|SHOWTIME|STARZ|EPIX|MGM|SCREENPIX|MOVIEPLEX|INDIEPLEX|RETROPLEX)(?: |$)/;
+  const PREMIUM_LABEL = { "STARZ ENCORE": "Starz Encore", ENCORE: "Starz Encore", HBO: "HBO", CINEMAX: "Cinemax", MOREMAX: "Cinemax", OUTERMAX: "Cinemax", MOVIEMAX: "Cinemax",
+    THRILLERMAX: "Cinemax", "ACTION MAX": "Cinemax", "5 STARMAX": "Cinemax", SHOWTIME: "Showtime", STARZ: "Starz", EPIX: "MGM+", MGM: "MGM+", SCREENPIX: "ScreenPix",
+    MOVIEPLEX: "MoviePlex", INDIEPLEX: "MoviePlex", RETROPLEX: "MoviePlex" };
+  // Channel lineups of one brand: a folder each.
+  const BRAND = /^(MUSIC CHOICE|DAZN)(?: |$)/;
+  const BRAND_KIND = { "MUSIC CHOICE": "music", DAZN: "sports" }, BRAND_LABEL = { "MUSIC CHOICE": "Music Choice", DAZN: "DAZN" };
+  // Stations of a network named by their number ("TELEMUNDO 51 (WSCV) MIAMI", "UNIVISION23 (WLTV)", "MY 9 WWOR NEW YORK").
+  const STATION_NET = { TELEMUNDO: "telemundo", UNIVISION: "univision", MY: "mynet", MYTV: "mynet" };
+  // Other local stations and local news: a call sign ("(WHDH)", "WXYZ-TV"), a known station name ("KIRO 7", "WGN9"), a station number
+  // with "PLUS" ("FOX 5 PLUS"), or a city news name ("NBC BOSTON NEWS").
+  const STATION = /\([KW][A-Z]{2,3}(?:-[A-Z]{1,2}\d?)?\)|\b[KW][A-Z]{2,3}-(?:TV|DT|CD|LD)\d?\b|^(?:NEWS 12|NEW JERSEY 12|SPECTRUM (?:BAY )?NEWS|BOSTON 25|7NEWS|KTLA|KUHT|KIRO|WGN ?\d|CBSN [A-Z]|DISTRICT (?:KNOWLEDGE|OF COLUMBIA))|^(?:ABC|CBS|NBC|FOX) (?:\d{1,2} PLUS|[A-Z ]+ NEWS)(?: |$)/;
+  const US_TAG = /^\s*[|[(]?\s*(?:US|USA)\s*[|:\])]\s*/i;
+  // Feed marks: "(2)", "(E)", "(West)", "#2", and the one or two letter feed tags some providers add ("(A)", "(PC)", "(SP)").
+  const FEED_MARKS = /[([]\s*(?:\d{1,2}|[A-Z]{1,2}|EAST|WEST|PACIFIC)\s*[)\]]|#\d{1,2}\b/gi;
+  const QUALITY = /(^|[^\p{L}\p{N}])(?:RAW|\d{2,3}\s?FPS|FHD|UHD|HD|SD|HQ|4K|8K|3840P|2160P|1080P|1080I|720P|480P|HEVC|H\.?26[45]|HDR10\+?|HDR|BACKUP|VIP|LOW|MULTI-?AUDIO)(?![\p{L}\p{N}])/giu;
+  // "CENTRAL" is not a feed word: it ends real names ("Comedy Central", "Game Show Central").
+  const FEED_WORDS = new Set(["EAST", "WEST", "PACIFIC", "MOUNTAIN", "ALT", "ALTERNATE", "FEED", "BACKUP", "OPT", "OPTION"]);
   const SUFFIX = new Set(["NETWORK", "CHANNEL", "TV"]);
   const words = (s) => String(s || "").toUpperCase().split(/[^\p{L}\p{N}&+!]+/u).filter(Boolean);
 
@@ -4634,10 +4867,18 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
   function identify(raw, group, country, section) {
     const us = country === "US" || country === "" || country === "Other";
     if (!us) return { key: "intl:" + country, label: country + " channels", kind: "intl", net: null, region: "", family: true };
-    const clean = LO.cleanName(raw);
-    const ev = EVENT_RE.exec(clean) || EVENT_RE.exec(String(raw).replace(/^\s*[|[(]?\s*(?:US|USA)\s*[|:\])]\s*/i, ""));
+    // A second country tag after "US:" ("US: IT| PIRATI DEI CARAIBI CHANNEL") is the channel's real country.
+    const inner = String(raw).replace(US_TAG, "");
+    if (inner !== String(raw)) { const c2 = LO.country("", inner); if (c2 && c2 !== "US") return { key: "intl:" + c2, label: c2 + " channels", kind: "intl", net: null, region: "", family: true }; }
+    let clean = LO.cleanName(raw).replace(RAISED, " ").replace(/\s{2,}/g, " ").trim();
+    for (let i = 0; i < 2; i++) clean = clean.replace(NAME_TAG, "");
+    const ev = EVENT_RE.exec(clean) || EVENT_RE.exec(inner);
     if (ev) { const p = ev[1].toUpperCase(); return { key: "ev:" + p, label: p.replace("PPV", "PPV") + " event channels", kind: "events", net: null, region: "", family: true }; }
-    if (/(?:^|[^\d])24\s*[/x×-]?\s*7(?!\d)/i.test(raw + " " + group)) return { key: "f:247", label: "24/7 channels", kind: "247", net: null, region: "", family: true };
+    if (/^\s*PPV\s*[:|]/i.test(inner)) return { key: "ev:PPV", label: "PPV event channels", kind: "events", net: null, region: "", family: true };
+    if (/(?:^|[^\d])24\s*[/x×-]?\s*7(?!\d)|(?:^|[^\d])24\s?H(?:RS?)?(?![\p{L}\p{N}])/iu.test(raw + " " + group)) return { key: "f:247", label: "24/7 channels", kind: "247", net: null, region: "", family: true };
+    // A free-service channel named by its service ("Pluto TV: Big Brother") stays with that service, even when a network shares the name.
+    const fastName = FAST_RE.exec(raw);
+    if (fastName) return fastOf(fastName);
     const k = netKey(clean);
     const hit = BY_KEY.get(k);
     if (hit) return { key: hit.id, label: hit.label, kind: hit.kind, net: hit, region: "national", family: false };
@@ -4651,10 +4892,33 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
     const kk = w.join(" ");
     const b = BROADCAST.exec(kk) || /^\d{1,2}(ABC|CBS|NBC|FOX)$/.exec(w[0] || "");
     if (b && !NOT_AFFILIATE.test(kk)) return affiliate(b[1].toLowerCase(), /\bPHILADELPHIA\b/.test(kk) ? "philly" : w.length > 1 ? "market" : "national");
+    const sn = (w[0] || "").replace(/\d+$/, "");
+    if (STATION_NET[sn] && (sn === "TELEMUNDO" || sn === "UNIVISION" || /\d$/.test(w[0]) || /^\d+$/.test(w[1] || ""))) return affiliate(STATION_NET[sn], w.length > 1 ? "market" : "national");
+    if (RSN.test(kk)) return { key: "f:rsn", label: "Regional sports networks", kind: "sports", net: null, region: "", family: true };
+    const pm = PREMIUM.exec(k);
+    if (pm) { const l = PREMIUM_LABEL[pm[1]]; return { key: "pm:" + l, label: l + " channels", kind: "movies", net: null, region: "", family: true }; }
+    const br = BRAND.exec(k);
+    if (br) return { key: "br:" + br[1], label: BRAND_LABEL[br[1]] + " channels", kind: BRAND_KIND[br[1]], net: null, region: "", family: true };
+    if (STATION.test(clean.toUpperCase())) return { key: "f:stations", label: "Local stations", kind: "local", net: null, region: "", family: true };
     const fast = FAST_RE.exec(raw) || FAST_RE.exec(group.replace(/^\s*US\s*[|:]\s*/i, "") + ":");
-    if (fast) { const p = fast[1].toUpperCase().replace(/^PLUTO$/, "PLUTO TV"); return { key: "fast:" + p, label: title(p) + " (free channels)", kind: "free", net: null, region: "", family: true }; }
+    if (fast) return fastOf(fast);
     const kind = { Sports: "sports", News: "news", Entertainment: "ent", Movies: "movies", Kids: "kids", Local: "local", Music: "music", "24/7": "247", "Events & PPV": "events" }[section] || "other";
-    return { key: k, label: "", kind, net: null, region: "", family: false };
+    const pg = plainGroup(group);
+    if (EVENT_GROUP.test(pg)) {
+      const p = pg.replace(/(?:^| )(?:PPV|EVENTS?|VIP|ON AIR)(?= |$)/g, " ").replace(/\s{2,}/g, " ").trim() || "PPV";
+      const ppv = /(?:^| )(?:PPV|EVENTS?)(?: |$)/.test(pg) && !/(?:^| )(?:TEAM|BALLY SPORTS)$/.test(p);
+      return { key: "ev:" + p, label: p + (ppv ? " event channels" : " channels"), kind: "events", net: null, region: "", family: true };
+    }
+    // The group names a folder for channels with no network of their own ([groups] folds a name in only when every feed
+    // of it has one, so "AT&T: Crime + Investigation" stays with the other Crime + Investigation feeds).
+    const svc = SERVICE_GROUP.exec(pg);
+    const fold = svc ? { key: "svc:" + SERVICE_LABEL[svc[1]], label: SERVICE_LABEL[svc[1]] + " channels", kind }
+      : /(?:^| )TV SHOWS(?: |$)/.test(pg) ? { key: "f:247", label: "24/7 channels", kind: "247" }
+      : /(?:^| )RELAX(?: |$)/.test(pg) ? { key: "f:relax", label: "Relax channels", kind: "music" }
+      : /(?:^| )HORSE RACING(?: |$)/.test(pg) ? { key: "f:racing", label: "Horse racing channels", kind: "sports" }
+      // A provider's 4K showcase group ("4K| ³⁸⁴⁰ᴾ"): channels from many countries.
+      : !pg && /^\s*[|[(]?\s*4K\s*[|:\])]/i.test(group) ? { key: "f:4k", label: "4K channels", kind } : null;
+    return { key: k, label: "", kind, net: null, region: "", family: false, fold };
   }
   /** A to Z with numbers in number order ("NFL 2" before "NFL 10"); the same on the TV, so both list alike. */
   function cmpLabel(a, b) {
@@ -4667,6 +4931,7 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
     }
     return x.length - y.length;
   }
+  function fastOf(m) { const p = m[1].toUpperCase().replace(/^PLUTO$/, "PLUTO TV"); return { key: "fast:" + p, label: title(p) + " (free channels)", kind: "free", net: null, region: "", family: true }; }
   function affiliate(id, region) { const n = NET.get(id); return { key: id, label: n.label, kind: n.kind, net: n, region, family: false }; }
   const title = (s) => s.split(" ").map((x) => (x.length > 3 ? x[0] + x.slice(1).toLowerCase() : x)).join(" ");
   const REGION_RANK = { home: 0, national: 1, philly: 2, market: 3, "": 1 };
@@ -4685,6 +4950,15 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
       if (!g) by.set(id.key, (g = { id: id.key, label: id.label, kind: id.kind, net: id.net, family: id.family, feeds: [] }));
       g.feeds.push(i);
     });
+    // Names with no network whose every feed sits in a folder group ("US| AT&T", "HR| HORSE RACING"): into that folder.
+    for (const g of [...by.values()]) {
+      if (g.family || g.net || !g.feeds.every((i) => info[i].id.fold)) continue;
+      const f = info[g.feeds[0]].id.fold;
+      let t = by.get(f.key);
+      if (!t) by.set(f.key, (t = { id: f.key, label: f.label, kind: f.kind, net: null, family: true, feeds: [] }));
+      t.feeds.push(...g.feeds);
+      by.delete(g.id);
+    }
     // Numbered series of one name ("Music Choice 01" to "60"): one folder.
     const series = new Map();
     for (const g of by.values()) { if (g.family || g.net) continue; const m = /^(.*\D) ?\d{1,3}$/.exec(g.id); if (m && m[1].trim().length > 1) { const p = m[1].trim(); (series.get(p) || series.set(p, []).get(p)).push(g); } }
@@ -6767,7 +7041,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-26.1";
+const BUILD = "2026-10-28.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

@@ -18,8 +18,15 @@ import java.util.TimeZone
 // stand-in fixture (LiveHomeTest here, tools/webtest/livehome-test.mjs there), so a change on one side that is not
 // made on the other fails a test. Pure Kotlin, no Android types.
 
-/** Who a channel is. [family]: a folder of separate channels (event channels, a free service, a country). */
-class LiveIdent(val key: String, val label: String, val kind: String, val net: LiveHome.Net?, val region: String, val family: Boolean)
+/**
+ * Who a channel is. [family]: a folder of separate channels (event channels, a free service, a country).
+ * [fold]: the folder its group names ("US| AT&T", "HR| HORSE RACING") for a channel with no network of its own;
+ * [LiveHome.groups] uses it only when every feed of that name has one.
+ */
+class LiveIdent(val key: String, val label: String, val kind: String, val net: LiveHome.Net?, val region: String, val family: Boolean, val fold: LiveFold? = null)
+
+/** A folder named by a channel's group. */
+class LiveFold(val key: String, val label: String, val kind: String)
 
 /** One A-Z entry: a network with its feeds (best first), or a family folder. [feeds] index the channel list. */
 class LiveGroup(val id: String, var label: String, val kind: String, val net: LiveHome.Net?, val family: Boolean, val feeds: MutableList<Int>)
@@ -86,7 +93,7 @@ ae|A&E|ent|prime|A&E,A AND E,AE
 hgtv|HGTV|ent|prime|HGTV
 food|Food Network|ent|prime|FOOD
 tlc|TLC|ent|prime|TLC
-paramount|Paramount Network|ent|prime|PARAMOUNT
+paramount|Paramount Network|ent|prime|PARAMOUNT,SPIKE
 comedy|Comedy Central|ent|prime|COMEDY CENTRAL
 syfy|Syfy|ent|prime|SYFY,SCI FI
 discovery|Discovery|docs|prime,docs|DISCOVERY
@@ -97,7 +104,7 @@ lifetime|Lifetime|ent|prime|LIFETIME
 freeform|Freeform|ent|prime|FREEFORM
 trutv|truTV|ent|prime|TRUTV,TRU
 tvland|TV Land|ent|prime|TV LAND
-e|E!|ent|prime|E!
+e|E!|ent|prime|E!,E! ENTERTAINMENT
 bet|BET|ent|prime|BET
 hbo|HBO|movies|prime|HBO
 showtime|Showtime|movies|prime|SHOWTIME
@@ -106,29 +113,29 @@ own|OWN|ent||OWN
 we|WE tv|ent||WE
 ifc|IFC|ent||IFC
 sundance|Sundance TV|ent||SUNDANCE
-magnolia|Magnolia Network|ent||MAGNOLIA
+magnolia|Magnolia Network|ent||MAGNOLIA,DIY
 oxygen|Oxygen|ent||OXYGEN
-id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID
-ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC
+id|Investigation Discovery|ent||INVESTIGATION DISCOVERY,ID,ID INVESTIGATION DISCOVERY
+ahc|American Heroes Channel|docs|docs,military|AMERICAN HEROES,AHC,AMERICA HEROES
 mhc|Military History Channel|docs|docs,military|MILITARY HISTORY
 smithsonian|Smithsonian Channel|docs|docs,military|SMITHSONIAN
-science|Science Channel|docs|docs,tech|SCIENCE
-natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD
+science|Science Channel|docs|docs,tech|SCIENCE,DISCOVERY SCIENCE
+natgeowild|Nat Geo Wild|docs|docs|NAT GEO WILD,NATIONAL GEOGRAPHIC WILD
 animalplanet|Animal Planet|docs|docs|ANIMAL PLANET
-vice|Vice|docs|docs|VICE
+vice|Vice|docs|docs|VICE,VICELAND
 curiosity|CuriosityStream|docs|docs,tech|CURIOSITYSTREAM,CURIOSITY
 cnn|CNN|news||CNN
 foxnews|Fox News|news||FOX NEWS
-msnbc|MSNBC|news||MSNBC
+msnbc|MSNBC|news||MSNBC,MS NOW,NBC MS NOW
 cnbc|CNBC|news|tech|CNBC
 bloomberg|Bloomberg TV|news|tech|BLOOMBERG
-espn|ESPN|sports||ESPN
+espn|ESPN|sports||ESPN,ESPN USA
 espn2|ESPN2|sports||ESPN2,ESPN 2
-espnu|ESPNU|sports||ESPNU
+espnu|ESPNU|sports||ESPNU,ESPN U
 secn|SEC Network|sports||SEC
 accn|ACC Network|sports||ACC
 btn|Big Ten Network|sports||BIG TEN,BTN,BIG 10
-cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN
+cbssn|CBS Sports Network|sports||CBS SPORTS,CBSSN,CBS SPORTS USA
 fs1|FS1|sports||FS1,FOX SPORTS 1
 fs2|FS2|sports||FS2,FOX SPORTS 2
 nfln|NFL Network|sports||NFL,NFL NET,NFLN
@@ -137,8 +144,200 @@ mlbn|MLB Network|sports||MLB,MLBN,MLB NET
 nhln|NHL Network|sports||NHL,NHLN,NHL NET
 nbatv|NBA TV|sports||NBA,NBATV
 golf|Golf Channel|sports||GOLF
-nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP
-nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
+nbcsp|NBC Sports Philadelphia|sports||NBC SPORTS PHILADELPHIA,NBCSP,NBC SPORTS PHILADELFIA,CSN PHILADELPHIA
+nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+,CSN PHILADELPHIA PLUS
+telemundo|Telemundo|local||TELEMUNDO
+univision|Univision|local||UNIVISION
+mynet|MyNetworkTV|local||MYNETWORKTV
+amcplus|AMC+|ent||AMC PLUS,AMC+
+amcthrillers|AMC Thrillers|movies||AMC THRILLERS
+antenna|Antenna TV|ent||ANTENNA
+aspire|Aspire|ent||ASPIRE
+awe|AWE|ent||AWE,A WEALTH OF ENTERTAINMENT,A WEALTH OF ENTERTAINMENT AWE
+afv|AFV|ent||AFV,AFV FAMILY
+abtv|Angels Broadcast Television|ent||ANGELS BROADCAST TELEVISION,ANGELS BROADCAST TELEVISION ABTV
+antena3|Antena 3 Internacional|ent||ANTENA 3 INTERNACIONAL
+bbcamerica|BBC America|ent||BBC AMERICA
+bether|BET Her|ent||BET HER
+betgospel|BET Gospel|ent||BET GOSPEL
+betjams|BET Jams|music||BET JAMS
+betsoul|BET Soul|music||BET SOUL
+bigbrother|Big Brother Live Feeds|ent||BIG BROTHER,BIG BROTHER QUAD VIEW
+bounce|Bounce TV|ent||BOUNCE
+bouncexl|Bounce XL|ent||BOUNCE XL
+buzzr|Buzzr|ent||BUZZR
+byutv|BYUtv|ent||BYU,BYUTV
+catchy|Catchy Comedy|ent||CATCHY COMEDY
+charge|Charge!|ent||CHARGE!
+circle|Circle|ent||CIRCLE
+cleo|Cleo TV|ent||CLEO
+cnc3|CNC3 Trinidad|ent||CNC 3 TRINIDAD,CNC3
+comedytv|Comedy.TV|ent||COMEDY
+comet|Comet|ent||COMET
+cooking|Cooking Channel|ent||COOKING
+courttv|Court TV|ent||COURT
+cozi|Cozi TV|ent||COZI
+crimeinv|Crime & Investigation|ent||CRIME & INVESTIGATION
+dabl|Dabl|ent||DABL
+daystar|Daystar|ent||DAYSTAR
+destamerica|Destination America|docs||DESTINATION AMERICA
+discfamily|Discovery Family|kids||DISCOVERY FAMILY
+disclife|Discovery Life|docs||DISCOVERY LIFE
+dogtv|DOGTV|ent||DOG,DOGTV
+elrey|El Rey Network|ent||EL REY
+ewtn|EWTN|ent||EWTN,EWTN CATHOLIC
+fashionone|Fashion One|ent||FASHION ONE
+fetv|FETV|ent||FETV
+foxsoul|Fox Soul|ent||FOX SOUL
+fxm|FXM|movies||FXM,FX MOVIES
+fyi|FYI|ent||FYI
+gameshowcentral|Game Show Central|ent||GAME SHOW CENTRAL
+gametv|Game TV|ent||GAME
+gettv|getTV|ent||GET,GETTV
+gaf|Great American Family|ent||GREAT AMERICAN FAMILY,GREAT AMERICAN COUNTRY
+gafl|Great American Faith & Living|ent||GREAT AMERICAN FAITH & LIVING
+grit|Grit|ent||GRIT
+gsn|Game Show Network|ent||GSN,GAME SHOW
+hallmarkfamily|Hallmark Family|ent||HALLMARK FAMILY,HALLMARK DRAMA
+hallmarkmystery|Hallmark Mystery|ent||HALLMARK MYSTERY,HALLMARK MOVIES MYSTERIES,HALLMARK M & M
+heroesicons|Heroes & Icons|ent||HEROES & ICONS
+hope|Hope Channel|ent||HOPE
+hsn|HSN|ent||HSN
+infowars|Infowars|news||INFOWARS
+blaze|BlazeTV|news||BLAZE,BLAZETV
+insp|INSP|ent||INSP
+ionmystery|ION Mystery|ent||ION MYSTERY
+ionplus|ION Plus|ent||ION PLUS
+jewelry|Jewelry TV|ent||JEWELRY
+justicecentral|Justice Central|ent||JUSTICE CENTRAL
+laff|Laff|ent||LAFF
+pasiones|Pasiones|ent||PASIONES,LATIN PASIONES
+lawcrime|Law & Crime|ent||LAW & CRIME
+lmn|Lifetime Movies|movies||LMN,LIFETIME MOVIE,LIFETIME MOVIES
+lrw|Lifetime Real Women|ent||LIFETIME REAL WOMEN
+localnow|Local Now|news||LOCAL NOW
+logo|Logo|ent||LOGO
+mega|Mega TV|ent||MEGA
+metv|MeTV|ent||METV,ME
+metvtoons|MeTV Toons|kids||METV TOONS
+motortrend|MotorTrend|ent||MOTORTREND
+mtv|MTV|music||MTV
+mtv2|MTV2|music||MTV2,MTV 2
+mtvlive|MTV Live|music||MTV LIVE
+cmt|CMT|music||CMT
+vh1|VH1|music||VH1,VH 1
+fuse|Fuse|music||FUSE,FUSE MUSIC
+revolt|Revolt|music||REVOLT
+axs|AXS TV|music||AXS,AXS TV NOW
+ovation|Ovation|ent||OVATION
+pixl|PixL|movies||PIXL
+pop|Pop TV|ent||POP
+qvc|QVC|ent||QVC,QVC 2
+shoplc|Shop LC|ent||SHOP LC
+rav|Real America's Voice|news||REAL AMERICA S VOICE
+reelz|Reelz|ent||REELZ,REELZ FAMUS
+retrotv|Retro TV|ent||RETRO
+rfdtv|RFD-TV|ent||RFD
+tastemade|Tastemade|ent||TASTEMADE
+tbn|TBN|ent||TBN
+tcm|TCM|movies||TCM,TURNER CLASSIC MOVIES
+victory|The Victory Channel|ent||VICTORY,THE VICTORY
+travel|Travel Channel|ent||TRAVEL
+tvone|TV One|ent||TV ONE
+uptv|UPtv|ent||UP,UPTV
+starttv|Start TV|ent||START
+zeetv|Zee TV|ent||ZEE
+sonymovie|Sony Movie Channel|movies||SONY MOVIE
+tmc|The Movie Channel|movies||THE MOVIE,TMC
+hdnetmovies|HDNet Movies|movies||NET MOVIES,HDNET MOVIES
+cinemax|Cinemax|movies||CINEMAX
+mgmplus|MGM+|movies||MGM+,MGM,EPIX
+cinesony|Cine Sony|movies||CINE SONY
+cineclub|Cine Club|movies||CINE CLUB
+cinemadinamita|Cinema Dinamita|movies||CINEMA DINAMITA
+weather|The Weather Channel|news||THE WEATHER,WEATHER
+foxweather|Fox Weather|news||FOX WEATHER
+foxbusiness|Fox Business|news||FOX BUSINESS
+hln|HLN|news||HLN
+abcnews|ABC News Live|news||ABC NEWS,ABC NEWS LIVE,ABC NEWS 2,ABC NEWS INTERNATIONAL
+cbsnews|CBS News 24/7|news||CBS NEWS,CBSN
+nbcnewsnow|NBC News Now|news||NBC NEWS NOW
+newsnation|NewsNation|news||NEWS NATION,NEWSNATION,WGN AMERICA
+newsmax|Newsmax|news||NEWSMAX
+newsy|Newsy|news||NEWSY,NEWS Y
+oan|One America News|news||OAN,ONE AMERICA NEWS,ONE AMERICAN NEWS
+necn|NECN|news||NECN,NBC NEW ENGLAND CABLE NEWS,NBC NEW ENGLAND CABLE NEWS NECN
+cheddar|Cheddar News|news||CHEDDAR,CHEDDAR NEWS,CHEDDAR BUSINESS
+cnbcworld|CNBC World|news||CNBC WORLD
+cspan|C-SPAN|news||C SPAN,C SPAN 1
+cspan2|C-SPAN2|news||C SPAN 2
+cspan3|C-SPAN3|news||C SPAN 3
+bbcnews|BBC News|news||BBC NEWS,BBC WORLD NEWS
+aljazeera|Al Jazeera English|news||AL JAZEERA,AL JAZEERA ENGLISH
+euronews|Euronews|news||EURONEWS
+trtworld|TRT World|news||TRT WORLD
+rtnews|RT|news||RT,RT NEWS
+rtdoc|RT Documentary|docs||RT DOCUMENTARY
+thefirst|The First|news||THE FIRST
+cartoon|Cartoon Network|kids||CARTOON
+adultswim|Adult Swim|kids||ADULT SWIM
+boomerang|Boomerang|kids||BOOMERANG
+disney|Disney Channel|kids||DISNEY
+disneyjr|Disney Junior|kids||DISNEY JR,DISNEY JUNIOR
+disneyxd|Disney XD|kids||DISNEY XD
+nick|Nickelodeon|kids||NICKELODEON,NICK
+nickjr|Nick Jr.|kids||NICK JR
+nicktoons|Nicktoons|kids||NICKTOONS,NICK TOONS
+teennick|TeenNick|kids||TEENNICK,TEEN NICK
+pbskids|PBS Kids|kids||PBS KIDS
+babyfirst|BabyFirst|kids||BABYFIRST,BABY FIRST
+babytv|BabyTV|kids||BABYTV,BABY
+threeabnkids|3ABN Kids|kids||3ABN KIDS
+espnews|ESPNews|sports||ESPNEWS,ESPN NEWS
+nbcsn|NBCSN|sports||NBC SPORTS,NBCSN
+nbcsportsnow|NBC Sports Now|sports||NBC SPORTS NOW
+foxdeportes|Fox Deportes|sports||FOX DEPORTES,FOX SPORTS DEPORTES
+foxsoccer|Fox Soccer Plus|sports||FOX SOCCER PLUS,FOX SPORTS SOCCER
+cbsgolazo|CBS Sports Golazo|sports||CBS SPORTS GOLAZO,CBS SPORTS GALAZO
+bein|beIN Sports|sports||BEIN,BEIN SPORTS
+eleven|Eleven Sports|sports||ELEVEN,ELEVEN SPORTS,ELEVEN SPORTS 1
+tudn|TUDN|sports||TUDN,TUDN ZONA
+goltv|GolTV|sports||GOL,GOLTV
+tennis|Tennis Channel|sports||TENNIS
+sstennis|SuperSport Tennis|sports||SUPERSPORT TENNIS
+premierleague|Premier League TV|sports||PREMIER LEAGUE
+willow|Willow|sports||WILLOW,WILLOW CRICKET
+willowxtra|Willow Xtra|sports||WILLOW CRICKET EXTRA,WILLOW XTRA
+f1channel|F1 Channel|sports||FORMULA 1,FORMULA 1 CHANNEL FM1TV
+motoamerica|MotoAmerica TV|sports||MOTO AMERICA
+mavtv|MAVTV|sports||MAV,MAVTV
+redbull|Red Bull TV|sports||RED BULL
+ufc|UFC Fight Pass|sports||UFC
+wwe|WWE|sports||WWE
+fightnet|Fight Network|sports||FIGHT
+boxingtv|Boxing TV|sports||BOXING
+billiard|Billiard TV|sports||BILLIARD
+padel|Padeltime TV|sports||PADELTIME
+pickleball|Pickleball TV|sports||PICKLEBALL,PICKLEBALL PBTV
+mlbstrikezone|MLB Strike Zone|sports||MLB STRIKE ZONE
+stadium|Stadium|sports||STADIUM
+stadium1|Stadium 1|sports||STADIUM 1
+stadium2|Stadium 2|sports||STADIUM 2
+stadium3|Stadium 3|sports||STADIUM 3
+fubosports|Fubo Sports|sports||FUBO SPORTS
+fantasysports|Fantasy Sports Network|sports||FANTASY SPORTS
+ginx|GINX Esports|sports||GINX ESPORTS
+yahoosports|Yahoo Sports|sports||YAHOO SPORTS
+afn|AFN Sports|sports||AFN SPORT,AFN SPORTS
+cowboy|The Cowboy Channel|sports||COWBOY
+outdoor|Outdoor Channel|sports||OUTDOOR
+outside|Outside TV|sports||OUTSIDE
+pursuit|Pursuit Channel|sports||PURSUIT
+sportsman|Sportsman Channel|sports||SPORTSMAN
+wfn|World Fishing Network|sports||WORLD FISHING
+wired2fish|Wired2Fish|sports||WIRED2FISH
+tvg|TVG|sports||TVG,TVG 2,TVG NETWORK 2
+fanduel|FanDuel TV|sports||FANDUEL
 """
 
     class Net(val id: String, val label: String, val kind: String, val tags: Set<String>, val keys: List<String>, val rank: Int)
@@ -188,12 +387,69 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
         "\\s*(?:[(\\[]\\s*(?:HULU|PHILO|SLING|FUBO|DTV|DIRECTV|AT&T|ATT|YTTV|YOUTUBE TV|PLUTO|TUBI|XUMO|ROKU|PLEX|VIZIO|STIRR|US|USA|COPY|ALT)\\s*[)\\]]|\\s[|\\-–]\\s*(?:HULU|PHILO|SLING|FUBO|DTV|DIRECTV|AT&T|YTTV))\\s*$",
         RegexOption.IGNORE_CASE,
     )
-    private val FEED_MARKS = Regex("[(\\[]\\s*(?:\\d{1,2}|E|W|EAST|WEST|PACIFIC)\\s*[)\\]]|#\\d{1,2}\\b", RegexOption.IGNORE_CASE)
+    /** Lineup and league tags some playlists put before the name ("TV: A&E", "RK: 48 HOURS", "MLB: MLB NETWORK", "(GT) MSG"). */
+    private val NAME_TAG = Regex("^\\s*(?:(?:TV|RK|ROKU|PRIME|NF|NETFLIX|AT&T|ATT|NBA|MLB|NHL|WNBA|HR|RX|4K|8K)\\s*:\\s*|\\(\\s*[A-Z]{2,3}\\s*\\)\\s+)", RegexOption.IGNORE_CASE)
+    /** Small raised letters and digits providers put in names and groups ("ᴿᴬᵂ", "⁶⁰ᶠᵖˢ", "³⁸⁴⁰ᴾ"). */
+    private val RAISED = Regex("[\\u0250-\\u02FF\\u1D00-\\u1DBF\\u2070-\\u209F\\u2C7C\\u2C7D\\uA7F8\\uA7F9\\u00B9\\u00B2\\u00B3]+")
+    private val SPACE_RUN = Regex("\\s{2,}")
+    /** A provider group, plain: "US| FLO ⱽᴵᴾ PPV" -> "FLO VIP PPV", "US| AT&T ᴿᴬᵂ ⁶⁰ᶠᵖˢ" -> "AT&T", "US| MILB PPV ⁽ᴮᴷ⁾" -> "MILB PPV". */
+    private val GROUP_TAGS = Regex("(^|[^\\p{L}\\p{N}])(?:RAW|\\d{2,3}\\s?FPS|FHD|UHD|HD|SD|4K|8K|3840P|2160P|1080P|BK)(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+    private val GROUP_SYMBOLS = Regex("[\\p{So}\\p{Cf}\\uFE00-\\uFE0F]")
+    private val GROUP_PREFIX = Regex("^\\s*[|\\[(]?\\s*(?:US|USA|8K|4K|RX|HR)\\s*[|:\\])]\\s*", RegexOption.IGNORE_CASE)
+    private val GROUP_PUNCT = Regex("[()\\[\\]/|]+")
+    private fun plainGroup(group: String): String {
+        var g = group.replace("\u2C7D\u1D35\u1D3E", " VIP ")
+        g = GROUP_PREFIX.replaceFirst(GROUP_SYMBOLS.replace(RAISED.replace(g, " "), " "), "")
+        g = SPACE_RUN.replace(GROUP_PUNCT.replace(GROUP_TAGS.replace(g, "$1 "), " "), " ")
+        return g.trim().uppercase(Locale.ROOT)
+    }
+    /** Event and pay-per-view groups ("FLO VIP PPV", "ESPN+ PPV", "MLB TEAM PPV", "NFL REPLAY"): a folder per provider. */
+    private val EVENT_GROUP = Regex("(?:^| )(?:PPV|EVENTS?|REPLAY)(?: |$)")
+    private val EVENT_GROUP_WORDS = Regex("(?:^| )(?:PPV|EVENTS?|VIP|ON AIR)(?= |$)")
+    private val EVENT_GROUP_PPV = Regex("(?:^| )(?:PPV|EVENTS?)(?: |$)")
+    private val EVENT_GROUP_NOT_PPV = Regex("(?:^| )(?:TEAM|BALLY SPORTS)$")
+    /** Streaming lineups ("AT&T", "ROKU", "PRIME", "NETFLIX ON AIR", "DISNEY+ NETWORK"): a folder per service. */
+    private val SERVICE_GROUP = Regex("^(AT&T|ATT|ROKU|TV|PRIME|NETFLIX|PEACOCK|DISNEY\\+|PARAMOUNT\\+|HBO MAX|HULU|SPECTRUM)(?: (?:NETWORK|ON AIR|ORIGINALS?|CITY))?$")
+    private val SERVICE_LABEL = mapOf(
+        "AT&T" to "AT&T", "ATT" to "AT&T", "ROKU" to "Roku", "TV" to "US TV", "PRIME" to "Prime Video", "NETFLIX" to "Netflix", "PEACOCK" to "Peacock",
+        "DISNEY+" to "Disney+", "PARAMOUNT+" to "Paramount+", "HBO MAX" to "HBO Max", "HULU" to "Hulu", "SPECTRUM" to "Spectrum",
+    )
+    private val TV_SHOWS_GROUP = Regex("(?:^| )TV SHOWS(?: |$)")
+    private val RELAX_GROUP = Regex("(?:^| )RELAX(?: |$)")
+    private val RACING_GROUP = Regex("(?:^| )HORSE RACING(?: |$)")
+    private val GROUP_4K = Regex("^\\s*[|\\[(]?\\s*4K\\s*[|:\\])]", RegexOption.IGNORE_CASE)
+    /** Regional sports networks, old and new names ("FOX SPORTS DETROIT", "CSN BOSTON", "MSG ZONE1", "PAC 12 OREGON"): one folder. */
+    private val RSN = Regex("^(?:FOX SPORTS (?!1(?: |$)|2(?: |$)|ONE|RACING|SOCCER|DEPORTES|NEWS)|NBC SPORTS (?!NETWORK|NOW|NEWS)|CSN |AT&T SPORTSNET|ROOT SPORTS|FANDUEL (?:SPORTS|MIDWEST)|BALLY SPORTS|SPECTRUM SPORTSNET|SPORTSNET (?:LA|NEW YORK|PITTSBURGH)|SNY(?: |$)|MSG|NESN|YES(?: |$)|MARQUEE|MONUMENTAL|ALTITUDE|MASN|MASSN|SPACE CITY|CHICAGO SPORTS|PAC 12 )")
+    /** Premium movie channels beyond the main one ("HBO ZONE", "STARZ ENCORE WESTERNS", "MOREMAX"): a folder per brand. */
+    private val PREMIUM = Regex("^(STARZ ENCORE|ENCORE|HBO|CINEMAX|MOREMAX|OUTERMAX|MOVIEMAX|THRILLERMAX|ACTION MAX|5 STARMAX|SHOWTIME|STARZ|EPIX|MGM|SCREENPIX|MOVIEPLEX|INDIEPLEX|RETROPLEX)(?: |$)")
+    private val PREMIUM_LABEL = mapOf(
+        "STARZ ENCORE" to "Starz Encore", "ENCORE" to "Starz Encore", "HBO" to "HBO", "CINEMAX" to "Cinemax", "MOREMAX" to "Cinemax", "OUTERMAX" to "Cinemax",
+        "MOVIEMAX" to "Cinemax", "THRILLERMAX" to "Cinemax", "ACTION MAX" to "Cinemax", "5 STARMAX" to "Cinemax", "SHOWTIME" to "Showtime", "STARZ" to "Starz",
+        "EPIX" to "MGM+", "MGM" to "MGM+", "SCREENPIX" to "ScreenPix", "MOVIEPLEX" to "MoviePlex", "INDIEPLEX" to "MoviePlex", "RETROPLEX" to "MoviePlex",
+    )
+    /** Channel lineups of one brand: a folder each. */
+    private val BRAND = Regex("^(MUSIC CHOICE|DAZN)(?: |$)")
+    private val BRAND_KIND = mapOf("MUSIC CHOICE" to "music", "DAZN" to "sports")
+    private val BRAND_LABEL = mapOf("MUSIC CHOICE" to "Music Choice", "DAZN" to "DAZN")
+    /** Stations of a network named by their number ("TELEMUNDO 51 (WSCV) MIAMI", "UNIVISION23 (WLTV)", "MY 9 WWOR NEW YORK"). */
+    private val STATION_NET = mapOf("TELEMUNDO" to "telemundo", "UNIVISION" to "univision", "MY" to "mynet", "MYTV" to "mynet")
+    private val DIGITS_END = Regex("\\d+$")
+    private val ALL_DIGITS = Regex("^\\d+$")
+    /**
+     * Other local stations and local news: a call sign ("(WHDH)", "WXYZ-TV"), a known station name ("KIRO 7", "WGN9"), a station number
+     * with "PLUS" ("FOX 5 PLUS"), or a city news name ("NBC BOSTON NEWS").
+     */
+    private val STATION = Regex("\\([KW][A-Z]{2,3}(?:-[A-Z]{1,2}\\d?)?\\)|\\b[KW][A-Z]{2,3}-(?:TV|DT|CD|LD)\\d?\\b|^(?:NEWS 12|NEW JERSEY 12|SPECTRUM (?:BAY )?NEWS|BOSTON 25|7NEWS|KTLA|KUHT|KIRO|WGN ?\\d|CBSN [A-Z]|DISTRICT (?:KNOWLEDGE|OF COLUMBIA))|^(?:ABC|CBS|NBC|FOX) (?:\\d{1,2} PLUS|[A-Z ]+ NEWS)(?: |$)")
+    private val PPV_NAME = Regex("^\\s*PPV\\s*[:|]", RegexOption.IGNORE_CASE)
+    private val H24H = Regex("(?:^|[^\\d])24\\s?H(?:RS?)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+    /** Feed marks: "(2)", "(E)", "(West)", "#2", and the one or two letter feed tags some providers add ("(A)", "(PC)", "(SP)"). */
+    private val FEED_MARKS = Regex("[(\\[]\\s*(?:\\d{1,2}|[A-Z]{1,2}|EAST|WEST|PACIFIC)\\s*[)\\]]|#\\d{1,2}\\b", RegexOption.IGNORE_CASE)
     private val QUALITY = Regex(
-        "(^|[^\\p{L}\\p{N}])(?:RAW|\\d{2,3}\\s?FPS|FHD|UHD|HD|SD|HQ|4K|8K|2160P|1080P|1080I|720P|480P|HEVC|H\\.?26[45]|HDR10\\+?|HDR|BACKUP|VIP|LOW|MULTI-?AUDIO)(?![\\p{L}\\p{N}])",
+        "(^|[^\\p{L}\\p{N}])(?:RAW|\\d{2,3}\\s?FPS|FHD|UHD|HD|SD|HQ|4K|8K|3840P|2160P|1080P|1080I|720P|480P|HEVC|H\\.?26[45]|HDR10\\+?|HDR|BACKUP|VIP|LOW|MULTI-?AUDIO)(?![\\p{L}\\p{N}])",
         RegexOption.IGNORE_CASE,
     )
-    private val FEED_WORDS = setOf("EAST", "WEST", "PACIFIC", "MOUNTAIN", "CENTRAL", "ALT", "ALTERNATE", "FEED", "BACKUP", "OPT", "OPTION")
+    /** "CENTRAL" is not a feed word: it ends real names ("Comedy Central", "Game Show Central"). */
+    private val FEED_WORDS = setOf("EAST", "WEST", "PACIFIC", "MOUNTAIN", "ALT", "ALTERNATE", "FEED", "BACKUP", "OPT", "OPTION")
     private val SUFFIX = setOf("NETWORK", "CHANNEL", "TV")
     private val SPLIT = Regex("[^\\p{L}\\p{N}&+!]+")
     private val SHIFT_WORD = Regex("^\\+\\d$")
@@ -249,6 +505,11 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
 
     private fun title(s: String): String = s.split(" ").joinToString(" ") { x -> if (x.length > 3) x[0] + x.substring(1).lowercase(Locale.ROOT) else x }
 
+    private fun fastOf(m: MatchResult): LiveIdent {
+        val p = m.groupValues[1].uppercase(Locale.ROOT).let { if (it == "PLUTO") "PLUTO TV" else it }
+        return LiveIdent("fast:$p", title(p) + " (free channels)", "free", null, "", true)
+    }
+
     private fun affiliate(id: String, region: String): LiveIdent {
         val n = NETS.getValue(id)
         return LiveIdent(id, n.label, n.kind, n, region, false)
@@ -258,13 +519,23 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
     fun identify(raw: String, group: String, country: String, section: String): LiveIdent {
         val us = country == "US" || country == "" || country == LiveOrganizer.UNKNOWN_COUNTRY
         if (!us) return LiveIdent("intl:$country", "$country channels", "intl", null, "", true)
-        val clean = LiveOrganizer.cleanName(raw)
-        val ev = EVENT_RE.find(clean) ?: EVENT_RE.find(US_PREFIX.replaceFirst(raw, ""))
+        // A second country tag after "US:" ("US: IT| PIRATI DEI CARAIBI CHANNEL") is the channel's real country.
+        val inner = US_PREFIX.replaceFirst(raw, "")
+        if (inner != raw) {
+            val c2 = LiveOrganizer.country("", inner)
+            if (c2 != "US" && c2 != LiveOrganizer.UNKNOWN_COUNTRY) return LiveIdent("intl:$c2", "$c2 channels", "intl", null, "", true)
+        }
+        var clean = SPACE_RUN.replace(RAISED.replace(LiveOrganizer.cleanName(raw), " "), " ").trim()
+        repeat(2) { clean = NAME_TAG.replaceFirst(clean, "") }
+        val ev = EVENT_RE.find(clean) ?: EVENT_RE.find(inner)
         if (ev != null) {
             val p = ev.groupValues[1].uppercase(Locale.ROOT)
             return LiveIdent("ev:$p", "$p event channels", "events", null, "", true)
         }
-        if (H247.containsMatchIn("$raw $group")) return LiveIdent("f:247", "24/7 channels", "247", null, "", true)
+        if (PPV_NAME.containsMatchIn(inner)) return LiveIdent("ev:PPV", "PPV event channels", "events", null, "", true)
+        if (H247.containsMatchIn("$raw $group") || H24H.containsMatchIn("$raw $group")) return LiveIdent("f:247", "24/7 channels", "247", null, "", true)
+        // A free-service channel named by its service ("Pluto TV: Big Brother") stays with that service, even when a network shares the name.
+        FAST_RE.find(raw)?.let { return fastOf(it) }
         val k = netKey(clean)
         BY_KEY[k]?.let { return LiveIdent(it.id, it.label, it.kind, it, "national", false) }
         // Local stations: "FOX 54 WZDX Huntsville", "6ABC WPVI Philadelphia", "CBS 2 New York" belong to their network.
@@ -279,11 +550,19 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
         if (b != null && !NOT_AFFILIATE.containsMatchIn(kk)) {
             return affiliate(b.lowercase(Locale.ROOT), if (PHILADELPHIA.containsMatchIn(kk)) "philly" else if (w.size > 1) "market" else "national")
         }
-        val fast = FAST_RE.find(raw) ?: FAST_RE.find(GROUP_US.replaceFirst(group, "") + ":")
-        if (fast != null) {
-            val p = fast.groupValues[1].uppercase(Locale.ROOT).let { if (it == "PLUTO") "PLUTO TV" else it }
-            return LiveIdent("fast:$p", title(p) + " (free channels)", "free", null, "", true)
+        val w0 = w.firstOrNull() ?: ""
+        val sn = DIGITS_END.replaceFirst(w0, "")
+        STATION_NET[sn]?.let { id ->
+            if (sn == "TELEMUNDO" || sn == "UNIVISION" || w0.lastOrNull()?.isDigit() == true || ALL_DIGITS.matches(w.getOrNull(1) ?: "")) {
+                return affiliate(id, if (w.size > 1) "market" else "national")
+            }
         }
+        if (RSN.containsMatchIn(kk)) return LiveIdent("f:rsn", "Regional sports networks", "sports", null, "", true)
+        PREMIUM.find(k)?.let { val l = PREMIUM_LABEL.getValue(it.groupValues[1]); return LiveIdent("pm:$l", "$l channels", "movies", null, "", true) }
+        BRAND.find(k)?.let { val b2 = it.groupValues[1]; return LiveIdent("br:$b2", BRAND_LABEL.getValue(b2) + " channels", BRAND_KIND.getValue(b2), null, "", true) }
+        if (STATION.containsMatchIn(clean.uppercase(Locale.ROOT))) return LiveIdent("f:stations", "Local stations", "local", null, "", true)
+        val fast = FAST_RE.find(raw) ?: FAST_RE.find(GROUP_US.replaceFirst(group, "") + ":")
+        if (fast != null) return fastOf(fast)
         val kind = when (section) {
             LiveOrganizer.SPORTS -> "sports"
             LiveOrganizer.NEWS -> "news"
@@ -296,7 +575,25 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
             LiveOrganizer.EVENTS -> "events"
             else -> "other"
         }
-        return LiveIdent(k, "", kind, null, "", false)
+        val pg = plainGroup(group)
+        if (EVENT_GROUP.containsMatchIn(pg)) {
+            val p = SPACE_RUN.replace(EVENT_GROUP_WORDS.replace(pg, " "), " ").trim().ifEmpty { "PPV" }
+            val ppv = EVENT_GROUP_PPV.containsMatchIn(pg) && !EVENT_GROUP_NOT_PPV.containsMatchIn(p)
+            return LiveIdent("ev:$p", p + if (ppv) " event channels" else " channels", "events", null, "", true)
+        }
+        // The group names a folder for channels with no network of their own ([groups] folds a name in only when every feed
+        // of it has one, so "AT&T: Crime + Investigation" stays with the other Crime + Investigation feeds).
+        val svc = SERVICE_GROUP.find(pg)
+        val fold = when {
+            svc != null -> SERVICE_LABEL.getValue(svc.groupValues[1]).let { LiveFold("svc:$it", "$it channels", kind) }
+            TV_SHOWS_GROUP.containsMatchIn(pg) -> LiveFold("f:247", "24/7 channels", "247")
+            RELAX_GROUP.containsMatchIn(pg) -> LiveFold("f:relax", "Relax channels", "music")
+            RACING_GROUP.containsMatchIn(pg) -> LiveFold("f:racing", "Horse racing channels", "sports")
+            // A provider's 4K showcase group ("4K| ³⁸⁴⁰ᴾ"): channels from many countries.
+            pg.isEmpty() && GROUP_4K.containsMatchIn(group) -> LiveFold("f:4k", "4K channels", kind)
+            else -> null
+        }
+        return LiveIdent(k, "", kind, null, "", false, fold)
     }
 
     private val CHUNKS = Regex("\\d+|\\D+")
@@ -333,6 +630,13 @@ nbcspp|NBC Sports Philadelphia Plus|sports||NBC SPORTS PHILADELPHIA PLUS,NBCSP+
             ident[i] = id
             us[i] = ctry == "US"
             by.getOrPut(id.key) { LiveGroup(id.key, id.label, id.kind, id.net, id.family, ArrayList()) }.feeds.add(i)
+        }
+        // Names with no network whose every feed sits in a folder group ("US| AT&T", "HR| HORSE RACING"): into that folder.
+        for (g in by.values.toList()) {
+            if (g.family || g.net != null || !g.feeds.all { ident[it]!!.fold != null }) continue
+            val f = ident[g.feeds[0]]!!.fold!!
+            by.getOrPut(f.key) { LiveGroup(f.key, f.label, f.kind, null, true, ArrayList()) }.feeds.addAll(g.feeds)
+            by.remove(g.id)
         }
         // Numbered series of one name ("Music Choice 01" to "60"): one folder.
         val series = LinkedHashMap<String, MutableList<LiveGroup>>()

@@ -83,7 +83,7 @@ class LiveHomeTest {
             val (name, group, want) = Triple(c.getString(0), c.getString(1), c.getString(2))
             val country = LiveOrganizer.country(group, name)
             val id = LiveHome.identify(name, group, country, LiveOrganizer.section(group, name, country))
-            val got = id.key + if (id.region.isNotEmpty() && id.region != "national") " (${id.region})" else ""
+            val got = id.key + (if (id.region.isNotEmpty() && id.region != "national") " (${id.region})" else "") + (id.fold?.let { " -> ${it.key}" } ?: "")
             if (got != want) bad.add("$name @ $group: got $got, want $want")
         }
         assertTrue(bad.joinToString("\n"), bad.isEmpty())

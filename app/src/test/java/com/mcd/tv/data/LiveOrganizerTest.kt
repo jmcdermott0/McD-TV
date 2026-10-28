@@ -66,6 +66,20 @@ class LiveOrganizerTest {
         assertFalse(LiveOrganizer.isSeparator("US| ESPN HD"))
         assertFalse(LiveOrganizer.isSeparator("NFL 03: Packers @ Bears 1:00 PM"))
         assertFalse(LiveOrganizer.isSeparator("E!"))
+        // Two-mark headers some providers use between blocks.
+        assertTrue(LiveOrganizer.isSeparator("## ENTERTAINMENT ᴿᴬᵂ/⁶⁰ᶠᵖˢ ##"))
+        assertTrue(LiveOrganizer.isSeparator("## 24/7 COMEDY ᴿᴬᵂ ##"))
+        assertFalse(LiveOrganizer.isSeparator("#1 Hits"))
+    }
+
+    @Test
+    fun nameOnlyCountryCodesNeedADifferentGroupTag() {
+        // A mixed 8K sports group: the name prefix says where the channel is from.
+        assertEquals("Bulgaria", LiveOrganizer.country("8K| SPORT ON AIR", "BG: DIEMA SPORT 1"))
+        assertEquals("Balkans", LiveOrganizer.country("8K| SPORT ON AIR", "HR: MAX SPORT 1"))
+        assertEquals("Baltics", LiveOrganizer.country("8K| SPORT ON AIR", "LV: GO3 SPORT 1"))
+        // "HR" here is the group's own horse racing tag, not Croatia.
+        assertEquals(LiveOrganizer.UNKNOWN_COUNTRY, LiveOrganizer.country("HR| HORSE RACING HD/4K", "HR: ATG Live 4K"))
     }
 
     // ------------------------------------------------------------------ countries and sections

@@ -157,6 +157,15 @@ object LiveOrganizer {
         reg("Thailand", "TH", "THAI")
     }
 
+    /**
+     * Codes trusted only as a name prefix ("8K| SPORT ON AIR": "BG: DIEMA SPORT 1", "HR: MAX SPORT 1", "FL: V SPORT GOLF"),
+     * and not when the group carries the same tag ("HR| HORSE RACING" / "HR: ATG LIVE").
+     */
+    private val NAME_COUNTRY = mapOf(
+        "BG" to "Bulgaria", "BH" to "Balkans", "BA" to "Balkans", "HR" to "Balkans", "SI" to "Balkans", "SR" to "Balkans", "RS" to "Balkans",
+        "ME" to "Balkans", "MK" to "Balkans", "LV" to "Baltics", "LT" to "Baltics", "EE" to "Baltics", "CL" to "Latino", "FL" to "Nordic",
+    )
+
     /** Country words that count anywhere in a group name (e.g. "SPANISH CHANNELS"). Long words only, to avoid false hits. */
     private val COUNTRY_WORDS: Map<String, String> = COUNTRY_CODES.filterKeys { it.length >= 5 || it == "UK" }
 
@@ -187,6 +196,8 @@ object LiveOrganizer {
         prefixCountry(group)?.let { return it }
         for (t in tokens(group.uppercase(Locale.ROOT))) COUNTRY_WORDS[t]?.let { return it }
         prefixCountry(name)?.let { return it }
+        val n = prefixToken(name)?.first
+        if (n != null && n != prefixToken(group)?.first) NAME_COUNTRY[n]?.let { return it }
         return UNKNOWN_COUNTRY
     }
 
@@ -264,6 +275,7 @@ object LiveOrganizer {
     private fun looksLikeSeparator(t: String): Boolean {
         if (t.isEmpty()) return true
         if (decoRun(t, false) || decoRun(t, true)) return true
+        if (t.length >= 5 && t.startsWith("##") && t.endsWith("##")) return true // "## ENTERTAINMENT ##"
         var alnum = 0
         for (c in t) if (c.isLetterOrDigit()) alnum++
         return alnum == 0 || alnum * 10 < t.length * 4 // under 40% letters and digits
