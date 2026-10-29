@@ -72,7 +72,7 @@ private data class HomeData(
 
 /**
  * Home: at most 8 rows. Continue Watching, My List (the profile's watchlist, when it has titles), Live TV favorites (when a playlist is set), Suggested for You, History (profiles that like
- * history; its See all opens Browse > History), Trending This Week, Popular on <service>, Top Rated, New Releases, then a small
+ * history; its See all opens Browse > History), True Crime (every profile but Kids; its See all opens Browse > True Crime), Trending This Week, Popular on <service>, Top Rated, New Releases, then a small
  * "More" row (Ask Jarvis, Browse, Live TV, Websites, Background Noise).
  * Everything else lives under Browse. Each catalog row ends in a "See all" tile that opens its full grid.
  * Everything personal (history, lists, Live TV favorites) belongs to the active profile, so the page is
@@ -137,6 +137,10 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
     // History: Ken Burns, for profiles whose Taste likes history (Dad). Never built from what was watched.
     val historyRow by rememberLoad(Prefs.activeProfile) {
         if (kids || !com.mcd.tv.data.HistoryHub.homeRowFor()) null else com.mcd.tv.data.HistoryHub.homeRow()
+    }
+    // True Crime: the first 20 titles of the shelf Browse > True Crime shows (one category, one source). Not on Kids.
+    val trueCrimeRow by rememberLoad(Prefs.activeProfile) {
+        if (kids || !com.mcd.tv.data.TrueCrimeHub.showFor()) null else com.mcd.tv.data.TrueCrimeHub.homeRow()
     }
     LaunchedEffect(Unit) {
         if (continueWatching.isNotEmpty() && !restoring) { withFrameNanos { }; runCatching { firstFocus.requestFocus() } }
@@ -246,6 +250,14 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
         item(key = "history") {
             val h = (historyRow as? Load.Ok)?.value
             if (h != null) TitleRail(h.first, h.second.visible(), { nav.push(Screen.History) }, openTitle, focus, "history")
+        }
+        item(key = com.mcd.tv.data.TrueCrime.ID) {
+            val tc = (trueCrimeRow as? Load.Ok)?.value
+            if (tc != null) TitleRail(
+                tc.first, tc.second.visible(),
+                { nav.push(Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID, "", com.mcd.tv.data.TrueCrime.LABEL)) },
+                openTitle, focus, com.mcd.tv.data.TrueCrime.ID,
+            )
         }
 
         when (val d = data) {

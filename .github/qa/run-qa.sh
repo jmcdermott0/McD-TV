@@ -151,6 +151,35 @@ for g in docs history movies kenburns era-founding era-civilwar era-worldwars er
   echo "      [history-$g] posters: $(grep -o 'content-desc="[^"]\+"' "qa-out/ui-history-$g.xml" 2>/dev/null | sed 's/content-desc=//' | tr '\n' ' ' | cut -c1-600)"
 done
 
+# 4-truecrime) True Crime: one category, one shelf (TrueCrimeHub.shelf). Browse > True Crime opens its grid and Home
+# shows its first 20 titles. Screenshots: screen-truecrime.png (the grid), home-truecrime.png (the Home row).
+check_screen truecrime "content-desc=\"(Making a Murderer|The Jinx|The Staircase)\""
+if grep -q 'content-desc="\(Dexter\|The Godfather\|Se7en\|Criminal Minds\)"' qa-out/ui-truecrime.xml; then
+  fail "True Crime: no crime fiction in the grid"
+else
+  pass "True Crime: no crime fiction in the grid"
+fi
+echo "      [truecrime] posters: $(grep -o 'content-desc="[^"]\+"' qa-out/ui-truecrime.xml 2>/dev/null | sed 's/content-desc=//' | tr '\n' ' ' | cut -c1-900)"
+# Browse menu: walk DOWN until the True Crime entry is on screen (the list is lazy), then screenshot it.
+adb shell am start -S -n com.mcd.tv/.MainActivity --es screen browse >/dev/null; sleep 9
+TC_MENU=""
+for k in $(seq 0 14); do
+  [ "$k" -gt 0 ] && { adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 1; }
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-browse-truecrime.xml >/dev/null 2>&1
+  if grep -q 'text="True Crime"' qa-out/ui-browse-truecrime.xml; then sleep 1; shot browse-truecrime; TC_MENU=1; break; fi
+done
+if [ -n "$TC_MENU" ]; then pass "Browse: True Crime entry"; else fail "Browse: True Crime entry"; fi
+adb shell am start -S -n com.mcd.tv/.MainActivity >/dev/null; sleep 25
+TC_HOME=""
+for k in 0 1 2 3 4 5 6 7 8 9; do
+  [ "$k" -gt 0 ] && { adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 2; }
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-home-truecrime.xml" >/dev/null 2>&1
+  if grep -q 'text="TRUE CRIME"' qa-out/ui-home-truecrime.xml && grep -q 'content-desc="Making a Murderer"' qa-out/ui-home-truecrime.xml; then
+    shot home-truecrime; TC_HOME=1; break
+  fi
+done
+if [ -n "$TC_HOME" ]; then pass "Home: True Crime row with Making a Murderer"; else shot home-truecrime; fail "Home: True Crime row with Making a Murderer"; fi
+
 # 4a) Settings with the remote: a screenshot of each category, a D-pad walk through its rows (the keyboard must
 # never open on focus), the edit dialog (opens on OK, one BACK closes it) and the update check in two presses.
 kb_shown() { adb shell dumpsys input_method | grep -q "mInputShown=true"; }

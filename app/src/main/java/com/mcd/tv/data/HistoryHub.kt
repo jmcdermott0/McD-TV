@@ -30,7 +30,7 @@ import org.json.JSONObject
  * on the TV, so only the first visit makes many small requests.
  */
 object HistoryHub {
-    private val net = Semaphore(6) // parallel TMDB requests
+    internal val net = Semaphore(6) // parallel TMDB requests
     private const val SHELF_TTL_MS = 15 * 60_000L
     private const val CLASS_MAX = 1500
     /** Bump when the saved keyword format changes. 4: every title's keywords (the exclusions need them). */
@@ -62,10 +62,10 @@ object HistoryHub {
 
     // ---------------------------------------------------------------- lookups kept on the TV
 
-    private fun loadMap(key: String): JSONObject = runCatching { JSONObject(Prefs.json(key).ifBlank { "{}" }) }.getOrDefault(JSONObject())
+    internal fun loadMap(key: String): JSONObject = runCatching { JSONObject(Prefs.json(key).ifBlank { "{}" }) }.getOrDefault(JSONObject())
 
     /** TMDB keyword ids for names (exact names only; 0 = TMDB has none). */
-    private suspend fun keywordIds(names: List<String>): List<Int> = coroutineScope {
+    internal suspend fun keywordIds(names: List<String>): List<Int> = coroutineScope {
         val wanted = names.distinct()
         val cache = loadMap("history_kwids")
         val found = wanted.filter { !cache.has(it) }
@@ -82,12 +82,12 @@ object HistoryHub {
         wanted.mapNotNull { n -> cache.optInt(n, 0).takeIf { it > 0 } }
     }
 
-    private fun Title.toJson() = JSONObject().put("id", id).put("type", type).put("name", name).put("overview", overview)
+    internal fun Title.toJson() = JSONObject().put("id", id).put("type", type).put("name", name).put("overview", overview)
         .put("poster", poster ?: "").put("backdrop", backdrop ?: "").put("rating", rating).put("year", year)
         .put("date", releaseDate).put("lang", language).put("votes", votes)
         .put("genres", org.json.JSONArray(genreIds)).put("oc", org.json.JSONArray(originCountries))
 
-    private fun JSONObject.toTitle() = Title(
+    internal fun JSONObject.toTitle() = Title(
         optInt("id"), optString("type"), optString("name"), optString("overview"),
         optString("poster").ifBlank { null }, optString("backdrop").ifBlank { null }, optDouble("rating", 0.0), optString("year"),
         originCountries = optJSONArray("oc")?.let { a -> (0 until a.length()).map { a.optString(it) } } ?: emptyList(),
@@ -168,7 +168,7 @@ object HistoryHub {
     }
 
     /** Plot keywords of each title, normalized (one small request per title the TV has not seen). */
-    private suspend fun keywordsOf(titles: List<Title>): Map<String, List<String>> = coroutineScope {
+    internal suspend fun keywordsOf(titles: List<Title>): Map<String, List<String>> = coroutineScope {
         loadKwCache()
         val out = HashMap<String, List<String>>()
         val missing = ArrayList<Title>()
@@ -201,7 +201,7 @@ object HistoryHub {
     // ---------------------------------------------------------------- filters
 
     /** "Not for me" titles, and titles whose keywords or name hit a Settings > Taste "Topics to skip" word. */
-    private fun blocked(profile: String): (Title, List<String>) -> Boolean {
+    internal fun blocked(profile: String): (Title, List<String>) -> Boolean {
         val hidden = Library.hidden(profile).map(::keyOf).toSet()
         val words = Recommender.choicesJson(profile).optJSONArray("avoidWords")
         val avoid = if (words == null) emptyList() else (0 until words.length()).map { HistoryEras.norm(words.optString(it)) }.filter { it.isNotEmpty() }
@@ -213,15 +213,15 @@ object HistoryHub {
         }
     }
 
-    private fun american(t: Title) = if (t.originCountries.isNotEmpty()) "US" in t.originCountries else t.language == "en"
+    internal fun american(t: Title) = if (t.originCountries.isNotEmpty()) "US" in t.originCountries else t.language == "en"
 
     // ---------------------------------------------------------------- shelves
 
-    private const val NOT_KIDS_MOVIE = "16,10751,14,878,27"
-    private const val NOT_KIDS_TV = "16,10762,10765"
+    internal const val NOT_KIDS_MOVIE = "16,10751,14,878,27"
+    internal const val NOT_KIDS_TV = "16,10762,10765"
 
     /** TMDB discover pages, in parallel; a failed page is left out. (type, page, params) */
-    private suspend fun discoverAll(queries: List<Triple<String, Int, Map<String, String>>>): List<Title> = coroutineScope {
+    internal suspend fun discoverAll(queries: List<Triple<String, Int, Map<String, String>>>): List<Title> = coroutineScope {
         queries.map { (type, page, p) ->
             async { runCatching { net.withPermit { Tmdb.discover(type, p + ("sort_by" to "vote_count.desc"), page) } }.getOrDefault(emptyList()) }
         }.awaitAll().flatten()

@@ -1,0 +1,211 @@
+# True Crime fixture: real TMDB catalog data, read from themoviedb.org on 2026-10-28.
+# The titles are the candidates the True Crime category's discover queries return (vote count order, first
+# pages), plus the hand-placed marquee titles and a few crime-fiction controls that must never appear.
+# One title per line: key|name|year|genres|language|rating|votes|keywords (first 15, ";"-separated).
+# Read by TrueCrimeTest (TV) and tools/webtest/truecrime-test.mjs (web): both must build tools/truecrime/expected.json.
+tv:99626|The Trials of Gabriel Fernandez|2020|99,80|en|7.4|447|child abuse;miniseries;torture;cruelty;courtroom;true crime;2010s
+tv:100698|Tiger King|2020|99,80|en|6.9|624|oklahoma;fraud;tiger;cult;rivalry;animal rights;eccentric;true crime;thought provoking;big cats;gay theme;riveting;investigative
+tv:85833|Conversations with a Killer: The Ted Bundy Tapes|2019|99,80|en|7.5|408|attempted murder;imprisonment;psychopath;sociopath;stalking;serial killer;miniseries;rape victim;crime scene;murderer;true crime;defense attorney;crime spree;sex crime;human behavior
+tv:103506|Jeffrey Epstein: Filthy Rich|2020|80,99|en|7.0|464|rape;sexual abuse;pedophilia;human trafficking;miniseries;statutory rape;rape victim;sexual violence;billionaire;prostitution;sex trafficking;child molester;true crime;government corruption;childhood sexual abuse
+tv:96129|Don't F**k with Cats: Hunting an Internet Killer|2019|80,99|en|7.6|700|amateur detective;toronto, canada;narcissism;police;montreal, canada;sociopath;murder;internet;murderer;killer;true crime;youtube;animal killing;evil;murder investigation
+tv:116989|Crime Scene: The Vanishing at the Cecil Hotel|2021|99,80,9648|en|6.9|396|hotel;miniseries;los angeles, california;true crime;reenactment;drowned;elevator
+tv:61929|The Jinx|2015|99,80|en|8.0|546|new york city;detective;texas;jinx;interview;lawyer;disappearance;true crime;murder investigation;multiple murder;real life;mystery
+tv:64439|Making a Murderer|2015|99,80|en|7.8|616|prison;corruption;wisconsin;revenge;trial;dirty cop;murderer;true crime;fight the system;wrecking yard;criminal justice;thought provoking;riveting;investigative
+tv:79126|Evil Genius|2018|99,80,9648|en|7.3|288|bomb;fbi;investigation;murder;heist;miniseries;bank robbery;true crime;reenactment;murder mystery;homemade explosive;thought provoking;riveting;investigative
+tv:76307|Dirty Money|2018|80,99|en|7.1|203|corruption;corporate greed
+tv:90|Mayday|2003|99,18,80|en|8.2|296|disaster;airplane accident;airplane wreck;airplane crash;crash landing;exploding airplane;mayday;plane crash;approving;plane accidents
+tv:21421|The Staircase|2004|99,80|en|7.6|213|true crime;falling down stairs;wife murder;murder trial;mysterious death
+tv:114705|Night Stalker: The Hunt for a Serial Killer|2021|99,80,9648|en|7.5|385|satanist;serial killer;los angeles, california;true crime;police investigation;homicide detective;1980s;ac/dc;richard ramirez
+tv:77601|Wild Wild Country|2018|99,80|en|7.7|331|sexuality;oregon, usa;attempted murder;scandal;investigation;cult;miniseries;true crime;individualism;wiretapping;indian guru;poisoning;mysticism;thought provoking;riveting
+tv:26101|The Keepers|2017|99,9648,80|en|7.4|218|corruption;nun;cover-up;murder;miniseries;baltimore, maryland
+tv:209167|Conversations with a Killer: The Jeffrey Dahmer Tapes|2022|99,80|en|7.8|298|miniseries;true crime
+tv:97062|Killer Inside: The Mind of Aaron Hernandez|2020|99,80|en|7.2|193|machismo;miniseries;tough guy;muscleman;true crime
+tv:245902|Quiet on Set: The Dark Side of Kids TV|2024|99,80|en|7.7|188|miniseries;crime investigation;shocking;abuse;child sexual abuse
+tv:7361|Auschwitz: The Nazis and the Final Solution|2005|99,80,10768|en|7.6|199|concentration camp;holocaust (shoah);auschwitz-birkenau concentration camp;interview;miniseries;historical drama;concentration camp survivor;nazi crimes;war crime;testimony;historical documentary;deported to auschwitz;auschwitz;historical horror;auschwitz camp
+tv:94813|The Devil Next Door|2019|99,80|en|7.2|151|germany;israel;holocaust (shoah);world war ii;nazi;trial;miniseries;war crime;cleveland, ohio
+tv:202880|Keep Sweet: Pray and Obey|2022|99,80|en|7.4|143|pedophilia;investigation;cult;polygamy;miniseries;statutory rape;pedophile;religious fundamentalism;true crime;psychotic;religious cult;underage bride;sexual assault;domineering;religious community
+tv:122672|The Sons of Sam: A Descent into Darkness|2021|99,80|en|7.0|143|new york city;1970s;cult;serial killer;true crime;devil worship;son of sam
+tv:242845|American Nightmare|2024|80,99|en|7.5|144|california;kidnapping;interview;true crime;boyfriend girlfriend relationship;ransom demand;strange;ex fiancée;abduction;new relationship;unbelievable
+tv:83131|Horror at the Cecil Hotel|2017|80,99|en|7.2|179|investigation
+tv:105489|Fear City: New York vs The Mafia|2020|99,80|en|6.7|141|new york city;1970s;wiretap;investigation;mafia;miniseries;true crime;1980s
+tv:95986|The Confession Killer|2019|99,80|en|7.2|129|miniseries;true crime
+tv:103023|I'll Be Gone in the Dark|2020|99,80|en|7.0|142|california;1970s;amateur detective;overdose;murder;serial killer;rape and murder;true crime;rapist;prescription drug abuse;sacramento;serial rapist;southern california;sex crime;murder mystery
+tv:49920|The Vow|2020|99,80,18|en|7.1|119|
+tv:153588|Crime Scene: The Times Square Killer|2021|99,80,9648|en|6.7|115|new york city;1970s;true crime;richard cottingham;torso killer
+tv:153574|The Puppet Master: Hunting the Ultimate Conman|2022|99,80|en|6.7|135|con man;dating app
+tv:105305|The Business of Drugs|2020|99,80|en|6.9|134|drug trafficking;drug smuggling;drug trade;investigative journalism;drug trafficker;drug manufacturing;drug wholesaler;observational documentary;crime documentary
+tv:96213|McMillion$|2020|99,80,18|en|6.9|134|conspiracy;scam;true crime
+tv:283197|American Murder: Gabby Petito|2025|99,80|en|7.2|112|interview;van;domestic abuse;miniseries;domestic violence;true crime;missing person;text messaging;shocking;somber;roadtrip;police manhunt;fugitive suspect;traveling couple;cell phone footage
+tv:111647|Seduced: Inside the NXIVM Cult|2020|99,80|en|7.1|113|cult;miniseries;true crime
+tv:5146|The First 48|2004|99,18,80|en|7.9|103|true crime;murder investigation
+tv:156595|Worst Roommate Ever|2022|80,99|en|6.9|102|roommates;homicide;attempted murder;interview;based on true story;murder;true crime;storytelling;murder investigation;homicide detective;homicide investigation;violence;911 call
+tv:101129|To Catch a Smuggler|2015|99,10764,80,18|es|7.7|108|war on drugs;airport security
+tv:87600|The Disappearance of Madeleine McCann|2019|80,99|en|6.4|102|portugal;resort;family holiday;true crime;missing child
+tv:111495|Carmel: Who Killed Maria Marta?|2020|99,80|es|7.5|99|murder;miniseries;true crime
+tv:113372|The Ripper|2020|99,80|en|6.5|111|1970s;interview;yorkshire;serial killer;miniseries;true crime;missing person;murder of a prostitute;leeds
+tv:107904|La Línea: Shadow of Narco|2020|99,80|es|6.6|99|miniseries;drugs
+tv:119337|Murder Among the Mormons|2021|99,80|en|7.0|94|interview;investigation;miniseries;explosion;bombing;true crime;murder case;mormonism;history
+tv:214180|Crime Scene: The Texas Killing Fields|2022|99,80|en|6.5|93|miniseries;true crime
+tv:132105|Monsters Inside: The 24 Faces of Billy Milligan|2021|99,80|en|6.9|93|1970s;investigation;assault;criminal;multiple personality
+tv:220229|Waco: American Apocalypse|2023|99,80|en|7.1|93|fbi;siege;miniseries;gunfight;true crime;waco, texas;documentary;waco siege
+tv:253249|Ashley Madison: Sex, Lies & Scandal|2024|80,99|en|6.7|91|adultery;blackmail;miniseries;investigative journalism;dark web;adulterous affair;observational documentary;personal data;dating websites;computer hacker;hacked;cyber attack;data breach;cheating spouse
+tv:87518|I Love You, Now Die: The Commonwealth v. Michelle Carter|2019|99,80|en|7.0|93|suicide;court case;sms;text message;true crime;online dating
+tv:255251|Sean Combs: The Reckoning|2025|99,80|en|7.3|88|rape;hip-hop;investigation;miniseries;sex trafficking;true crime;sexual assault;meditative;rap;critical;empathetic;frustrated;subjective
+tv:133359|House of Secrets: The Burari Deaths|2021|99,80|hi|7.0|84|delhi, india;investigation;murder;criminal;true crime
+tv:196122|Jimmy Savile: A British Horror Story|2022|99,80|en|6.8|83|true crime;cautionary;provocative;frightened;powerful
+tv:76153|Rotten|2018|99,80|en|7.2|82|corruption;capitalism;food industry;organic food;factory farming;meat industry
+tv:213193|FIFA Uncovered|2022|99,80|en|7.0|81|miniseries
+tv:218530|Murdaugh Murders: A Southern Scandal|2023|99,80|en|6.8|80|scandal;south carolina;family;power
+tv:72541|Inside the World's Toughest Prisons|2016|80,99|en|7.0|78|
+tv:272299|This Is the Zodiac Speaking|2024|99,80|en|7.3|82|miniseries;true crime;cold case;zodiac killer
+tv:11105|Forensic Files|1996|80,99|en|7.9|82|suspicion of murder;interview;medical examiner;whodunit;true crime;reenactment;coroner;criminal investigation;forensic science;law enforcement;evidence;forensic technology
+tv:208720|Sins of Our Mother|2022|80,99|en|7.0|77|child murder;fbi;homicide;idaho;murder;miniseries;true crime;doomsday;evil;mormon;religious cult;murder trial;news footage;united states of america (usa);factual
+tv:81337|I AM A KILLER|2018|99,80|en|6.9|73|killer;true crime;dark;documentary;provocative
+movie:923632|The Tinder Swindler|2022|99,80|en|6.95|1172|con man;fraud;dating;con;meeting on the internet;social media;online dating;desperate;payback;cautionary;scammer;conman;internet crime;fraudster;audacious
+tv:222314|American Manhunt: The Boston Marathon Bombing|2023|99,80|en|7.5|75|miniseries;true crime;terrorist bombing
+movie:84287|The Imposter|2012|99,9648,80|en|7.3|830|kidnapping;fake identity;investigation;biography;disappearance;investigator;stolen identity;missing child;child kidnapping;identity theft;missing son
+movie:44639|Inside Job|2010|99,80|en|7.7|1089|corruption;capitalism;globalization;bank;banker;fraud;wall street;finances;global economy;banking;crisis;based on true story;money;economics;financial crisis
+tv:212870|Killer Sally|2022|99,80|en|6.7|74|miniseries;true crime
+movie:489931|American Animals|2018|18,80,99|en|6.736|1261|new york city;library;pennsylvania, usa;artist;kentucky;art collector;final exam;arrest;based on true story;travel;heist;university;theft;disguise;unreliable narrator
+movie:743601|American Murder: The Family Next Door|2020|80,99|en|7.254|782|killing;colorado;murder;murderer;killer;family;home video;true crime;missing person;text messaging;social media;murder of family;missing wife;murdered wife;factual
+movie:14285|The Thin Blue Line|1988|80,99|en|7.7|430|texas;death penalty;investigation;dallas, texas;murder;trial;police officer;corrupt system;miscarriage of justice
+movie:801058|Seaspiracy|2021|99,80|en|7.8|485|fishing;pollution;ecology;vegan;environmental destruction;political corruption;environmental change;fishing net;environmental disaster;political scandal;environmental issues;political documentary;social & cultural documentary;fishing vessel;environmental catastrophe
+movie:250658|The Internet's Own Boy: The Story of Aaron Swartz|2014|99,80|en|7.9|481|suicide;hacker;biography;based on true story;internet;news;free software;cyber actvism
+movie:411009|Amanda Knox|2016|99,80|da|6.6|606|italy;murder;trial;true crime;wrongful conviction
+movie:470401|Abducted in Plain Sight|2017|99,80|en|6.6|408|parent child relationship;kidnapping;family relationships;child molester;woman director;abduction
+movie:2260|Capturing the Friedmans|2003|99,80|en|7.1|376|sexual abuse;pedophilia;middle class;child pornography;sodomy;pedophile;american;family;incest;childhood sexual abuse;sexual predator
+movie:15584|Dear Zachary: A Letter to a Son About His Father|2008|99,80|en|8.1|616|loss of loved one;parent child relationship;husband wife relationship;grandparent grandchild relationship;narration;pregnancy;murder;break-up;psychiatrist;older woman younger man relationship;mourning;medical school;hopeful;tragic
+movie:1400782|The Perfect Neighbor|2025|80,99|en|6.828|361|florida;homicide;racist;murder;true crime;yelling;neighborhood;woman director;annoying;neighbor feud;escalation;complaint;nuisance;news footage;dispute
+movie:50275|TPB AFK: The Pirate Bay - Away from Keyboard|2013|99,80|sv|7.2|367|pirate gang;piracy;copyright;trial;hacking;computer nerd;the pirate bay;file sharing;international crime;illegal activity;download;criminal infraction;computer networking;crime documentary;share
+movie:988046|Girl in the Picture|2022|80,99|en|7.1|322|child abuse;sexual abuse;oklahoma;psychopath;psychological abuse;murder;fugitive;alias;true crime;physical abuse;missing child;death of mother;exotic dancer;child kidnapping;shocking
+movie:438446|Mommy Dead and Dearest|2017|80,99|en|7.4|262|child abuse;killing;mother daughter relationship
+movie:962697|Our Father|2022|99,80|en|6.5|218|genetics;infertility;doctor;evil doctor;crime doctor;fertility;fertility clinic;genetic science
+movie:753230|The Three Deaths of Marisela Escobedo|2020|99,80|es|8.8|246|vindictive
+movie:77365|Into the Abyss|2011|99,80|en|6.9|293|texas;death penalty;death row;capital punishment;death row inmate
+movie:376424|Beware the Slenderman|2016|99,80|en|6.5|275|schizophrenia;wisconsin;bullying;internet;stabbing;woman director;meme;slender man;criminal trial;creepypasta;crime
+movie:17204|Paradise Lost: The Child Murders at Robin Hood Hills|1996|99,80|en|7.6|215|child murder;arkansas;right and justice;miscarriage of justice;satanic panic;disrespectful;dubious;west memphis three
+movie:13364|Deliver Us from Evil|2006|80,99|en|7.2|215|woman director
+movie:1261924|What Jennifer Did|2024|99,80|en|6.2|196|canada;murder;ontario, canada;police interrogation;somber;mother daughter relationship;911 call;disheartening
+movie:1662317|The Crash|2026|99,80|en|6.816|196|based on true story;true crime;speculative;callous;cruel
+movie:295595|Soaked in Bleach|2015|18,99,80|en|7.0|190|rock star;gunshot wound;private investigator;reenactment;crime investigation;investigative journalism;possible suicide;suicide investigation
+movie:1229958|Lover, Stalker, Killer|2024|80,99|en|6.8|186|ex-lover;stalking;female stalker;true crime;text messaging;online dating;nebraska
+movie:56811|Cropsey|2010|80,99,9648,27|en|6.0|188|kidnapping;asylum;satanism;urban legend;boogeyman;missing person;found footage;staten island, new york city;woman director
+movie:381028|Tower|2016|16,80,99|en|7.6|211|violence in schools;massacre;adult animation;school shooting;animated documentary
+movie:430826|Casting JonBenet|2017|99,80,18|en|5.7|176|reenactment
+movie:473415|Voyeur|2017|99,80|en|5.9|181|
+movie:1061117|The Hatchet Wielding Hitchhiker|2023|80,99|en|6.2|174|california;sensation;hitchhiker;hatchet;true crime;homeless man;social media;zero to hero;shocking;nomad;meme;downward spiral;heroic deed;unpredictable;viral phenomenon
+movie:810731|Why Did You Kill Me?|2021|99,80|en|5.9|170|murder;true crime;social media;avenge
+movie:477331|Long Shot|2017|80,99|en|7.161|171|true crime;short film
+movie:850329|Shiny_Flakes: The Teenage Drug Lord|2021|99,80|de|7.5|165|germany;drug dealer;drug dealing;illegal drugs;illegal drug;bitcoin;darknet;cyber criminal;crime documentary;cheerful
+movie:799555|Operation Varsity Blues: The College Admissions Scandal|2021|99,80,18|en|6.8|154|money laundering;scandal;reenactment;college admission;academic cheating
+movie:159004|Dirty Wars|2013|99,18,80|en|7.0|158|journalist;covert operation;terrorism
+movie:83660|Paradise Lost 3: Purgatory|2012|99,80|en|7.4|154|death row;press conference;arkansas;lawyer;murder investigation;forensic evidence;legal appeal;west memphis three
+movie:857497|Untold: Malice at the Palace|2021|99,80|en|7.3|147|fight;sports;basketball;national basketball association (nba);brawl;indiana pacers;detroit pistons
+movie:1699155|Maternal Instinct|2026|99,80|en|7.2|140|
+movie:367215|The Fear of 13|2015|99,80|en|7.4|147|prison;prisoner;death row;biography;reenactment;legal system
+movie:8439|Bus 174|2002|99,80|pt|7.4|153|slum;police brutality;bus;hostage;rio de janeiro;hijacking;bus hijacking;teacher;massacre survivor;street kid;homeless teenager;police failure
+movie:621753|Bikram: Yogi, Guru, Predator|2019|99,80|en|6.3|139|yoga;true crime;yoga instructor;yogi
+movie:37088|Aileen: Life and Death of a Serial Killer|2003|99,80|en|6.7|154|prison;child abuse;michigan;death penalty;death row;self-defense;death sentence;interview;childhood trauma;daytona;murder;dysfunctional family;domestic abuse;rape victim;incest
+movie:17208|Paradise Lost 2: Revelations|2000|99,80|en|7.2|134|child murder;interview;arkansas;crime scene;defense attorney;mistake of law;evidence;west memphis three
+movie:946327|Trust No One: The Hunt for the Crypto King|2022|99,80|en|6.1|132|donation;dollar;money;criminal;missing person;investor;crypto-currencies
+movie:475345|Heroin(e)|2017|99,80|en|6.9|131|drug addiction;heroin;drugs;heroine
+movie:569499|Detainment|2018|18,80,99|en|6.7|105|child abuse;kidnapping;based on true story;murder;criminal investigation;short film
+movie:473325|So Help Me God|2018|99,53,80|fr|7.3|119|interview;investigation;crime scene;investigator;murder investigation;woman lawyer;crime investigation;criminal lawyer;homicide investigation;documentary;crime documentary;female lawyer
+movie:4832|The 11th Hour|2007|99,18,80|en|6.8|102|climate change;greenhouse effect;hurricane;temperature drop;ice melting;destroy;climate;weather;interview;natural disaster;global warming;polar bear;destruction of planet;scientist;woman director
+movie:84288|The Invisible War|2012|99,10752,80|en|7.1|122|post-traumatic stress disorder (ptsd);rape;sexism;rape victim;family;misogyny;injustice;sexual assault
+movie:1171989|The Devil on Trial|2023|99,18,80|en|5.9|100|exorcism;interview;family drama;docudrama;exorcist;demonic possession;mind possession;amateur footage;criminal trial;crime documentary;informative
+movie:1466938|A Deadly American Marriage|2025|80,99|en|6.5|94|married couple;court case;au pair;father-in-law;stepmother;north carolina;death of father;beaten to death;ireland;true crime;second marriage;manipulative woman;murder of spouse
+movie:1183166|Vjeran Tomic: The Spider-Man of Paris|2023|99,80|fr|6.6|81|paris, france;based on true story;art theft;art heist;crime documentary
+movie:246743|Whitey: United States of America v. James J. Bulger|2014|80,99|en|6.4|84|boston, massachusetts;fbi;biography;criminal
+movie:1018647|Capturing the Killer Nurse|2022|80,99|en|6.4|87|nurse;new jersey;based on novel or book;pennsylvania, usa;intensive care;based on true story;murder;serial killer;hospital;true crime;male nurse;unexplained deaths;multiple murders;icu - intensive care unit;toxicology
+movie:1550569|Aileen: Queen of the Serial Killers|2025|99,80|en|7.0|90|child abuse;serial killer;prostitution;true crime;1980s;1990s;dysfunctional life;female serial killer;child sexual abuse;female killer;biographical documentary
+movie:914268|The Martha Mitchell Effect|2022|99,80,36|en|6.4|82|usa president;1970s;kidnapping;vietnam war;watergate scandal;richard nixon;us republican party;corrupt politician;government cover-up;government conspiracy;government corruption;woman director;1960s;whistleblower;political scandal
+movie:1005342|Running with the Devil: The Wild World of John McAfee|2022|99,80|en|6.069|87|interview;fugitive;central america;true crime;investigative journalism;information technology;misleading information;life and career
+movie:318973|Welcome to Leith|2015|53,80,99|en|6.6|83|small town;racist;north dakota;racism;white supremacists
+movie:288694|La trattativa|2014|80,99|it|7.5|85|italy;corruption;satire;mafia;political satire;woman director
+tv:82883|The Act|2019|18,80|en|7.6|5219|biography;based on true story;anthology;tribunal;trial;true crime;munchausen syndrome by proxy;thriller
+tv:72597|Manhunt|2017|80,9648|en|7.6|567|fbi;bomber;mathematics;anthology;serial killer;terrorism;true crime;mountain cabin
+tv:81355|When They See Us|2019|18|en|8.2|1082|new york city;rape;based on true story;miniseries;racism;true crime;fight the system;miscarriage of justice;social issues;1980s;race relations;thought provoking;african american
+tv:124800|Love & Death|2023|80,18|en|7.8|522|texas;self-defense;based on true story;murder;miniseries;true crime;extramarital affair;bludgeoning;axe murder;small town murder;murder trial;courtroom drama
+tv:91275|Unbelievable|2019|18,80|en|7.9|869|rape;detective;sexual abuse;colorado;investigation;based on true story;miniseries;true crime;female detective;based on magazine, newspaper or article;2010s;bittersweet;teenager
+tv:119988|The Innocent|2021|80,9648,18|es|7.6|493|rape;based on novel or book;fight;murder;miniseries;true crime;catholicism;wonder;dark;admiring;amused
+tv:137893|Griselda|2024|18,80|en|7.2|425|based on true story;miniseries;true crime;cartel;1980s;slow burn;gritty
+tv:67744|MINDHUNTER|2017|18,80|en|8.1|3178|prison;based on novel or book;1970s;fbi;psychology;interview;psychopath;serial killer;murderer;true crime;rapist;police investigation;virginia;mysterious;quantico
+tv:105177|Unsolved Mysteries|2020|99,18,9648|en|7.7|344|investigation;supernatural;ufo;murder;paranormal;disappearance;true crime;intrigue;missing person;reboot;unsolved mystery;murder mystery
+tv:211358|Under the Bridge|2024|18,80|en|7.7|252|based on novel or book;children's home;bullying;dysfunctional family;teenage girl;miniseries;true crime;murder investigation;trouble at home;lesbian;victoria bc;lesbian interest;lesbian character;lesbian protagonist
+tv:299939|Monster: The Lizzie Borden Story|2026|18,80|en|7.1|226|massachusetts;based on true story;murder;miniseries;true crime;axe murder;macabre;lizzie borden;19th century;20th century;psychological drama;crime;defiant;sympathetic;axe
+tv:105804|Candy|2022|18,80|en|7.1|244|texas;self-defense;based on true story;miniseries;true crime;extramarital affair;bludgeoning;axe murder;small town murder;murder trial;courtroom drama
+tv:96628|Des|2020|80,18|en|7.2|217|london, england;based on novel or book;detective inspector;murder;serial killer;judgment;true crime;united kingdom;1980s
+tv:197248|Conversations with a Killer: The John Wayne Gacy Tapes|2022|99|en|7.4|234|1970s;illinois;clown;biography;serial killer;miniseries;true crime;missing person;criminal investigation;crawlspace
+tv:113987|Landscapers|2021|35,80,18|en|6.8|224|investigation;based on true story;dark comedy;black and white;true crime;stolen identity;impersonation fraud;killer couple;classic western
+tv:122196|The Staircase|2022|18,80|en|7.0|302|based on true story;murder;true crime;wife murderer;national news;ambivalent
+tv:241257|Bodkin|2024|18,9648|en|6.5|168|nun;dark comedy;ireland;true crime;podcaster;investigative journalist;mysterious disappearance;absurd;thriller
+movie:1949|Zodiac|2007|80,9648,53|en|7.534|12064|california;san francisco, california;killing;detective;journalist;based on novel or book;newspaper;1970s;victim;code;investigation;police;murder;serial killer;crime scene
+tv:126|Unsolved Mysteries|1988|9648,18,80|en|7.7|156|alien;disappearance;true crime;unsolved mystery;mystical;wanted;mysterious events;observational documentary;crimes
+tv:197373|Based on a True Story|2023|35,18|en|7.0|160|husband wife relationship;dark comedy;serial killer;los angeles, california;true crime;podcast;comedy thriller
+movie:696|Manhattan|1979|35,18,10749|en|7.698|2703|new york city;adultery;based on novel or book;lolita;based on true story;love;mistress;black and white;writer;relationship;divorce;true crime;manhattan, new york city;married;pretentious
+movie:466420|Killers of the Flower Moon|2023|80,36,18|en|7.4|4441|based on novel or book;husband wife relationship;war veteran;fbi;oklahoma;manipulation;greed;based on true story;murder;native american;colonisation;racism;series of murders;genocide;period drama
+movie:522212|Just Mercy|2019|18,80,36|en|7.8|2569|judge;death penalty;innocence;based on true story;lawyer;electric chair;racism;execution;justice;true crime;humiliation;injustice;1980s;legal drama;earnest
+tv:87508|Delhi Crime|2019|80|hi|7.7|141|delhi, india;investigation;gang rape;true crime;euphoric;horrified;tragic
+movie:541134|The Good Nurse|2022|18,80,9648|en|6.867|1527|insulin;nurse;new jersey;detective;based on novel or book;heart disease;investigation;friendship;based on true story;murder;serial killer;hospital;criminal;true crime;mother daughter relationship
+movie:13008|An American Crime|2007|80,18,27|en|7.3|800|child abuse;rape;carnival;based on true story;murder;basement;dysfunctional family;teenage girl;torture;church;single mother;true crime;watching tv;jumping on a bed;1960s
+movie:169209|Empire State|2013|28,18|en|5.4|758|new york city;based on true story;heist;true crime;security guard;police investigation;toxic friendship;security breach;armored truck robbery;criminal tension;reckless friend;local mobsters;crime escalation;robbery planning;loyalty conflict
+movie:433501|City of Lies|2018|80,53,18|en|6.3|703|based on novel or book;based on true story;police corruption;los angeles, california;true crime;lapd;whistleblower;1990s;cold case;music industry;rap;investigative thriller;tupac shakur;notorious b.i.g;evidence suppression
+movie:835113|Woman of the Hour|2024|80,18,53|en|6.385|1135|new york city;california;rape;photographer;wyoming, usa;1970s;based on true story;serial killer;female protagonist;true crime;audition;woman director;sexual assault;social issues;aspiring actress
+movie:881164|Boston Strangler|2023|80,9648,53|en|6.6|886|journalist;journalism;boston, massachusetts;based on true story;serial killer;true crime;female journalist;investigative journalism;1960s;candid;factual;dramatic;informative;instructive
+movie:1013601|The Alto Knights|2025|80,18|en|6.225|485|new york city;biography;crime boss;mafia;true crime;assassination attempt;usa history;1950s;20th century
+movie:72477|Texas Killing Fields|2011|18,53,80|en|5.8|545|torture;series of murders;true crime;multiple murder;woman director
+movie:18900|In Cold Blood|1967|80,18|en|7.5|460|murder;true crime;farmer;gay theme;psychological drama;tragic
+movie:67748|Snowtown|2011|80,18|en|6.3|376|vandalism;suspicion;brother;family relationships;serial killer;gang;rural area;pot smoking;torture;corpse;sadist;drugs;true crime;south australia;neighborhood
+movie:747688|Yara|2021|18|it|6.302|449|based on true story;murder;true crime;prosecutor;murder investigation;procedural;bergamo
+movie:336845|Cleveland Abduction|2015|80,10770,18|en|7.3|453|kidnapping;based on true story;true crime;woman director
+movie:43434|Carlos|2010|80,18,36|en|7.0|247|gun;car bomb;miniseries;terrorism;opec;hostage situation;revolutionary;true crime
+movie:1397832|A Widow's Game|2025|53,9648|es|6.231|308|based on true story;true crime;murder mystery
+movie:421473|Above Suspicion|2019|53,80,28|en|5.9|326|corruption;fbi;drug trafficking;kentucky;based on true story;betrayal;true crime;murder investigation;undercover operation;toxic relationship;police informant;affair;rookie agent;abuse of authority;pikeville
+movie:831223|Gone Mom: The Disappearance of Jennifer Dulos|2021|53,9648,80,10770|en|7.8|241|custody battle;investigation;connecticut;based on true story;mistress;police detective;true crime;marriage for money;rich parents;marital separation;mysterious disappearance;wife disappears;estranged husband;mr. right;getting divorced
+movie:63276|The Scent of the Night|1998|18,80|it|7.3|234|rome, italy;hold-up robbery;rise and fall;based on true story;mugger;true crime;criminal gang;late night crime;suburban angst;burglars;evading police;robbery gang
+movie:48211|Sacco & Vanzetti|1971|18,36|it|7.6|220|immigrant;death sentence;anarchist;electric chair;true crime;red scare;miscarriage of justice;courtroom drama;anarchism;italian immigrant;political persecution
+movie:390520|Team Foxcatcher|2016|99|en|7.0|155|wrestling;murder;wrestler;true crime;olympic athlete;wrestling team
+movie:1360610|The Menendez Brothers|2024|99|en|7.155|190|based on true story;murder;true crime;crime;compassionate
+movie:835112|Ted Bundy: American Boogeyman|2021|53,80|en|6.6|153|based on true story;true crime
+movie:660353|Ted K|2021|18,80|en|6.1|154|bomb;sibling relationship;montana;1970s;socialism;based on true story;true crime;1980s;1990s;domestic terrorism;independent film;first person;unabomber;biographical drama;voiceover narration
+movie:1130022|Sovereign|2025|80,18,53|en|6.6|153|police chief;conspiracy theory;true crime;police standoff;extremist;aggressive;sovereignty;manhunt;father son relationship;pathetic;drama;action;crime;antagonistic;tragic
+movie:1118028|The Red Virgin|2024|18,36,53|es|7.1|185|based on true story;true crime
+movie:21253|Four Days in September|1997|53,18,36|pt|7.5|146|ambassador;kidnapping;freedom;revolutionary;true crime;military dictatorship;brazilian military dictatorship
+tv:137003|Catching Killers|2021|99,80|en|6.8|70|detective;interview;investigation;murder;serial killer;true crime;reenactment
+movie:28110|Dillinger|1973|80,18|en|6.6|124|prison;chicago, illinois;prostitute;bank robber;gangster;biography;historical figure;based on true story;murder;jail;gang;mobster;gunfight;true crime;dillinger
+tv:216005|Madoff: The Monster of Wall Street|2023|99,80|en|7.1|72|wall street;rise and fall;miniseries;ponzi scheme;financier;investigative journalism;bank fraud;international finance;sharemarket fraud;madoff;finance;financial fraud;crime documentary;securities fraud
+tv:261034|American Murder: Laci Peterson|2024|80,99|en|7.2|64|california;detective;homicide;married couple;suspicion of murder;interview;murder;miniseries;true crime;pregnant wife;murder investigation;homicide detective;shocking;murder trial;missing wife
+tv:73792|The Confession Tapes|2017|99|en|7.1|65|wrongful conviction
+tv:261649|Into the Fire: The Lost Daughter|2024|9648,80,99|en|7.7|71|amateur detective;tragedy;teenage girl;miniseries;true crime;missing daughter;shocking;determination;cold case;amateur sleuth;search for daughter
+tv:66738|O.J.: Made in America|2016|99|en|8.1|62|american football;police brutality;miniseries;los angeles, california;true crime;racial tension;lapd;racist cop;wife murder;murder trial;race relations
+movie:84351|West of Memphis|2012|99|en|7.4|162|release from prison;arkansas;murder;trial;wrongful conviction;woman director;miscarriage of justice;1990s;satanic panic;death row inmate;west memphis three
+movie:682589|Crazy, Not Insane|2020|99|en|7.2|87|serial killer;murderer;psychiatrist;dissociative identity disorder;traumatized child;dissociative identities;dissociative amnesia;dissociation
+movie:836486|JFK Revisited: Through the Looking Glass|2021|99,36|en|7.0|92|usa president;john f. kennedy;conspiracy theory;political assassination;john f. kennedy assassination;usa history;usa politics;1960s;political documentary;history and legacy;crime documentary;historical documentary
+movie:393561|Risk|2017|99,80|en|6.6|80|asylum;national security agency (nsa);information leak;investigative journalism;semi-biographical;fake news;surveillance state;observational documentary;julian assange;immersive;mass surveillance;crime documentary;wikileaks and surveillance;fbi surveillance
+movie:1426486|Chaos: The Manson Murders|2025|99,80|en|6.1|77|central intelligence agency (cia);based on novel or book;hypnosis;lsd;cult;mind control;murder;conspiracy theory;religious cult;speculative;aggressive;1960s;mk ultra;mescaline;cointel pro
+movie:1620991|The Investigation of Lucy Letby|2026|99,80|en|6.3|79|nurse;serial killer;true crime;life sentence;life imprisonment;infanticide;female serial killer
+movie:97044|Aileen Wuornos: The Selling of a Serial Killer|1992|99,80|en|6.8|78|prison;death row;opportunist;crooked lawyer;serial killer;police corruption;exploitation of friendship;public defender;legal system;female serial killer;women in prison;defense lawyer;legal scandal;systemic corruption;documentary director
+movie:448444|The Death and Life of Marsha P. Johnson|2017|99|en|7.1|108|suicide;new york city;drag queen;investigation;biography;murder;lgbt;hate crime;activist;trans woman;cold case;transgender rights;gay history
+movie:1591516|Evil Influencer: The Jodi Hildebrandt Story|2025|99|en|6.2|71|true crime;crime documentary;disgusted
+movie:1550785|My Father, the BTK Killer|2025|80,99|en|6.717|69|post-traumatic stress disorder (ptsd);serial killer;true crime;wichita kansas;narcissist;family man;pov (point of view);infamous;father daughter relationship;news footage;murder victim;multiple murders;letters;heinous;child of a serial killer
+movie:289575|Tales of the Grim Sleeper|2014|80,99|en|6.3|67|serial killer
+movie:377462|O.J.: Made in America|2016|99,80,36|en|8.4|269|american football;police brutality;biography;los angeles, california;true crime;racial tension;sports documentary;lapd;murder trial;criminal justice system;race relations
+tv:64513|American Crime Story|2016|80,18|en|7.6|1094|police;based on true story;anthology;lawyer;criminal;crime investigation;curious;nervous;grim;criminal law;anxious;serious;dramatic;distressing;matter of fact
+tv:113988|DAHMER - Monster: The Jeffrey Dahmer Story|2022|80,18|en|8.0|2968|deaf-mute;pedophilia;court case;necrophilia;alcoholism;based on true story;murder;serial killer;miniseries;racism;psychological thriller;brutality;criminal;lgbt;troubled childhood
+movie:968|Dog Day Afternoon|1975|80,18,53|en|7.856|3555|new york city;airport;bank;hostage;fbi;police;heist;psychological thriller;bank robbery;brooklyn, new york city;bank cashier;car procession;attica;energetic;unhappy marriage
+movie:640|Catch Me If You Can|2002|18,80|en|7.979|17796|fbi;con man;fraud;biography;based on true story;deception;con artist;redemption;chameleon;impersonation;attempted jailbreak;engagement party;mislaid trust;bank fraud;conman
+movie:398|Capote|2005|80,18|en|7.0|1715|self-fulfilling prophecy;based on novel or book;journalism;identity;dreams;literature research;literature;magazine;biography;kansas, usa;based on true story;author;truman capote;1950s;1960s
+movie:261023|Black Mass|2015|18,80,36|en|6.526|3717|corruption;prostitute;boston, massachusetts;fbi;senator;gangster;irish mob;based on true story;murder;organized crime;pay phone;extortion;beaten to death;brutality;informant
+movie:4982|American Gangster|2007|18,80|en|7.598|6337|new york city;drug trafficking;nightclub;junkie;ghetto;heroin;vietnam;gangster;drug smuggling;society;ambition;rise and fall;cop;organized crime;drug dealing
+movie:68812|The Iceman|2012|53,80,18|en|6.567|1205|new jersey;restaurant;hitman;van;arrest;psychopath;based on true story;jail;serial killer;drug dealing;stabbing;crime family;cynical;bombing;blunt
+tv:78|Dateline|1992|80,99|en|6.6|53|homicide;interview;murder;true crime;missing person;investigative journalism;news magazine;homicide investigation;serious;mysterious disappearance;mystery;correspondent
+tv:4057|Criminal Minds|2005|80,18,9648|en|8.3|4211|fbi;criminal mastermind;crime investigation;special agent;criminology;police profiling;police procedural;witty
+tv:1405|Dexter|2006|80,18,9648|en|8.2|5970|miami, florida;based on novel or book;double life;homicide;vigilante;murder;serial killer;psychological thriller;killer;forensic science;murder investigation;crime investigation;dark secret;mysterious;police department
+tv:1396|Breaking Bad|2008|18,80|en|9.0|18983|new mexico;drug dealer;narcissism;psychopath;terminal illness;outlaw;dark comedy;cancer;tragedy;drugs;criminal;meth lab;drug lord;high school teacher;dea agent
+movie:238|The Godfather|1972|18,80|en|8.688|23865|italy;loss of loved one;love at first sight;based on novel or book;europe;symbolism;gangster;patriarch;organized crime;mafia;religion;revenge motive;crime family;sicilian mafia;religious hypocrisy
+movie:769|GoodFellas|1990|18,80|en|8.451|14954|new york city;prison;based on novel or book;florida;1970s;mass murder;irish-american;drug trafficking;gangster;biography;based on true story;murder;organized crime;gore;mafia
+tv:2734|Law & Order: Special Victims Unit|1999|80,18,9648|en|8.0|4393|detective;sexual abuse;sex scandal;domestic abuse;sexual violence;domestic violence;criminal;sex trafficking;interrogation;district attorney;courtroom;assistant district attorney;sex crime;sexual assault;sex trade
+movie:807|Se7en|1995|80,9648,53|en|8.383|24093|self-fulfilling prophecy;detective;s.w.a.t.;rage and hate;insomnia;sadism;investigation;police;psychopath;murder;serial killer;shootout;religion;corpse;seven deadly sins
+movie:274|The Silence of the Lambs|1991|80,53,18|en|8.345|18754|prison;based on novel or book;fbi;kidnapping;scientific study;psychopath;murder;serial killer;psychological thriller;brutality;cannibal;psychiatrist;biting;moth;virginia
+movie:398978|The Irishman|2019|80,18,36|en|7.569|7822|philadelphia, pennsylvania;chicago, illinois;based on novel or book;pennsylvania, usa;1970s;war veteran;irish-american;hitman;gangster;male friendship;aging;murder;family relationships;organized crime;mafia

@@ -2061,6 +2061,199 @@ async function route() {
   if (saved) { setTimeout(() => { if (tok === routeTok) window.scrollTo(0, saved); }, 60); setTimeout(() => { if (tok === routeTok && window.scrollY < saved - 4) window.scrollTo(0, saved); }, 900); }
 }
 
+// ---------- True Crime ----------
+// One category (TCR.ID) on Home (the first 20 titles) and Browse > True Crime (the whole shelf), from one source.
+// Mirrors TrueCrime.kt and TrueCrimeHub.kt on the TV: the same rules, marquee titles and TMDB queries.
+// tools/webtest/truecrime-test.mjs runs TCR.shelf on tools/truecrime/fixture.txt (real TMDB data) and compares it
+// with tools/truecrime/expected.json, which the TV's TrueCrimeTest reads too, so the two apps cannot drift.
+// >>> TrueCrime rules (pure: no DOM, no network)
+const TCR = (() => {
+  const ID = "truecrime", LABEL = "True Crime", SUBTITLE = "Documentaries, docuseries and true-crime films";
+  const DOCUMENTARY = 99, CRIME = 80, COMEDY = 35, ROMANCE = 10749, HISTORY = 36, WAR = 10752, WAR_POLITICS = 10768, ANIMATION = 16;
+  const VETO_GENRES = new Set([10751, 10762, 14, 878, 10765, 10767, 10766]);
+  const SHORT_FILM = "short film", TRUE_CRIME = "true crime";
+  const CRIME_TERMS = [
+    TRUE_CRIME, "serial killer", "murder", "murders", "homicide", "unsolved murder", "cold case", "wrongful conviction",
+    "wrongful imprisonment", "miscarriage of justice", "death row", "criminal trial", "kidnapping", "abduction",
+    "missing person", "missing child", "con man", "con artist", "conman", "fraud", "ponzi scheme", "cult", "heist",
+    "bank robbery", "forensic science", "criminal investigation", "crime investigation", "crime documentary", "mafia",
+    "organized crime", "drug lord", "cartel", "police corruption", "serial rapist", "sex crime",
+  ];
+  const OFF_TOPIC = [
+    "holocaust", "world war", "nazi", "war crime", "concentration camp", "environmental", "ecology", "climate",
+    "climate change", "pollution", "global warming", "disaster", "plane crash", "airplane accident", "airplane crash",
+    "food industry", "factory farming", "financial crisis", "global economy", "covert operation",
+  ];
+  const REAL_STORY = [
+    "based on true story", "based on a true story", "based on real events", "based on real person", "biography",
+    "historical figure", "based on magazine newspaper or article",
+  ];
+  const DOC_DISCOVER_TERMS = [
+    "serial killer", "murder investigation", "unsolved murder", "unsolved murders", "cold case", "wrongful conviction",
+    "wrongful imprisonment", "murder trial", "crime documentary",
+  ];
+  // [type, name, year, documentary]. The documentaries lead the shelf in this order.
+  const MARQUEE = [
+    ["tv", "Making a Murderer", 2015, true], ["tv", "The Jinx", 2015, true], ["tv", "The Staircase", 2004, true],
+    ["tv", "Don't F**k with Cats: Hunting an Internet Killer", 2019, true], ["tv", "I'll Be Gone in the Dark", 2020, true],
+    ["tv", "Conversations with a Killer: The Ted Bundy Tapes", 2019, true], ["tv", "Night Stalker: The Hunt for a Serial Killer", 2021, true],
+    ["movie", "O.J.: Made in America", 2016, true], ["tv", "The Keepers", 2017, true], ["tv", "Evil Genius", 2018, true],
+    ["tv", "Wild Wild Country", 2018, true], ["tv", "Unsolved Mysteries", 2020, true], ["movie", "The Thin Blue Line", 1988, true],
+    ["movie", "Paradise Lost: The Child Murders at Robin Hood Hills", 1996, true], ["movie", "American Murder: The Family Next Door", 2020, true],
+    ["movie", "The Imposter", 2012, true], ["tv", "Murdaugh Murders: A Southern Scandal", 2023, true], ["tv", "Forensic Files", 1996, true],
+    ["movie", "Zodiac", 2007, false], ["movie", "Killers of the Flower Moon", 2023, false], ["movie", "In Cold Blood", 1967, false],
+    ["tv", "Mindhunter", 2017, false], ["tv", "When They See Us", 2019, false], ["tv", "American Crime Story", 2016, false],
+    ["tv", "Dahmer - Monster: The Jeffrey Dahmer Story", 2022, false], ["tv", "The Act", 2019, false], ["tv", "Unbelievable", 2019, false],
+    ["movie", "Dog Day Afternoon", 1975, false], ["movie", "Catch Me If You Can", 2002, false], ["movie", "Capote", 2005, false],
+  ];
+  /** HistoryEras.norm: lower case, words split on anything that is not a-z or 0-9. */
+  const norm = (k) => String(k || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join(" ");
+  /** HistoryEras.normName: letters and digits only. */
+  const normName = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{Nd}]/gu, "");
+  function marqueeFor(type, name, year) {
+    if (!(year > 0)) return null;
+    const n = normName(name);
+    return MARQUEE.find((m) => m[0] === type && normName(m[1]) === n && Math.abs(m[2] - year) <= 1) || null;
+  }
+  const typeOf = (t) => t.key.split(":")[0];
+  const mq = (t) => marqueeFor(typeOf(t), t.name, t.year);
+  const matches = (kw, term) => kw === term || (" " + kw + " ").includes(" " + term + " ");
+  const anyMatch = (kws, terms) => kws.some((k) => terms.some((x) => matches(k, x)));
+  const kwsOf = (t) => t.keywords.map(norm).filter(Boolean);
+  /** TrueCrime.reason: "marquee", "doc", "drama" or null. t = { key, name, year, genres, keywords, votes, rating, american }. */
+  function reason(t) {
+    if (mq(t)) return "marquee";
+    if (t.genres.some((g) => VETO_GENRES.has(g))) return null;
+    const kws = kwsOf(t);
+    if (kws.includes(SHORT_FILM)) return null;
+    const tagged = kws.includes(TRUE_CRIME);
+    if (t.genres.includes(DOCUMENTARY)) {
+      if (tagged) return "doc";
+      if (t.genres.some((g) => g === HISTORY || g === WAR || g === WAR_POLITICS)) return null;
+      if (anyMatch(kws, OFF_TOPIC)) return null;
+      return t.genres.includes(CRIME) || anyMatch(kws, CRIME_TERMS) ? "doc" : null;
+    }
+    if (!tagged || t.genres.includes(ANIMATION)) return null;
+    if (t.genres.includes(CRIME)) return "drama";
+    return anyMatch(kws, REAL_STORY) && !t.genres.some((g) => g === COMEDY || g === ROMANCE) ? "drama" : null;
+  }
+  function score(t) {
+    const m = mq(t);
+    const doc = t.genres.includes(DOCUMENTARY) || (m && m[3]);
+    return Math.log10(t.votes + 1) + t.rating / 5 + (t.american ? 1 : 0) + (doc ? 1.5 : 0) + (m ? 1 : 0) + (kwsOf(t).includes(TRUE_CRIME) ? 0.5 : 0);
+  }
+  /** TrueCrime.shelf: title keys, the marquee documentaries first, then the rest by score. */
+  function shelf(pool) {
+    const seenKey = new Set(), groups = new Map();
+    for (const t of pool) {
+      if (seenKey.has(t.key)) continue; seenKey.add(t.key);
+      const g = normName(t.name) + "|" + t.year;
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(t);
+    }
+    const kept = [...groups.values()]
+      .map((same) => same.find((x) => mq(x)) || same.reduce((a, b) => (b.votes > a.votes ? b : a)))
+      .filter((t) => reason(t) !== null);
+    const lead = (t) => { const m = mq(t); return m && m[3] ? MARQUEE.indexOf(m) : -1; };
+    const led = kept.filter((t) => lead(t) >= 0).sort((a, b) => lead(a) - lead(b));
+    const sc = new Map(kept.map((t) => [t.key, score(t)]));
+    const rest = kept.filter((t) => lead(t) < 0).sort((a, b) => sc.get(b.key) - sc.get(a.key) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    return led.concat(rest).map((t) => t.key);
+  }
+  return { ID, LABEL, SUBTITLE, DOCUMENTARY, CRIME, TRUE_CRIME, DOC_DISCOVER_TERMS, MARQUEE, norm, normName, marqueeFor, reason, score, shelf };
+})();
+// <<< TrueCrime rules
+const TC = (() => {
+  const TTL = 15 * 60000, MAX = 60, KW_MAX = 600;
+  let mem = null, building = null;
+  const NOT_KIDS_MOVIE = "16,10751,14,878,27", NOT_KIDS_TV = "16,10762,10765"; // HistoryHub.NOT_KIDS_*
+  const load = (k) => { try { return JSON.parse(LS.get(k) || "{}") || {}; } catch { return {}; } };
+  const save = (k, o) => { try { LS.set(k, JSON.stringify(o)); } catch {} };
+  /** TMDB keyword ids for exact names, kept on this device (0 = TMDB has none). */
+  async function kwIds(names) {
+    const c = load("mcdtv_tc_kwids"); let changed = false;
+    await mapPool(names.filter((n) => !(n in c)), 4, async (n) => {
+      try {
+        const r = (await tmdb("/search/keyword", { query: n })).results || [];
+        const hit = r.find((o) => String(o.name || "").toLowerCase() === n.toLowerCase());
+        c[n] = hit ? hit.id : 0; changed = true;
+      } catch {}
+    });
+    if (changed) save("mcdtv_tc_kwids", c);
+    return names.map((n) => +c[n] || 0).filter((id) => id > 0);
+  }
+  /** Each title's plot keywords, normalized, kept on this device (one small request per new title). */
+  async function keywordsOf(list) {
+    const c = load("mcdtv_tc_kw"); const m = c.v === 1 && c.m ? c.m : {}; let changed = false;
+    await mapPool(list.filter((t) => !((t.type + ":" + t.id) in m)), 6, async (t) => {
+      try {
+        const d = await tmdb(`/${t.type}/${t.id}/keywords`, {});
+        m[t.type + ":" + t.id] = (d.keywords || d.results || []).map((k) => TCR.norm(k.name)).filter(Boolean).slice(0, 30).join(";");
+        changed = true;
+      } catch {}
+    });
+    if (changed) { const ks = Object.keys(m); for (const k of ks.slice(0, Math.max(0, ks.length - KW_MAX))) delete m[k]; save("mcdtv_tc_kw", { v: 1, m }); }
+    const out = new Map();
+    for (const t of list) out.set(t.type + ":" + t.id, String(m[t.type + ":" + t.id] || "").split(";").filter(Boolean));
+    return out;
+  }
+  /** The marquee titles on TMDB (exact name, within a year), kept 30 days (a miss 7). */
+  async function marqueeTitles() {
+    const c = load("mcdtv_tc_marquee"), now = Date.now(); let changed = false;
+    const got = await mapPool(TCR.MARQUEE, 4, async ([type, name, year]) => {
+      const k = type + "|" + name + "|" + year, e = c[k];
+      if (e && now - (e.at || 0) < (e.t ? 30 : 7) * 86400000) return e.t || null;
+      try {
+        let hit = null;
+        for (const y of [year, year - 1, year + 1]) {
+          const r = (await tmdb(`/search/${type}`, { query: name, include_adult: "false", [type === "movie" ? "year" : "first_air_date_year"]: y })).results || [];
+          const o = r.find((x) => TCR.normName(x.title || x.name) === TCR.normName(name));
+          if (o) { hit = norm(o, type); break; }
+        }
+        c[k] = hit ? { at: now, t: hit } : { at: now }; changed = true;
+        return hit;
+      } catch { return e && e.t || null; }
+    });
+    if (changed) save("mcdtv_tc_marquee", c);
+    return got.filter(Boolean);
+  }
+  /** TrueCrimeHub.queries: the same discover calls (vote count order) the TV makes. */
+  function queries(trueCrimeId, docIds) {
+    const q = [];
+    for (const type of ["tv", "movie"]) for (const page of [1, 2, 3]) q.push([type, page, { with_genres: TCR.DOCUMENTARY + "," + TCR.CRIME, "vote_count.gte": "20" }]);
+    if (trueCrimeId) for (const type of ["tv", "movie"]) for (const page of [1, 2]) q.push([type, page, { with_keywords: String(trueCrimeId), without_genres: type === "movie" ? NOT_KIDS_MOVIE : NOT_KIDS_TV, "vote_count.gte": "20" }]);
+    if (docIds) for (const type of ["tv", "movie"]) q.push([type, 1, { with_genres: String(TCR.DOCUMENTARY), with_keywords: docIds, "vote_count.gte": "20" }]);
+    return q;
+  }
+  async function build() {
+    const marquee = marqueeTitles();
+    const [tc] = await kwIds([TCR.TRUE_CRIME]);
+    const docIds = (await kwIds(TCR.DOC_DISCOVER_TERMS)).join("|");
+    const pages = await mapPool(queries(tc, docIds), 6, ([type, page, p]) => api.discover(type, { ...p, sort_by: "vote_count.desc" }, page).catch(() => []));
+    const seen = new Set();
+    const cands = (await marquee).concat(pages.flat()).filter((t) => { const k = t.type + ":" + t.id; if (seen.has(k)) return false; seen.add(k); return true; });
+    if (!cands.length) throw new Error("Couldn't load True Crime. Check the network and try again.");
+    const kws = await keywordsOf(cands);
+    const byKey = new Map(cands.map((t) => [t.type + ":" + t.id, t]));
+    const american = (t) => (t.oc && t.oc.length ? t.oc.includes("US") : t.lang === "en");
+    const pool = cands.map((t) => ({
+      key: t.type + ":" + t.id, name: t.name, year: parseInt(t.year, 10) || 0, genres: (t.genres || []).map(Number),
+      keywords: kws.get(t.type + ":" + t.id) || [], votes: t.votes || 0, rating: t.rating || 0, american: american(t),
+    }));
+    return TCR.shelf(pool).map((k) => byKey.get(k)).filter(Boolean);
+  }
+  /** The whole shelf (60 at most). Home shows the first 20 of this same list. Not on the Kids profile. */
+  async function shelf(max = MAX) {
+    if (isKids()) return [];
+    if (!mem || Date.now() - mem.at > TTL) {
+      building = building || build().then((l) => { mem = { at: Date.now(), list: l }; return l; }).finally(() => { building = null; });
+      await building;
+    }
+    return mem.list.slice(0, max);
+  }
+  return { ID: TCR.ID, LABEL: TCR.LABEL, SUBTITLE: TCR.SUBTITLE, shelf, homeRow: () => shelf(20) };
+})();
+
 // ---------- Home ----------
 function renderHome(v, tok) {
   const L = lists();
@@ -2070,6 +2263,7 @@ function renderHome(v, tok) {
     ${rowShell("picked", "Picked for " + profileName(S.profile || "p1"), "")}
     ${rowShell("because", "Because You Watched", "")}
     ${rowShell("watchlist", "My Watchlist", "#/list")}
+    ${rowShell(TC.ID, TC.LABEL, "#/browse/" + TC.ID)}
     ${rowShell("trending", "Trending This Week", "#/browse/trending")}
     ${rowShell("pm", "Popular Movies", "#/browse/popular?type=movie")}
     ${rowShell("ps", "Popular Shows", "#/browse/popular?type=tv")}
@@ -2091,6 +2285,7 @@ function renderHome(v, tok) {
     fillRow("because", bw.items, posterCard, tok);
   }
   else { const r = $("#row-because"); if (r) r.classList.add("hidden"); }
+  fillRow(TC.ID, TC.homeRow(), posterCard, tok); // the first 20 of the Browse > True Crime shelf
   fillRow("trending", trending, posterCard, tok);
   fillRow("pm", api.popular("movie"), posterCard, tok);
   fillRow("ps", api.popular("tv"), posterCard, tok);
@@ -2324,6 +2519,8 @@ const KINDS = {
   lang: { title: "By Language", types: ["movie", "tv"], picker: "lang", fetch: (ty, v, p) => api.byLang(ty, v || "en", p) },
   genre: { title: "Genres", types: ["movie", "tv"], picker: "genre", fetch: (ty, v, p) => api.byGenre(ty, v || (ty === "tv" ? 10759 : 28), p) },
   service: { title: "Streaming", types: ["movie", "tv"], picker: "service", fetch: (ty, v, p) => api.byService(ty, v || 8, p) },
+  // True Crime: one page, the whole shelf; Home's row is its first 20 (TC.shelf).
+  [TC.ID]: { title: TC.LABEL, types: ["all"], fetch: (ty, v, p) => (p === 1 ? TC.shelf() : Promise.resolve([])) },
 };
 function renderBrowse(v) {
   const tile = (href, name, sub, glow) => `<a class="tile" href="${href}" style="${glow ? "--glow:" + glow : ""}">${esc(name)}<small>${esc(sub)}</small></a>`;
@@ -2337,6 +2534,7 @@ function renderBrowse(v) {
       ${tile("#/browse/lang?type=movie&v=en", "By Language", "Original language")}
       ${tile("#/browse/genre?type=movie&v=28", "Genres", "Action, Comedy, Drama and more")}
       ${tile("#/browse/service?type=movie&v=8", "Streaming Services", "What's on each service")}
+      ${isKids() ? "" : tile("#/browse/" + TC.ID, TC.LABEL, TC.SUBTITLE)}
       ${tile("#/live", "Live TV", "Channels from your playlist")}
     </div>
     <div class="section-h"><h2>Streaming services</h2></div>
@@ -7041,7 +7239,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-28.1";
+const BUILD = "2026-10-28.2";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;
