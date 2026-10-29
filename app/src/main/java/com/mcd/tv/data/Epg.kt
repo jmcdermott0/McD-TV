@@ -39,11 +39,16 @@ data class Programme(
 
 /**
  * Reads the playlist's XMLTV guide (plain or .gz), keeping only what Live TV shows:
- * programmes for channels in the playlist that are on now or start in the next 8 hours.
+ * programmes for channels in the playlist that are on now or start in the next 12 hours.
  * Guide map keys are [keyOf] (the channel's stream URL). Any failure gives an empty guide.
+ * Which guide id each channel reads is decided by [GuideMatch].
  */
 object Epg {
-    private const val WINDOW_MS = 8 * 3600_000L
+    /**
+     * Kept ahead of now. Longer than [CACHE_MS] plus My Guide's three hours, so a guide that is almost due for a
+     * reload still fills the whole grid (with 8 h, the grid's right edge read "No guide info" for the last hour).
+     */
+    private const val WINDOW_MS = 12 * 3600_000L
     private const val CACHE_MS = 6 * 3600_000L
     private const val MAX_KEPT = 60_000
     private const val MAX_DESC = 160
@@ -59,6 +64,12 @@ object Epg {
 
     /** The most recently loaded guide (empty until a load finishes). */
     @Volatile var current: Map<String, List<Programme>> = emptyMap()
+        private set
+
+    /** Coverage of the last guide read (Settings > Live TV health shows it), or null before the first one. */
+    class Stats(val channels: Int, val withId: Int, val listed: Int, val byHow: Map<String, Int>)
+
+    @Volatile var lastStats: Stats? = null
         private set
 
     /** The last good guide when it was for the same playlist, else nothing. */
@@ -134,37 +145,23 @@ object Epg {
     }
 
     private suspend fun parse(input: InputStream, channels: List<Channel>): Map<String, List<Programme>> {
-        // Playlist lookups: tvg-id first, then tvg-name / channel name (all case-insensitive).
-        val byTvgId = HashMap<String, MutableList<String>>()
+        // Guide id per channel: its own tvg-id, else a copy of the same network that has one ([GuideMatch]).
+        val plan = GuideMatch.plan(channels)
+        val byTvgId = plan.byTvgId
+        // Guide channels whose id no playlist channel names: matched by display-name (exact, then normalized).
         val byName = HashMap<String, MutableList<String>>()
+        val byKey = HashMap<String, MutableList<String>>()
         for (ch in channels) {
             val k = keyOf(ch)
-            ch.tvgId?.lowercase()?.let { byTvgId.getOrPut(it) { ArrayList(1) }.add(k) }
             ch.tvgName?.lowercase()?.let { byName.getOrPut(it) { ArrayList(1) }.add(k) }
             byName.getOrPut(ch.name.lowercase()) { ArrayList(1) }.let { if (k !in it) it.add(k) }
-        }
-        // Normalized names ([LiveFill.guideKey]): a copy without a guide id borrows the id of a copy of the same
-        // network that has one ("ESPN 2 FHD" uses "ESPN2"'s guide; West feeds keep their own).
-        val byKey = HashMap<String, MutableList<String>>()
-        val donor = HashMap<String, String>()
-        val keyOfCh = arrayOfNulls<String>(channels.size)
-        for ((n, ch) in channels.withIndex()) {
             val gk = LiveFill.guideKey(ch.name)
-            if (gk.isEmpty()) continue
-            keyOfCh[n] = gk
-            byKey.getOrPut(gk) { ArrayList(1) }.add(keyOf(ch))
-            val id = ch.tvgId?.takeIf { it.isNotBlank() }?.lowercase()
-            if (id != null && gk !in donor) donor[gk] = id
-        }
-        for ((n, ch) in channels.withIndex()) {
-            if (!ch.tvgId.isNullOrBlank()) continue
-            val id = donor[keyOfCh[n] ?: continue] ?: continue
-            val k = keyOf(ch)
-            byTvgId.getOrPut(id) { ArrayList(1) }.let { if (k !in it) it.add(k) }
+            if (gk.isNotEmpty()) byKey.getOrPut(gk) { ArrayList(1) }.add(k)
         }
         // XMLTV channel id -> channel keys (filled from <channel> elements).
         val idMap = HashMap<String, List<String>>()
         fun keysFor(xmlId: String): List<String>? = idMap[xmlId] ?: byTvgId[xmlId.lowercase()]
+        fun shiftOf(k: String): Long = if (k in plan.shifted) GuideMatch.WEST_SHIFT_MS else 0L
 
         val now = System.currentTimeMillis()
         val until = now + WINDOW_MS
@@ -187,11 +184,18 @@ object Epg {
                             val keys = keysFor(p.getAttributeValue(null, "channel") ?: "")
                             val start = parseTime(p.getAttributeValue(null, "start"))
                             val end = parseTime(p.getAttributeValue(null, "stop"))
-                            if (keys == null || start == null || end == null || end <= now || start >= until) {
+                            // A West feed reads its East twin's listings 3 hours later (live events air at the
+                            // same time on both), so the window is per channel.
+                            fun inWindow(sh: Long) = end!! + sh > now && start!! + sh < until
+                            if (keys == null || start == null || end == null || keys.none { k -> inWindow(0L) || inWindow(shiftOf(k)) }) {
                                 skip(p)
                             } else {
                                 val prog = readProgramme(p, start, end)
-                                for (k in keys) out.getOrPut(k) { ArrayList() }.add(prog)
+                                for (k in keys) {
+                                    val sh = if (prog.live) 0L else shiftOf(k)
+                                    if (!inWindow(sh)) continue
+                                    out.getOrPut(k) { ArrayList() }.add(if (sh == 0L) prog else prog.copy(start = start + sh, end = end + sh))
+                                }
                                 if (++kept >= MAX_KEPT) break
                             }
                         }
@@ -207,12 +211,19 @@ object Epg {
         // Sort each channel's list and drop duplicates (a channel matched by two guide ids).
         val result = HashMap<String, List<Programme>>(out.size)
         for ((k, list) in out) {
+            // A West feed: a live event (kept at its real time) replaces the delayed shows it overlaps.
+            if (k in plan.shifted && list.any { it.live }) {
+                val live = list.filter { it.live }
+                list.removeAll { p -> !p.live && live.any { l -> p.start < l.end && l.start < p.end } }
+            }
             list.sortBy { it.start }
             val clean = ArrayList<Programme>(list.size)
             var lastStart = Long.MIN_VALUE
             for (prog in list) if (prog.start != lastStart) { clean.add(prog); lastStart = prog.start }
             result[k] = clean
         }
+        val keys = channels.mapTo(HashSet()) { keyOf(it) }
+        lastStats = Stats(keys.size, plan.how.size, result.keys.count { it in keys }, plan.how.values.groupingBy { it }.eachCount())
         return result
     }
 
@@ -328,6 +339,179 @@ object Epg {
         val doy = (153 * mp + 2) / 5 + d - 1
         val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
         return era * 146_097L + doe - 719_468L
+    }
+}
+
+// ======================= Which guide id a channel reads =======================
+//
+// Pure (no XML, no network): unit tests in GuideMatchTest; the web app mirrors it (docs/app/index.html, LV guideMatch).
+// Why it exists: on J's real playlist (2026-10-29) 15,280 of 16,620 entries carry no guide id. Most of those are free
+// lineup channels the provider's guide does not list at all, but many are copies of a network or a station whose
+// other copy does carry an id. Each rule below only ever borrows an id that a channel of the same name, the same
+// guide-id stem or the same call sign already carries; it never invents one.
+
+object GuideMatch {
+    /** Values of [Plan.how]: why a channel reads the guide id it reads. */
+    const val OWN = "own"
+    const val NAME = "name"
+    const val LINEUP = "lineup"
+    const val STEM = "idstem"
+    const val CALL = "callsign"
+    const val WEST = "west"
+    const val NETWORK = "network"
+
+    /** A West feed airs its East twin's schedule this much later. */
+    const val WEST_SHIFT_MS = 3 * 3600_000L
+
+    /**
+     * [byTvgId]: guide id (lower case) -> channel keys. [shifted]: channel keys that read their East twin's listings
+     * 3 hours later. [how]: channel key -> rule (channels with no guide id are absent). [idOf]: channel key -> guide id.
+     */
+    class Plan(
+        val byTvgId: Map<String, List<String>>,
+        val shifted: Set<String>,
+        val how: Map<String, String>,
+        val idOf: Map<String, String>,
+    )
+
+    /**
+     * Lineup and region tags the organizer keeps in the name ("TV: CNN", "CA FR: HISTORIA", "SS: beIN SPORTS 1")
+     * but that say nothing about which network it is. Not "RK:": Roku's own channels read Roku's guide (GuideExtra).
+     */
+    private val LINEUP_TAG = Regex("^\\s*(?:TV|(?!RK)[A-Z]{2}(?: (?:EN|FR))?)\\s*[:|]\\s*")
+
+    /** Free lineups: their station channels are often a news-only stream, so a call sign alone is not enough there. */
+    private val FAST_TAG = Regex(
+        "^\\s*(?:PRIME|AMAZON|TUBI|RK|ROKU|PLUTO(?: ?TV)?|PLEX|XUMO|SAMSUNG(?: TV PLUS)?|VIZIO|LG|DISTRO|STIRR|FREEVEE|FAST)\\s*[:|]",
+        RegexOption.IGNORE_CASE,
+    )
+    private val CALL_PAREN = Regex("\\(([KW][A-Z]{2,3})(?:-[A-Z]{2})?\\)")
+    private val CALL_LEAD = Regex("^(?:[A-Z&+]{2,6}\\s*[:|]\\s*)*([KW][A-Z]{2,3})(?:-?(?:TV|DT|CD|LD))?\\b(?=.*\\b(?:ABC|CBS|NBC|FOX|CW|PBS|MYTV|TELEMUNDO|UNIVISION|ION)(?![A-Z]))")
+    private val ID_SUFFIX = Regex("^(.+)\\.([a-z]{2})$")
+    private val NOT_STEM = Regex("[^a-z0-9+!]")
+    private val WEST_END = Regex("^(.+) west$")
+    private val NO_SHIFT = Regex("\\b(?:sports?|sportsnet|news|bally|weather|abc|cbs|nbc|fox|cw|pbs)\\b")
+
+    private val PAY_TAG = Regex(
+        "^\\s*(?:AT&T|ATT|TV|DIRECTV|DTV|SLING|SPECTRUM|FUBO(?:TV)?|PHILO|HULU|YOUTUBE TV|YTTV|DISH|XFINITY|FIOS|VERIZON)\\s*[:|]",
+        RegexOption.IGNORE_CASE,
+    )
+    private val ALT = Regex("\\b(?:alt|alternate)\\b", RegexOption.IGNORE_CASE)
+    private val WEST_WORD = Regex("\\bwest\\b")
+
+    /** Networks whose channels are local stations: one station's guide is not another's. */
+    private val BROADCAST = setOf("abc", "cbs", "nbc", "fox", "cw", "telemundo", "univision", "unimas", "mynet", "ion", "pbs")
+
+    /**
+     * The catalog network a channel is a plain copy of ("AT&T: MS NOW" and "US: MSNBC HD" are both "msnbc"), with
+     * "|w" for a West feed; null for free lineups, alternate feeds, folders, other countries and station networks.
+     */
+    private fun networkKey(ch: Channel, country: String, key: String, lender: Boolean): String? {
+        if (FAST_TAG.containsMatchIn(ch.name) || ALT.containsMatchIn(ch.name)) return null
+        // Borrowing by catalog name only inside a pay-TV lineup ("AT&T: E!", "TV: MS NOW"): untagged names that the
+        // catalog aliases ("NFL CHANNEL", "AXS TV NOW") are often a free channel of the same brand.
+        if (!lender && (country != "US" || !PAY_TAG.containsMatchIn(ch.name))) return null
+        val r = LiveHome.identify(ch.name, ch.group, country, "")
+        if (r.net == null || r.fold != null || r.kind == "intl" || r.region == "market" || r.key in BROADCAST) return null
+        return r.key + if (WEST_WORD.containsMatchIn(key)) "|w" else ""
+    }
+
+    /** Guide-id country suffix for a channel's country ([LiveOrganizer.country]). */
+    private val SUFFIX = mapOf("US" to "us", "Canada" to "ca", "UK" to "uk")
+
+    /**
+     * "hbo west" -> "hbo": the East twin of a West feed key, or null. Regional names ("sportsnet west") and broadcast
+     * networks stay: a network's West feed is a different station with its own local shows.
+     */
+    fun westTwin(key: String): String? {
+        val m = WEST_END.matchEntire(key) ?: return null
+        return if (NO_SHIFT.containsMatchIn(key)) null else m.groupValues[1]
+    }
+
+    /** Stem of a guide id with a two-letter country suffix: "AWealthofEntertainment.us" -> ("us", "awealthofentertainment"). */
+    private fun stemOf(id: String): Pair<String, String>? =
+        ID_SUFFIX.matchEntire(id)?.let { it.groupValues[2] to NOT_STEM.replace(it.groupValues[1], "") }
+
+    /** A US channel never borrows another country's feed ("theweathernetwork.ca" for The Weather Channel). */
+    private fun usOk(country: String, id: String): Boolean = country != "US" || stemOf(id)?.first.let { it == null || it == "us" }
+
+    /** Call sign in the name: "ABC (WPLG) Miami", or a leading one next to a network ("US: KTRK ABC 13"). */
+    fun callSign(name: String): String? {
+        val u = name.uppercase(Locale.ROOT)
+        return (CALL_PAREN.find(u) ?: CALL_LEAD.find(u))?.groupValues?.get(1)?.lowercase(Locale.ROOT)
+    }
+
+    fun plan(channels: List<Channel>, keyOf: (Channel) -> String = Epg::keyOf): Plan {
+        val n = channels.size
+        val gk = Array(n) { LiveFill.guideKey(channels[it].name) }
+        val own = Array(n) { channels[it].tvgId?.trim()?.takeIf { s -> s.isNotEmpty() }?.lowercase(Locale.ROOT) }
+        val ctry = arrayOfNulls<String>(n)
+        fun countryOf(i: Int): String = ctry[i] ?: LiveOrganizer.country(channels[i].group, channels[i].name).also { ctry[i] = it }
+        // Name with a lineup tag taken off ("TV: CNN" -> "cnn"); the plain guide key when there is no tag.
+        fun lineupKey(i: Int): String {
+            val name = channels[i].name
+            val t = LINEUP_TAG.replace(name, "")
+            return if (t != name) LiveFill.guideKey(t) else gk[i]
+        }
+        // The first guide id seen per normalized name (any country, and per country), and per id stem.
+        val donor = HashMap<String, String>()
+        val local = HashMap<String, String>()
+        val stems = HashMap<String, String>()
+        val nets = HashMap<String, String>()
+        val idNets = HashMap<String, MutableSet<String>>()
+        for (i in 0 until n) {
+            val id = own[i] ?: continue
+            if (gk[i].isNotEmpty()) donor.putIfAbsent(gk[i], id)
+            val lk = lineupKey(i)
+            if (lk.isNotEmpty()) local.putIfAbsent(countryOf(i) + "|" + lk, id)
+            stemOf(id)?.let { (suf, stem) -> if (stem.isNotEmpty()) stems.putIfAbsent("$suf|$stem", id) }
+            networkKey(channels[i], countryOf(i), lk, lender = true)?.let { nk ->
+                nets.putIfAbsent(nk, id)
+                idNets.getOrPut(id) { HashSet(2) }.add(nk.substringBefore('|'))
+            }
+        }
+        // An id the provider files under two networks ("Hallmark Mystery" filed under hallmark.us) is not lent out.
+        nets.values.removeAll { (idNets[it]?.size ?: 0) > 1 }
+        val byTvgId = HashMap<String, MutableList<String>>()
+        val shifted = HashSet<String>()
+        val how = HashMap<String, String>()
+        val idOf = HashMap<String, String>()
+        for (i in 0 until n) {
+            val ch = channels[i]
+            val k = keyOf(ch)
+            var id = own[i]
+            var rule = if (id != null) OWN else ""
+            if (id == null && gk[i].isNotEmpty()) donor[gk[i]]?.let { id = it; rule = NAME }
+            val key = lineupKey(i)
+            if (id == null && key.isNotEmpty()) {
+                val c = countryOf(i)
+                val v = local["$c|$key"] ?: if (key != gk[i]) donor[key] else null
+                if (v != null && usOk(c, v)) { id = v; rule = LINEUP }
+                val suf = SUFFIX[c]
+                if (id == null && suf != null) {
+                    stems["$suf|${NOT_STEM.replace(key, "")}"]?.let { id = it; rule = STEM }
+                }
+                if (id == null && suf == "us" && !FAST_TAG.containsMatchIn(ch.name)) {
+                    callSign(ch.name)?.let { cs -> stems["us|$cs"]?.let { id = it; rule = CALL } }
+                }
+                if (id == null) {
+                    networkKey(ch, c, key, lender = false)?.let { nk -> nets[nk]?.takeIf { usOk(c, it) }?.let { id = it; rule = NETWORK } }
+                }
+            }
+            // West feed: the East twin's id with listings 3 hours later, also when the provider gave the West copy
+            // the East id itself ("HBO West" filed under hbo.us showed East times).
+            val twinId = westTwin(key)?.let { donor[it] }
+            if (twinId != null && (id == null || id == twinId) && usOk(countryOf(i), twinId)) {
+                if (id == null) rule = WEST
+                id = twinId
+                shifted.add(k)
+            }
+            val gid = id ?: continue
+            byTvgId.getOrPut(gid) { ArrayList(1) }.let { if (k !in it) it.add(k) }
+            how.putIfAbsent(k, rule)
+            idOf.putIfAbsent(k, gid)
+        }
+        return Plan(byTvgId, shifted, how, idOf)
     }
 }
 

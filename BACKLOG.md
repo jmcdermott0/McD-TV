@@ -45,6 +45,7 @@ Ranked upgrades from the October 2026 review by the four focus agents (.claude/a
 3. "On now" strip on Favorites and Sports, plus a Comedy shortcut. S/M
 4. Check My Guide and For You speed on a Fire stick now that they use the LiveFill fallbacks. S
 - Relay (next batched deploy): block IPv6 private addresses and redirects to internal hosts in iptv.mts.
+- Relay (next batched deploy): in iptv.mts `window=1`, keep listings that ended up to 3 hours ago (stop > now - 3 h), so West feeds on the web show the show on now (they read the East table 3 hours later; see HANDOFF, guide matching).
 
 ## Web and phone app (agent: web-app)
 

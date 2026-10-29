@@ -10,7 +10,7 @@ export function loadEngine(htmlPath = new URL('../../docs/app/index.html', impor
   const pure = /\/\/ ---- pure:[^\n]*\n([\s\S]*?)\/\/ ---- end pure ----/.exec(html);
   if (!lo || !lh || !pure) throw new Error('Live TV code blocks not found in index.html');
   // LV's pure helpers read SCHED-free inputs only; castNet and friends come along.
-  return new Function(lo[0] + '\n' + lh[1] + '\nconst P = (() => {\n' + pure[1] + '\nreturn { gkey, eventProg, homeRank, netOf };\n})();\nreturn { LO, LH, P };')();
+  return new Function(lo[0] + '\n' + lh[1] + '\nconst P = (() => {\n' + pure[1] + '\nreturn { gkey, eventProg, homeRank, netOf, guideMatch, westTwin, callSign };\n})();\nreturn { LO, LH, P };')();
 }
 
 export function readText(path) {
@@ -62,16 +62,26 @@ export function parseXmltv(text) {
 }
 
 /**
- * The web app's playlist clean-up (separators and repeated links dropped) and guide match: a channel's own guide
- * id, else the guide of a copy of the same network that has one (LV.gkey), like the TV's Epg donor match.
+ * The web app's playlist clean-up (separators and repeated links dropped) and guide match (guideMatch, the same rules
+ * as the TV's GuideMatch): a channel's own guide id, else the id another copy of the same network carries. West feeds
+ * that read their East twin get its listings 3 hours later.
  */
 export function prepare(E, raw, guide) {
-  const seen = new Set(), chs = [];
-  for (const c of raw) { if (E.LO.isSeparator(c.name) || seen.has(c.url)) continue; seen.add(c.url); chs.push(c); }
-  const donor = new Map();
-  for (const c of chs) if (c.tvgId && guide.has(c.tvgId)) { const k = E.P.gkey(c.name); if (k && !donor.has(k)) donor.set(k, c.tvgId); }
-  const gid = chs.map((c) => (c.tvgId && guide.has(c.tvgId) ? c.tvgId : donor.get(E.P.gkey(c.name)) || ''));
+  const lower = new Map([...guide.keys()].map((k) => [String(k).toLowerCase(), k]));
+  const gm = E.P.guideMatch(raw.map((c) => ({ name: c.name, group: c.group, id: c.tvgId })));
+  const seen = new Set(), chs = [], at = [];
+  raw.forEach((c, i) => { if (E.LO.isSeparator(c.name) || seen.has(c.url)) return; seen.add(c.url); chs.push(c); at.push(i); });
+  const gid = at.map((i) => (gm.idOf[i] && lower.get(gm.idOf[i])) || '');
+  const shift = at.map((i) => gm.shift[i]);
   const country = chs.map((c) => E.LO.country(c.group, c.name));
   const section = chs.map((c) => E.LO.sectionTV(c.group, c.name));
-  return { chs, gid, country, section, progs: (i) => (gid[i] ? guide.get(gid[i]) : null) || [] };
+  // Like Epg.parse: live events stay at their real time on a West feed and replace the delayed shows they overlap.
+  const progs = (i) => {
+    const l = (gid[i] ? guide.get(gid[i]) : null) || [];
+    if (!shift[i]) return l;
+    const live = l.filter((p) => p.live);
+    return l.filter((p) => p.live || !live.some((x) => p.start + shift[i] < x.end && x.start < p.end + shift[i]))
+      .map((p) => (p.live ? p : { ...p, start: p.start + shift[i], end: p.end + shift[i] })).sort((a, b) => a.start - b.start);
+  };
+  return { chs, gid, country, section, progs };
 }

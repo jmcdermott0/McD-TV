@@ -30,6 +30,8 @@ jobs:
           done
       - name: Quality fallback unit tests
         run: node tools/webtest/qf-test.mjs
+      - name: Guide matching (real channel names; same expected file as the TV's GuideMatchTest) and coverage audit
+        run: node tools/epg/guidematch-test.mjs && node tools/epg/coverage.mjs
       - name: Live TV default view (stand-in playlist and guide snapshot; same expected file as the TV's LiveHomeTest)
         run: node tools/webtest/livehome-test.mjs
       - name: True Crime category (real TMDB fixture; same expected file as the TV's TrueCrimeTest)

@@ -1,0 +1,362 @@
+{
+ "vectors": [
+  {
+   "name": "US: A&E HD",
+   "id": "aande.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: AWE HD",
+   "id": "awealthofentertainment.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: E! ENTERTAINMENT WEST HD",
+   "id": "eentertainment.us",
+   "how": "own",
+   "shift": 10800000
+  },
+  {
+   "name": "US: E! ENTERTAINMENT HD",
+   "id": "eentertainment.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: ID INVESTIGATION DISCOVERY HD",
+   "id": "investigationdiscovery.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: REELZ FAMUS HD",
+   "id": "reelzchannel.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: USA NETWORK 4K",
+   "id": "usanetwork.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: USA NETWORK WEST HD",
+   "id": "usanetwork.us",
+   "how": "own",
+   "shift": 10800000
+  },
+  {
+   "name": "US: CNN HD",
+   "id": "cnn.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: CBS NEWS",
+   "id": "wcbs.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: ABC 10 (WPLG) Miami (A) HD",
+   "id": "wplg.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: NBC 13 BIRMINGHAM AL (WVTM) HD",
+   "id": "wvtm.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: HBO HD",
+   "id": "hbo.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: HBO WEST HD",
+   "id": "hbo.us",
+   "how": "own",
+   "shift": 10800000
+  },
+  {
+   "name": "US: SHOWTIME WEST HD",
+   "id": "showtimewest.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: MSNBC HD",
+   "id": "msnbc.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: THE WEATHER CHANNEL HD",
+   "id": "theweathernetwork.ca",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: HALLMARK HD",
+   "id": "hallmark.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: HALLMARK M&M HD",
+   "id": "hallmark.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: CBS HD",
+   "id": "wcbs.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: FOX SPORTS DETROIT HD",
+   "id": "foxsports.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: FOX SPORTS WEST",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "CA: DISNEY CHANNEL",
+   "id": "disneychannel.ca",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: STARZ HD",
+   "id": "starz.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: AMC HD",
+   "id": "amc.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: NFL NETWORK HD",
+   "id": "nflnetwork.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "US: ABC DENVER (KMGH) HD",
+   "id": "kmgh.us",
+   "how": "own",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: A WEALTH OF ENTERTAINMENT ᴿᴬᵂ",
+   "id": "awealthofentertainment.us",
+   "how": "idstem",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: INVESTIGATION DISCOVERY ᴿᴬᵂ",
+   "id": "investigationdiscovery.us",
+   "how": "idstem",
+   "shift": 0
+  },
+  {
+   "name": "TV: A&E ᴿᴬᵂ",
+   "id": "aande.us",
+   "how": "lineup",
+   "shift": 0
+  },
+  {
+   "name": "TV: CNN ᴿᴬᵂ",
+   "id": "cnn.us",
+   "how": "lineup",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: E! ᴿᴬᵂ",
+   "id": "eentertainment.us",
+   "how": "network",
+   "shift": 0
+  },
+  {
+   "name": "TV: MS NOW ᴿᴬᵂ",
+   "id": "msnbc.us",
+   "how": "network",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: USA ᴿᴬᵂ",
+   "id": "usanetwork.us",
+   "how": "network",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: REELZ ᴿᴬᵂ",
+   "id": "reelzchannel.us",
+   "how": "network",
+   "shift": 0
+  },
+  {
+   "name": "TV: HBO WEST ᴿᴬᵂ",
+   "id": "hbo.us",
+   "how": "lineup",
+   "shift": 10800000
+  },
+  {
+   "name": "US: STARZ WEST HD",
+   "id": "starz.us",
+   "how": "west",
+   "shift": 10800000
+  },
+  {
+   "name": "US: CBS (WCBS)",
+   "id": "wcbs.us",
+   "how": "callsign",
+   "shift": 0
+  },
+  {
+   "name": "US: ABC (WPLG)",
+   "id": "wplg.us",
+   "how": "callsign",
+   "shift": 0
+  },
+  {
+   "name": "US: NBC 13 (WVTM) BIRMINGHAM (H) ᴿᴬᵂ",
+   "id": "wvtm.us",
+   "how": "callsign",
+   "shift": 0
+  },
+  {
+   "name": "US: NBC (WVTM) BIRMINGHAM, AL (D) ᴿᴬᵂ",
+   "id": "wvtm.us",
+   "how": "callsign",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: DISNEY CHANNEL ᴿᴬᵂ",
+   "id": "disneychannel.ca",
+   "how": "name",
+   "shift": 0
+  },
+  {
+   "name": "TV: THE WEATHER CHANNEL ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "PRIME: ABC DENVER NEWS (KMGH) ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "US: NFL CHANNEL ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: HALLMARK MYSTERY ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "CA: CBS WEST",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "PRIME: AMC + ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: NFL NETWORK ALT ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "RK: LAW & CRIME ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "PRIME: LAW & CRIME ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "AT&T: LAW & CRIME ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "US: LAW & CRIME",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "RK: REELZ FAMOUS AND INFAMOUS ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "TUBI: REELZ FAMOUS & INFAMOUS ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "PRIME: CHAOS ON CAM BY A&E ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "RK: UNIVERSAL CRIME ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  },
+  {
+   "name": "PRIME: UNIVERSAL CRIME ᴿᴬᵂ",
+   "id": "",
+   "how": "",
+   "shift": 0
+  }
+ ],
+ "fixture": {
+  "channels": 12601,
+  "how": {
+   "none": 11429,
+   "name": 889,
+   "own": 210,
+   "west": 73
+  },
+  "sha256": "8e1d2e32233e97a06e643d5722624f649ca01ebbd2a27667a05304feca02c57f"
+ }
+}

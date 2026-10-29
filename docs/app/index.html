@@ -5534,6 +5534,70 @@ const LV = (() => {
     const sep = g.L && g.L.sport === "soccer" ? " vs " : " at ";
     return { title: (g.away.short || g.away.name) + sep + (g.home.short || g.home.name), start: g.start, end: Math.max(g.start + dur, live ? now + 30 * 60000 : 0), live: !!live, detail: g.detail || "", src: "game" };
   }
+  // Which guide id a channel reads (mirrors data/Epg.kt GuideMatch; GuideMatchTest and tools/epg/coverage.mjs check both).
+  // [chs]: { name, group, id } with id the playlist's guide id ("" for none). Returns arrays by index:
+  // idOf (lower-case guide id or ""), how ("own", "name", "lineup", "idstem", "callsign", "network", "west" or ""), shift (ms).
+  // Only borrows an id another copy of the same name, id stem or call sign already carries.
+  const GM_WEST_MS = 3 * 3600000;
+  const GM_LINEUP = /^\s*(?:TV|(?!RK)[A-Z]{2}(?: (?:EN|FR))?)\s*[:|]\s*/; // not RK: Roku's own channels read Roku's guide (GX)
+  const GM_FAST = /^\s*(?:PRIME|AMAZON|TUBI|RK|ROKU|PLUTO(?: ?TV)?|PLEX|XUMO|SAMSUNG(?: TV PLUS)?|VIZIO|LG|DISTRO|STIRR|FREEVEE|FAST)\s*[:|]/i;
+  const GM_CALL_PAREN = /\(([KW][A-Z]{2,3})(?:-[A-Z]{2})?\)/;
+  const GM_CALL_LEAD = /^(?:[A-Z&+]{2,6}\s*[:|]\s*)*([KW][A-Z]{2,3})(?:-?(?:TV|DT|CD|LD))?\b(?=.*\b(?:ABC|CBS|NBC|FOX|CW|PBS|MYTV|TELEMUNDO|UNIVISION|ION)(?![A-Z]))/;
+  const GM_SUFFIX = { US: "us", Canada: "ca", UK: "uk" };
+  const GM_BROADCAST = new Set(["abc", "cbs", "nbc", "fox", "cw", "telemundo", "univision", "unimas", "mynet", "ion", "pbs"]);
+  /** Catalog network of a plain copy ("AT&T: MS NOW" and "US: MSNBC HD" -> "msnbc"), "|w" for West; null for free lineups, alternate feeds, folders, other countries and station networks. */
+  // Borrowing by catalog name only inside a pay-TV lineup ("AT&T: E!", "TV: MS NOW"); [lender] copies may be anywhere.
+  const GM_PAY = /^\s*(?:AT&T|ATT|TV|DIRECTV|DTV|SLING|SPECTRUM|FUBO(?:TV)?|PHILO|HULU|YOUTUBE TV|YTTV|DISH|XFINITY|FIOS|VERIZON)\s*[:|]/i;
+  function gmNetKey(ch, country, key, lender) {
+    if (GM_FAST.test(ch.name || "") || /\b(?:alt|alternate)\b/i.test(ch.name || "")) return null;
+    if (!lender && (country !== "US" || !GM_PAY.test(ch.name || ""))) return null;
+    const r = LH.identify(ch.name || "", ch.group || "", country, "");
+    if (!r.net || r.fold || r.kind === "intl" || r.region === "market" || GM_BROADCAST.has(r.key)) return null;
+    return r.key + (/\bwest\b/.test(key) ? "|w" : "");
+  }
+  const gmStem = (id) => { const m = /^(.+)\.([a-z]{2})$/.exec(id); return m ? [m[2], m[1].replace(/[^a-z0-9+!]/g, "")] : null; };
+  const gmUsOk = (country, id) => { if (country !== "US") return true; const s = gmStem(id); return !s || s[0] === "us"; };
+  function westTwin(key) { const m = /^(.+) west$/.exec(key); return m && !/\b(?:sports?|sportsnet|news|bally|weather|abc|cbs|nbc|fox|cw|pbs)\b/.test(key) ? m[1] : null; }
+  function callSign(name) { const u = String(name || "").toUpperCase(); const m = GM_CALL_PAREN.exec(u) || GM_CALL_LEAD.exec(u); return m ? m[1].toLowerCase() : null; }
+  function guideMatch(chs) {
+    const n = chs.length, gk = chs.map((c) => gkey(c.name)), own = chs.map((c) => String(c.id || "").trim().toLowerCase());
+    const donor = new Map(), stems = new Map(), local = new Map(), nets = new Map(), idNets = new Map(), ctry = new Array(n);
+    const countryOf = (i) => ctry[i] == null ? (ctry[i] = LO.country(chs[i].group || "", chs[i].name || "")) : ctry[i];
+    for (let i = 0; i < n; i++) {
+      const id = own[i]; if (!id) continue;
+      if (gk[i] && !donor.has(gk[i])) donor.set(gk[i], id);
+      const t = String(chs[i].name || "").replace(GM_LINEUP, ""), lk = t !== String(chs[i].name || "") ? gkey(t) : gk[i];
+      if (lk && !local.has(countryOf(i) + "|" + lk)) local.set(countryOf(i) + "|" + lk, id);
+      const s = gmStem(id); if (s && s[1] && !stems.has(s[0] + "|" + s[1])) stems.set(s[0] + "|" + s[1], id);
+      const nk = gmNetKey(chs[i], countryOf(i), lk, true);
+      if (nk) { if (!nets.has(nk)) nets.set(nk, id); (idNets.get(id) || idNets.set(id, new Set()).get(id)).add(nk.split("|")[0]); }
+    }
+    // An id the provider files under two networks ("Hallmark Mystery" filed under hallmark.us) is not lent out.
+    for (const [k, v] of [...nets]) if (idNets.get(v).size > 1) nets.delete(k);
+    const idOf = new Array(n).fill(""), how = new Array(n).fill(""), shift = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      const ch = chs[i];
+      let id = own[i] || "", rule = id ? "own" : "";
+      if (!id && gk[i] && donor.has(gk[i])) { id = donor.get(gk[i]); rule = "name"; }
+      const tagless = String(ch.name || "").replace(GM_LINEUP, "");
+      const key = tagless !== String(ch.name || "") ? gkey(tagless) : gk[i];
+      if (!id && key) {
+        const c = countryOf(i), v = local.get(c + "|" + key) || (key !== gk[i] ? donor.get(key) : "");
+        if (v && gmUsOk(c, v)) { id = v; rule = "lineup"; }
+        const suf = GM_SUFFIX[c];
+        if (!id && suf) { const v = stems.get(suf + "|" + key.replace(/[^a-z0-9+!]/g, "")); if (v) { id = v; rule = "idstem"; } }
+        if (!id && suf === "us" && !GM_FAST.test(ch.name || "")) { const cs = callSign(ch.name); const v = cs && stems.get("us|" + cs); if (v) { id = v; rule = "callsign"; } }
+        if (!id) { const nk = gmNetKey(ch, c, key, false), v = nk && nets.get(nk); if (v && gmUsOk(c, v)) { id = v; rule = "network"; } }
+      }
+      const tw = westTwin(key), twinId = tw && donor.get(tw);
+      if (twinId && (!id || id === twinId) && gmUsOk(countryOf(i), twinId)) {
+        if (!id) rule = "west";
+        id = twinId; shift[i] = GM_WEST_MS;
+      }
+      idOf[i] = id; how[i] = id ? rule : "";
+    }
+    return { idOf, how, shift };
+  }
   // ---- end pure ----
 
   function xtreamOf(url) {
@@ -5591,7 +5655,7 @@ const LV = (() => {
       if (!o || o.stream_id == null || o.stream_id === "") continue;
       const id = String(o.stream_id);
       const icon = typeof o.stream_icon === "string" && /^https?:/i.test(o.stream_icon) ? o.stream_icon : "";
-      // epg: the provider has a guide for this copy (often a small share of a big list; see guideIds below).
+      // epg: the provider has a guide for this copy (often a small share of a big list; see guideMatch below).
       out.push({ sid: id, epg: !!o.epg_channel_id, epgId: String(o.epg_channel_id || ""), name: String(o.name || "").trim() || "Channel " + id, logo: icon, group: cats[String(o.category_id)] || "Other",
         url: `${x.base}/live/${encodeURIComponent(x.user)}/${encodeURIComponent(x.pass)}/${id}.m3u8` });
       if (out.length >= 25000) break;
@@ -5633,25 +5697,21 @@ const LV = (() => {
         if (mixedBlocked(url)) throw new Error(LIVE_NO); // an http link can't be read from this https page
         raw = parseM3u(await getText(url, 90000));
       }
-      // Guide: a copy without its own guide borrows the guide of a copy of the same network that has one
-      // ("ESPN FHD" uses "ESPN"'s guide), the way the TV matches its guide by channel name (see gkey: West feeds keep their own).
-      const guideIds = new Map();
-      // Also by the guide id itself, squashed ("AWealthofEntertainment.us" -> "awealthofentertainment").
-      const squash = (n) => n.replace(/[^a-z0-9]+/g, "");
-      for (const ch of raw) {
-        if (!ch.epg || !ch.sid) continue;
-        const k = gkey(ch.name); if (k && !guideIds.has(k)) guideIds.set(k, ch.sid);
-        const q = squash(k); if (q && !guideIds.has("~" + q)) guideIds.set("~" + q, ch.sid);
-        const e = squash(String(ch.epgId || "").toLowerCase().replace(/\.[a-z]{2,3}$/, "")); if (e && !guideIds.has("~" + e)) guideIds.set("~" + e, ch.sid);
-      }
-      const guideFor = (n) => { const k = gkey(n); return guideIds.get(k) || guideIds.get("~" + squash(k)) || ""; };
+      // Guide: a copy with no guide id of its own reads the id another copy of the same network carries (same
+      // name, id stem or call sign; West feeds read their East twin 3 hours later). guideMatch mirrors the TV's
+      // GuideMatch. The provider's guide table is per stream, so a borrowed id reads through the first copy that owns it.
+      const gm = guideMatch(raw.map((ch) => ({ name: ch.name, group: ch.group, id: ch.epg ? ch.epgId : "" })));
+      const sidOfId = new Map();
+      raw.forEach((ch) => { const e = ch.epg && ch.sid ? String(ch.epgId || "").trim().toLowerCase() : ""; if (e && !sidOfId.has(e)) sidOfId.set(e, ch.sid); });
       // Organize: drop separators and repeated URLs, clean the names, pick a section.
       const seen = new Set(), list = [];
-      for (const ch of raw) {
+      for (let i = 0; i < raw.length; i++) {
+        const ch = raw[i];
         if (LO.isSeparator(ch.name) || seen.has(ch.url)) continue;
         seen.add(ch.url);
         const sec = LO.section(ch.group, ch.name);
-        list.push({ sid: ch.epg ? ch.sid : guideFor(ch.name), name: LO.cleanName(ch.name), raw: ch.name, logo: ch.logo, group: ch.group, url: ch.url, sec,
+        const sid = !gm.idOf[i] ? "" : ch.epg && ch.sid && gm.how[i] !== "west" ? ch.sid : sidOfId.get(gm.idOf[i]) || "";
+        list.push({ sid, shift: sid ? gm.shift[i] : 0, name: LO.cleanName(ch.name), raw: ch.name, logo: ch.logo, group: ch.group, url: ch.url, sec,
           tags: sec === "Sports" || sec === "Events & PPV" ? sportTags(ch.group + " " + ch.name) : [] });
       }
       if (!list.length) throw new Error("The playlist loaded but had no live channels in it.");
@@ -5793,7 +5853,7 @@ const LV = (() => {
       const now = Date.now();
       for (const [sid, r] of Object.entries(j.rows)) {
         if (!r || !(now - r.at < EPG_TTL) || !Array.isArray(r.list)) continue;
-        EPG.set(sid, { at: r.at, list: r.list.filter((p) => p && p.title && p.end > now) });
+        EPG.set(sid, { at: r.at, list: r.list.filter((p) => p && p.title && p.end > now - EPG_BACK) });
       }
     } catch {}
   }
@@ -5804,12 +5864,20 @@ const LV = (() => {
       const now = Date.now();
       const rows = [...EPG.entries()].filter(([, c]) => !c.failed && now - c.at < EPG_TTL).sort((a, b) => b[1].at - a[1].at).slice(0, EPG_MAX);
       const out = {};
-      for (const [sid, c] of rows) out[sid] = { at: c.at, list: c.list.filter((p) => p.end > now).slice(0, 8).map((p) => ({ ...p, desc: (p.desc || "").slice(0, 120) })) };
+      for (const [sid, c] of rows) out[sid] = { at: c.at, list: c.list.filter((p) => p.end > now - EPG_BACK).slice(0, 10).map((p) => ({ ...p, desc: (p.desc || "").slice(0, 120) })) };
       try { localStorage.setItem(EPG_KEY, JSON.stringify({ scope: epgScope, rows: out })); }
       catch { try { localStorage.removeItem(EPG_KEY); } catch {} }
     }, 2000);
   }
   const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // A channel's listings not yet over. Rows keep the last 3 hours too: a West feed (ch.shift) reads its East twin's
+  // listings 3 hours later, so the East show that ended 2 hours ago is on the West feed now.
+  const EPG_BACK = 3 * 3600000;
+  function epgList(ch, c) {
+    if (!c || c.failed || !c.list) return [];
+    const now = Date.now(), sh = (ch && ch.shift) || 0;
+    return sh ? c.list.map((p) => ({ ...p, start: p.start + sh, end: p.end + sh })).filter((p) => p.end > now) : c.list.filter((p) => p.end > now);
+  }
   function b64(s) { try { return new TextDecoder().decode(Uint8Array.from(atob(String(s || "")), (c) => c.charCodeAt(0))); } catch { return String(s || ""); } }
   // ---------- extra guide for free streaming channels (the TV's data/GuideExtra.kt, same rules) ----------
   // The provider's guide often has nothing for the free streaming channels in a playlist ("RK: Law & Crime",
@@ -5941,7 +6009,7 @@ const LV = (() => {
       const j = JSON.parse(await get(api, 25000));
       const now = Date.now();
       list = ((j && j.epg_listings) || []).map((e) => ({ title: b64(e.title).trim(), desc: b64(e.description).trim().slice(0, 200), start: (+e.start_timestamp || 0) * 1000, end: (+e.stop_timestamp || 0) * 1000 }))
-        .filter((p) => p.title && p.start && p.end > p.start && p.end > now && p.start < now + 6 * 3600000).sort((a, b) => a.start - b.start);
+        .filter((p) => p.title && p.start && p.end > p.start && p.end > now - EPG_BACK && p.start < now + 6 * 3600000).sort((a, b) => a.start - b.start);
     } catch { failed = true; }
     EPG.set(sid, { at: Date.now(), list, failed });
     if (!failed) epgSave();
@@ -5969,9 +6037,10 @@ const LV = (() => {
     const now = Date.now();
     const real = !!(ch.sid && (st.xt || gxSid(ch.sid)));
     const c = real ? EPG.get(ch.sid) : null;
-    let cur = c ? c.list.find((p) => p.start <= now && p.end > now) : null, nxt = c ? c.list.find((p) => p.start > now) : null;
+    const l = c ? epgList(ch, c) : [];
+    let cur = l.find((p) => p.start <= now && p.end > now) || null, nxt = l.find((p) => p.start > now) || null;
     if (!cur && !nxt) { const fb = fallback(ch, now); if (fb) { if (fb.untimed || fb.start <= now) cur = fb; else nxt = fb; } }
-    if (!cur && !nxt) return [`<small>${real && !c ? "Loading guide&#8230;" : c && c.list.length ? "Nothing listed right now" : "No guide for this channel"}</small>`, ""];
+    if (!cur && !nxt) return [`<small>${real && !c ? "Loading guide&#8230;" : l.length ? "Nothing listed right now" : "No guide for this channel"}</small>`, ""];
     const pct = cur && !cur.untimed ? Math.max(0, Math.min(100, ((now - cur.start) / (cur.end - cur.start)) * 100)) : 0;
     // Wrapping up (last 30 minutes): what starts next, right under it (phones hide the NEXT column).
     const left = cur ? Math.round((cur.end - now) / 60000) : 0;
@@ -5993,7 +6062,7 @@ const LV = (() => {
   function paint(sid) { $$(`.lv-row[data-sid="${CSS.escape(String(sid))}"]`).forEach(paintRow); }
   /** Rows with no guide of their own, after a schedule arrives (the network's game can fill them now). */
   function paintNoGuide() {
-    $$(".lv-row").forEach((row) => { const ch = st.list && st.list[+row.dataset.idx]; const c = ch && ch.sid && EPG.get(ch.sid); if (ch && (!ch.sid || !st.xt || (c && !c.list.length))) paintRow(row); });
+    $$(".lv-row").forEach((row) => { const ch = st.list && st.list[+row.dataset.idx]; const c = ch && ch.sid && EPG.get(ch.sid); if (ch && (!ch.sid || !st.xt || (c && !epgList(ch, c).length))) paintRow(row); });
   }
   function row(i, f, label, gid) {
     const ch = st.list[i];
@@ -6176,7 +6245,7 @@ const LV = (() => {
   }
   const homeGames = () => Object.values(SCHED).flatMap((x) => x.games || []).filter((g) => HOME_LEAGUES.has(g.L.id))
     .map((g) => ({ league: g.L.id, id: g.id, state: g.state, start: g.start, detail: g.detail, away: g.away, home: g.home, casts: g.casts }));
-  function progsOf(i) { const ch = st.list[i]; const c = ch && ch.sid && (st.xt || gxSid(ch.sid)) ? EPG.get(ch.sid) : null; return c && !c.failed ? c.list : []; }
+  function progsOf(i) { const ch = st.list[i]; const c = ch && ch.sid && (st.xt || gxSid(ch.sid)) ? EPG.get(ch.sid) : null; return c ? epgList(ch, c) : []; }
   function buildHome() {
     const now = Date.now();
     st.home = LH.home({ idx: st.idx, chs: st.chs, progs: progsOf, games: homeGames(), teams: teams(), now, eventOf: (i) => eventProg(st.list[i].raw, st.list[i].group, now) });
@@ -7360,7 +7429,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-29.1";
+const BUILD = "2026-10-29.2";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;
