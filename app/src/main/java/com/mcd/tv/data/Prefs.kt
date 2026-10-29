@@ -108,6 +108,14 @@ object Prefs {
         get() = sp.getBoolean("slow_connection", false)
         set(v) = sp.edit().putBoolean("slow_connection", v).apply()
 
+    /**
+     * Settings > Addons and Live TV > Guide for free channels: the extra guide for free streaming channels
+     * (GuideExtra). On by default. This TV only, never synced; nothing else changes when it is turned off.
+     */
+    var guideExtra: Boolean
+        get() = sp.getBoolean("guide_extra", true)
+        set(v) = sp.edit().putBoolean("guide_extra", v).apply()
+
     /** Settings > Playback > Quality: "auto" (step down from 4K when it struggles), "4k" or "1080". This TV only, never synced. */
     var qualityMode: String
         get() = QualityMode.clean(sp.getString("quality_mode", QualityMode.AUTO))

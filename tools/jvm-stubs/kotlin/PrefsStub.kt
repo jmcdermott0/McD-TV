@@ -6,6 +6,7 @@ package com.mcd.tv.data
 object Prefs {
     var m3uUrl: String = ""
     var slowConnection: Boolean = false
+    var guideExtra: Boolean = true
     var maxMovieGb: Int = 0
     var maxEpisodeGb: Int = 0
     var wallUrl: String = ""

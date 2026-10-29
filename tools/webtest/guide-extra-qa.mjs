@@ -86,6 +86,28 @@ for (const width of [390, 1280]) {
   log(width, 'no guide anywhere |', key.slice(0, 100));
   if (!/No guide/.test(key)) fails.push(`${width} KEY TV should still say No guide: "${key}"`);
   log(width, 'guide files asked:', gx.join(', '));
+  // Settings > Playback > Live TV guide: off drops the extra rows at once and keeps the provider's; on brings them back.
+  await p.goto(B + '#/settings/playback'); await p.waitForSelector('#gxOn', { timeout: 15000 }).catch(() => fails.push(`${width}: no Live TV guide switch`));
+  if (!(await p.isChecked('#gxOn').catch(() => false))) fails.push(`${width}: the switch should start on`);
+  await p.click('#gxOn'); await p.waitForTimeout(300);
+  const offKey = await p.evaluate(() => localStorage.getItem('mcdtv_web_guide_extra_off'));
+  await p.goto(B + '#/live'); await p.waitForSelector('#lvQ', { timeout: 30000 }).catch(() => {});
+  const lawOff = (await rowText('law')).find((r) => /RK: LAW/.test(r)) || '';
+  const nbcOff = (await rowText('nbc 13'))[0] || '';
+  log(width, 'switch off | stored', offKey, '|', lawOff.slice(0, 80), '|', nbcOff.slice(0, 60));
+  if (offKey !== '1' || /Police Pursuits/.test(lawOff) || !/No guide/.test(lawOff)) fails.push(`${width} switch off: "${lawOff}" stored ${offKey}`);
+  if (!/WVTM 13 News at 6/.test(nbcOff)) fails.push(`${width} switch off: NBC 13 lost its provider guide`);
+  await p.reload(); await p.waitForSelector('#lvQ', { timeout: 30000 }).catch(() => {}); await p.waitForTimeout(1500);
+  const lawReload = (await rowText('law')).find((r) => /RK: LAW/.test(r)) || '';
+  if (/Police Pursuits/.test(lawReload)) fails.push(`${width} switch off: came back after a reload`);
+  await p.goto(B + '#/settings/playback'); await p.waitForSelector('#gxOn'); await p.click('#gxOn'); await p.waitForTimeout(300);
+  await p.goto(B + '#/live'); await p.waitForSelector('#lvQ', { timeout: 30000 }).catch(() => {});
+  let lawOn = '';
+  for (let i = 0; i < 20; i++) { lawOn = (await rowText('law')).find((r) => /RK: LAW/.test(r)) || ''; if (/Police Pursuits/.test(lawOn)) break; await p.waitForTimeout(500); }
+  log(width, 'switch on again |', lawOn.slice(0, 80));
+  if (!/Police Pursuits/.test(lawOn)) fails.push(`${width} switch on again: "${lawOn}"`);
+  const kept = await p.evaluate(() => ['mcdtv_web_init', 'mcdtv_web_profile'].every((k) => localStorage.getItem(k)));
+  if (!kept) fails.push(`${width}: the switch touched the setup keys`);
   if (errs.length) fails.push(`${width} page errors: ${errs.join(' | ')}`);
   await ctx.close();
 }
