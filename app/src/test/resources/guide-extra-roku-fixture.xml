@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Real excerpt of https://i.mjh.nz/Roku/all.xml.gz (generated-ts 1793310486), fetched 2026-10-29T22:13Z: the four channels from J's photo, programmes 22:00Z to 06:00Z. -->
+<tv generator-info-name="www.matthuisman.nz">
+<channel id="0322f5b9c0d954169122de194a8005ac">
+    <display-name>Universal Crime</display-name>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/0322f5b9c0d954169122de194a8005ac/https%3A%2F%2Fimage.roku.com%2Fbh-uploads%2Fproduction%2FinfoHUDLogo%2F1690916142226_Universal-Crime-ROKU-HUD-LOGO-260x147.png"/>
+    <lcn>2657</lcn>
+  </channel>
+<channel id="8ba514251e1a58b7b53368177baa1041">
+    <display-name>Law &amp; Crime</display-name>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/8ba514251e1a58b7b53368177baa1041/https%3A%2F%2Fimage.roku.com%2Fbh-uploads%2Fproduction%2FinfoHUDLogo%2F1705443337284_lc-roku-epg-infohud-260x147.png"/>
+    <lcn>2668</lcn>
+  </channel>
+<channel id="8abbea29b86a5a5da299c7ef2e288cab">
+    <display-name>Reelz Famous and Infamous</display-name>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/8abbea29b86a5a5da299c7ef2e288cab/https%3A%2F%2Fimage.roku.com%2Fbh-uploads%2Fproduction%2FinfoHUDLogo%2F1733326414482_ReelzFI_260x147_v1.png"/>
+    <lcn>2671</lcn>
+  </channel>
+<channel id="99e44ea6699928b32c444dce774b9b32">
+    <display-name>Chaos on Cam by A&amp;E</display-name>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/99e44ea6699928b32c444dce774b9b32/https%3A%2F%2Fimage.roku.com%2Fbh-uploads%2Fproduction%2FinfoHUDLogo%2F1751556977789_Chaos_On_Cam_by_AE_HUD_logo__efefef_center_aligned_260x147.png"/>
+    <lcn>4822</lcn>
+  </channel>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261029204400 +0000" stop="20261029223200 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>A gospel singer kills his evangelist wife when she denies him more money and threatens blackmail.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S03E07</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261029223200 +0000" stop="20261030002100 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>A man murders his wife and has a friend cover up the act with a burglary.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S03E08</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261030002100 +0000" stop="20261030021300 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>A fitness expert murders an associate who uncovered financial fraud in a health-spa chain.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S04E01</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261030021300 +0000" stop="20261030035800 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>A photographer kills his wife and a former convict after framing him for her kidnapping and murder.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S04E02</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261030035800 +0000" stop="20261030054600 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>Columbo tries to outwit a military academy commandant planning a murder.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S04E03</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="0322f5b9c0d954169122de194a8005ac" start="20261030054600 +0000" stop="20261030073800 +0000">
+    <title>Columbo</title>
+    <sub-title>Columbo</sub-title>
+    <desc>An automobile executive is a suspect in the murder of a cruise ship's vocalist.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75a61723f29b5a16b9707b883c99b44b/rokuFeed/assets/4f04b65e8bb85baf910f809a1a2c0411.jpg"/>
+    <episode-num system="onscreen">S04E04</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261029220000 +0000" stop="20261029230000 +0000">
+    <title>Police Pursuits by Law&amp;Crime</title>
+    <sub-title>Police Pursuits by Law&amp;Crime</sub-title>
+    <desc>A man with a machete tries to outrun police on his bicycle.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/586758b79ca731e56b264ca11ffaa58b/images/gracenote/assets/p30793296_b_h10_aa.jpg"/>
+    <episode-num system="onscreen">S01E02</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261029230000 +0000" stop="20261030000000 +0000">
+    <title>Police Pursuits by Law&amp;Crime</title>
+    <sub-title>Police Pursuits by Law&amp;Crime</sub-title>
+    <desc>Florida troopers refuse to let go in this incredible PIT maneuver.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/586758b79ca731e56b264ca11ffaa58b/images/gracenote/assets/p30793296_b_h10_aa.jpg"/>
+    <episode-num system="onscreen">S02E09</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030000000 +0000" stop="20261030003000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A detective intervenes in a chaotic fight; suspects are arrested for dealing cocaine.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E144</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030003000 +0000" stop="20261030010000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>An officer stops a car passenger from reaching for his gun; a couple is involved in a bar fight.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E145</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030010000 +0000" stop="20261030013000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A suspect leads police on a dangerous chase through a neighborhood; a prowler.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E146</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030013000 +0000" stop="20261030020000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A car chase suspect can't explain his passenger's motives; a female driver gives false information.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E147</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030020000 +0000" stop="20261030023000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A little person challenges an officer; police settle a violent fight between two combatants.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E148</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030023000 +0000" stop="20261030030000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A driver goes in circles to evade police; officers force a drug suspect to spit out his cocaine.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E149</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030030000 +0000" stop="20261030033000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A driver's getaway gets a flat tire; after a high-speed chase, a suspect barricades himself.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E150</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030033000 +0000" stop="20261030040000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A suspect tries hiding drugs in her bra; a minor is caught with a loaded gun in his pants.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E151</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030040000 +0000" stop="20261030043000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A detective intervenes in a chaotic fight; suspects are arrested for dealing cocaine.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E144</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030043000 +0000" stop="20261030050000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>An officer stops a car passenger from reaching for his gun; a couple is involved in a bar fight.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E145</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030050000 +0000" stop="20261030053000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A suspect leads police on a dangerous chase through a neighborhood; a prowler.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E146</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8ba514251e1a58b7b53368177baa1041" start="20261030053000 +0000" stop="20261030060000 +0000">
+    <title>Cops Reloaded</title>
+    <sub-title>Cops Reloaded</sub-title>
+    <desc>A car chase suspect can't explain his passenger's motives; a female driver gives false information.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/75cb5d75065f53ae8cc74a9375274dfe/rokuFeed/assets/7fc5c5b5173859c497a298a9904a94ce.jpg"/>
+    <episode-num system="onscreen">S01E147</episode-num>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261029212202 +0000" stop="20261029221604 +0000">
+    <title>Notorious</title>
+    <sub-title>Notorious</sub-title>
+    <desc>With his Subway diet, Jared Fogle became an inspiration to millions of overweight Americans.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/b4de90c5f2015db38792f3ddb8ee7ecc/rokuFeed/assets/5e62e707098b51f093248d5107db47fb.jpg"/>
+    <episode-num system="onscreen">S01E07</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261029221604 +0000" stop="20261029231009 +0000">
+    <title>Notorious</title>
+    <sub-title>Notorious</sub-title>
+    <desc>Weiner scrambled to contain the damage of his illicit sexual cravings.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/b4de90c5f2015db38792f3ddb8ee7ecc/rokuFeed/assets/5e62e707098b51f093248d5107db47fb.jpg"/>
+    <episode-num system="onscreen">S01E09</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261029231009 +0000" stop="20261030000422 +0000">
+    <title>Sherri Papini's Abduction: REELZ Investigates</title>
+    <desc>A young mom goes for a run and disappears into thin air, then miraculously shows up 22 days later.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/93acdfe2f9c05d1bb5024f932954ef07/images/gracenote/assets/p21742125_b_h9_aa.jpg"/>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261030000422 +0000" stop="20261030005827 +0000">
+    <title>Lorena: Escaping Bobbitt</title>
+    <desc>Revelations from Lorena Bobbitt detail what life was truly like when she assaulted her husband.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/91236eec350d5b81bae7f02e50bcd593/images/gracenote/assets/p21742197_b_h9_aa.jpg"/>
+    <rating system="USA Parental Rating">TVPG</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261030005827 +0000" stop="20261030033731 +0000">
+    <title>On Patrol: Live</title>
+    <sub-title>On Patrol: Live</sub-title>
+    <desc>Search for suspects after multiple vehicle break-ins while officers investigate shots fired.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/b96fbcc3226c51d0bfa309b0c22b9903/rokuFeed/assets/2634c7dfe81357beb261f58a39b170f8.jpg"/>
+    <episode-num system="onscreen">S04E25</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="8abbea29b86a5a5da299c7ef2e288cab" start="20261030033731 +0000" stop="20261030061638 +0000">
+    <title>On Patrol: Live</title>
+    <sub-title>On Patrol: Live</sub-title>
+    <desc>La. officers respond to shots fired while a Daytona Beach, Fla. pursuit ends with a water rescue.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/b96fbcc3226c51d0bfa309b0c22b9903/rokuFeed/assets/2634c7dfe81357beb261f58a39b170f8.jpg"/>
+    <episode-num system="onscreen">S04E26</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261029220000 +0000" stop="20261029222600 +0000">
+    <title>Parking Wars</title>
+    <desc>A citizen speeds off with a boot attached in Philadelphia; a DJ gets the runaround at the lot.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E04</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261029222600 +0000" stop="20261029231700 +0000">
+    <title>Parking Wars</title>
+    <sub-title>Parking Wars</sub-title>
+    <desc>Top 10 outrageous encounters between illegal parkers and the Philadelphia Parking Authority.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E07</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261029231700 +0000" stop="20261029234300 +0000">
+    <title>Parking Wars</title>
+    <desc>Truck drivers unload both freight and expletives; agents make a bet.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E02</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261029234300 +0000" stop="20261030000800 +0000">
+    <title>Parking Wars</title>
+    <desc>Clerical errors create chaos in Philadelphia; Detroit booters dampen holiday spirits.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E13</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030000800 +0000" stop="20261030003400 +0000">
+    <title>Parking Wars</title>
+    <desc>Two women scramble to retrieve the car that a valet had towed during their night of partying.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E10</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030003400 +0000" stop="20261030010000 +0000">
+    <title>Parking Wars</title>
+    <desc>Shawn tries to keep the streets safe for kids; relationships are strained at the impound lot.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E14</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030010000 +0000" stop="20261030012500 +0000">
+    <title>Parking Wars</title>
+    <desc>A furious mother and her son cause a fracas when they cut to the front of the line at the lot.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E03</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030012500 +0000" stop="20261030015100 +0000">
+    <title>Parking Wars</title>
+    <desc>Enraged stalker in Philadelphia; woman booted in Detroit during her job interview.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E01</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030015100 +0000" stop="20261030021700 +0000">
+    <title>Parking Wars</title>
+    <desc>An irate man claims he is a sovereign; unpleasant surprise in the front seat of a car.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E05</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030021700 +0000" stop="20261030024200 +0000">
+    <title>Parking Wars</title>
+    <desc>Stalker in Detroit; two brothers try to retrieve their car from the impound lot.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E06</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030024200 +0000" stop="20261030030800 +0000">
+    <title>Parking Wars</title>
+    <desc>An angry Detroit taxi driver confronts Ponytail; Brian gives the gift of tickets.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E12</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030030800 +0000" stop="20261030033400 +0000">
+    <title>Parking Wars</title>
+    <desc>A man tries to recover his rental car that was towed when he took his wife to the hospital.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E11</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030033400 +0000" stop="20261030040000 +0000">
+    <title>Parking Wars</title>
+    <desc>Late-night partiers try to get their cars back before the lot closes.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S02E17</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030040000 +0000" stop="20261030042600 +0000">
+    <title>Parking Wars</title>
+    <desc>A citizen speeds off with a boot attached in Philadelphia; a DJ gets the runaround at the lot.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E04</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030042600 +0000" stop="20261030051700 +0000">
+    <title>Parking Wars</title>
+    <sub-title>Parking Wars</sub-title>
+    <desc>Top 10 outrageous encounters between illegal parkers and the Philadelphia Parking Authority.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E07</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030051700 +0000" stop="20261030054300 +0000">
+    <title>Parking Wars</title>
+    <desc>Truck drivers unload both freight and expletives; agents make a bet.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E02</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+<programme channel="99e44ea6699928b32c444dce774b9b32" start="20261030054300 +0000" stop="20261030060800 +0000">
+    <title>Parking Wars</title>
+    <desc>Clerical errors create chaos in Philadelphia; Detroit booters dampen holiday spirits.</desc>
+    <icon src="https://images.sr.roku.com/idType/roku-trc/context/trc/id/00775b2a18b55dae886e4006c8ffcdd2/images/gracenote/assets/p185921_b_h8_al.jpg"/>
+    <episode-num system="onscreen">S05E13</episode-num>
+    <rating system="USA Parental Rating">TV14</rating>
+  </programme>
+</tv>

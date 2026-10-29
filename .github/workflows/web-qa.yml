@@ -69,6 +69,12 @@ jobs:
           name: livehome-web-screens
           path: tools/livehome/qa/*.png
           if-no-files-found: ignore
+      - name: Extra guide for free streaming channels (real i.mjh.nz excerpt; provider guide keeps its rows)
+        working-directory: tools/webtest
+        run: |
+          curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
+          sleep 1
+          node guide-extra-qa.mjs
       - name: Throttled quality fallback test (real HLS, 6 Mbps 4K and 1.9 Mbps 1080p, Chrome network throttling)
         working-directory: tools/webtest
         run: |

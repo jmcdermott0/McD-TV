@@ -60,6 +60,7 @@ import coil.compose.AsyncImage
 import com.mcd.tv.Nav
 import com.mcd.tv.Screen
 import com.mcd.tv.data.Epg
+import com.mcd.tv.data.GuideExtra
 import com.mcd.tv.data.FavoriteTeam
 import com.mcd.tv.data.MyTeams
 import com.mcd.tv.data.Game
@@ -271,7 +272,7 @@ fun GamesScreen(nav: Nav, start: League) {
         val url = M3u.guideUrl
         if (index != null && url.isNotBlank() && LiveSession.guide.isEmpty()) {
             val g = Epg.load(url, index.source)
-            if (g.isNotEmpty()) LiveSession.guide = g
+            if (g.isNotEmpty()) LiveSession.guide = GuideExtra.withCached(g, index.source)
         }
     }
     LaunchedEffect(Unit) { GameBoard.refreshAll() }

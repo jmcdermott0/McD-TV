@@ -5663,6 +5663,7 @@ const LV = (() => {
         st.idx = LH.groups(st.chs, (i) => LO.country(list[i].group, list[i].raw), (i) => LO.sectionTV(list[i].group, list[i].raw));
         st.gix = new Map(st.idx.list.map((g) => [g.id, g]));
         epgRestore(url);
+        setTimeout(gxLoad, 0); // extra guide for free streaming channels; never holds up the channel list
       }
     } catch (e) {
       if (st.key === url) st = { status: "error", list: null, msg: (e && e.message) || LIVE_NO, key: url };
@@ -5810,7 +5811,126 @@ const LV = (() => {
   }
   const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   function b64(s) { try { return new TextDecoder().decode(Uint8Array.from(atob(String(s || "")), (c) => c.charCodeAt(0))); } catch { return String(s || ""); } }
+  // ---------- extra guide for free streaming channels (the TV's data/GuideExtra.kt, same rules) ----------
+  // The provider's guide often has nothing for the free streaming channels in a playlist ("RK: Law & Crime",
+  // "PRIME: Universal Crime"). i.mjh.nz publishes the Roku Channel and Plex free channel guides as XMLTV, rebuilt
+  // about every hour; the maintainer's GitHub copy allows browsers. A channel is matched by name without its lineup
+  // tag, and only a channel with no guide of its own gets one ("x<n>:<id>" guide ids). Read as a stream, so a 37 MB
+  // file never sits in memory whole.
+  const GX_BASE = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/master/";
+  const GX_SRC = [GX_BASE + "Roku/all.xml.gz", GX_BASE + "Plex/us.xml.gz"];
+  const GX_TTL = 6 * 3600000, GX_RETRY = 10 * 60000, GX_WINDOW = 8 * 3600000;
+  const GXP = new Map(); // "x<n>:<id>" -> programmes on now or in the next 8 hours
+  let gxAt = 0, gxFailAt = 0, gxKey = "", gxBusy = null;
+  const gxSid = (sid) => /^x\d+:/.test(String(sid || ""));
+  function gxCore(s) {
+    s = s.replace(/\([^)]*\)|\[[^\]]*\]/g, " ").toLowerCase().replace(/&/g, " and ")
+      .replace(/\b(?:hd|fhd|uhd|sd|4k|raw|east|eastern|backup|hevc|1080p|720p|60fps|us|usa|feed|stream)\b/g, " ").replace(/[^a-z0-9+]+/g, "");
+    if (!s) return [];
+    const a = s.replace(/^the/, "");
+    return [...new Set([s, a, a.replace(/(?:channel|network|tv)$/, "")])].filter((k) => k.length >= 3);
+  }
+  const GX_RAISED = /[\u02B0-\u02FF\u1D00-\u1DBF\u2070-\u209F]/g;
+  /** "PRIME: CHAOS ON CAM BY A&E ᴿᴬᵂ" -> ["chaosoncambyaande"]. */
+  function gxPlaylistKeys(n) { let s = String(n || "").replace(GX_RAISED, ""); for (let k = 0; k < 2; k++) s = s.replace(/^\s*[A-Za-z0-9&+.' ]{1,12}[|:]\s*/, ""); return gxCore(s); }
+  /** A guide's display name; its own colon stays ("MGM Presents: Horror"). */
+  const gxSourceKeys = (n) => gxCore(String(n || "").replace(GX_RAISED, ""));
+  function gxUn(s) {
+    return s.indexOf("&") < 0 ? s : s.replace(/&(#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos);/gi, (m, e) => e === "amp" ? "&" : e === "lt" ? "<" : e === "gt" ? ">" : e === "quot" ? '"' : e === "apos" ? "'"
+      : e[1] === "x" || e[1] === "X" ? String.fromCodePoint(parseInt(e.slice(2), 16)) : String.fromCodePoint(+e.slice(1)));
+  }
+  /** "20261029220000 +0000" -> epoch ms, or 0. */
+  function gxTime(s) {
+    const m = /^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)?\s*([+-]\d{4})?/.exec(String(s || "")); if (!m) return 0;
+    let t = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+    if (m[7]) t -= (+m[7].slice(1, 3) * 60 + +m[7].slice(3, 5)) * (m[7][0] === "-" ? -1 : 1) * 60000;
+    return t;
+  }
+  const gxAttr = (el, a) => { const m = new RegExp(" " + a + '="([^"]*)"').exec(el); return m ? gxUn(m[1]) : ""; };
+  const gxTag = (el, t) => { const m = new RegExp("<" + t + "[^>]*>([^<]*)</" + t + ">").exec(el); return m ? gxUn(m[1]).trim() : ""; };
+  /** One XMLTV file: channels wanted by name key -> guide id -> programmes in the window. */
+  async function gxRead(url, want, now) {
+    const r = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
+    if (!r.ok || !r.body) throw new Error("guide");
+    const rd = r.body.pipeThrough(new DecompressionStream("gzip")).pipeThrough(new TextDecoderStream()).getReader();
+    const ids = new Set(), out = new Map(), until = now + GX_WINDOW;
+    let buf = "";
+    // Next "<channel" / "<programme" in buf (-1: none before cTo / pTo), kept so a tag that stopped appearing
+    // is not searched for through the whole buffer again for every programme.
+    let cAt = -1, cTo = 0, pAt = -1, pTo = 0;
+    const find = (tag, at, to, from) => at >= from ? [at, to] : ((i) => [i, i < 0 ? buf.length : i])(buf.indexOf(tag, Math.max(from, to - tag.length)));
+    for (;;) {
+      const { value, done } = await rd.read();
+      if (value) buf += value;
+      let cut = 0;
+      for (;;) {
+        [cAt, cTo] = find("<channel", cAt, cTo, cut); [pAt, pTo] = find("<programme", pAt, pTo, cut);
+        const c = cAt, p = pAt;
+        const s = c < 0 ? p : p < 0 ? c : Math.min(c, p);
+        if (s < 0) { cut = Math.max(cut, buf.length - 12); break; }
+        const ch = s === c, close = ch ? "</channel>" : "</programme>";
+        const e = buf.indexOf(close, s); if (e < 0) { cut = s; break; }
+        const el = buf.slice(s, e + close.length); cut = e + close.length;
+        if (!/^<(?:channel|programme)[\s>]/.test(el)) continue;
+        if (ch) {
+          const id = gxAttr(el, "id"); if (!id) continue;
+          for (const m of el.matchAll(/<display-name[^>]*>([^<]*)<\/display-name>/g)) {
+            if (gxSourceKeys(gxUn(m[1])).some((k) => want.has(k))) { ids.add(id); out.set(id, { keys: gxSourceKeys(gxUn(m[1])), list: [] }); break; }
+          }
+        } else {
+          const id = gxAttr(el, "channel"); if (!ids.has(id)) continue;
+          const start = gxTime(gxAttr(el, "start")), end = gxTime(gxAttr(el, "stop"));
+          if (!start || !end || end <= now || start >= until) continue;
+          const d = gxTag(el, "desc");
+          out.get(id).list.push({ title: gxTag(el, "title") || "Untitled", desc: d.slice(0, 200), start, end });
+        }
+      }
+      buf = buf.slice(cut);
+      if (cAt >= 0) cAt -= cut; if (pAt >= 0) pAt -= cut;
+      cTo = Math.max(0, cTo - cut); pTo = Math.max(0, pTo - cut);
+      if (done) break;
+    }
+    return out;
+  }
+  /** Loads the extra guide (6 h) and gives it to every channel that has no guide of its own. */
+  function gxLoad() {
+    if (gxBusy || st.status !== "ok" || !st.list || !("DecompressionStream" in window) || !("TextDecoderStream" in window)) return gxBusy;
+    const now = Date.now();
+    if (gxKey === st.key && (now - gxAt < GX_TTL || now - gxFailAt < GX_RETRY)) { gxApply(); return null; }
+    const key = st.key;
+    gxBusy = (async () => {
+      const want = new Map(); // name key -> channel indexes with no guide
+      st.list.forEach((ch, i) => { if (!ch.sid || gxSid(ch.sid)) for (const k of gxPlaylistKeys(ch.raw)) (want.get(k) || want.set(k, []).get(k)).push(i); });
+      const found = new Map(); let any = false;
+      for (let n = 0; n < GX_SRC.length && want.size; n++) {
+        let got; try { got = await gxRead(GX_SRC[n], want, Date.now()); } catch { continue; }
+        for (const [id, x] of got) {
+          if (!x.list.length) continue;
+          const sid = "x" + n + ":" + id;
+          x.list.sort((a, b) => a.start - b.start); GXP.set(sid, x.list); any = true;
+          for (const k of x.keys) { const idx = want.get(k); if (!idx) continue; for (const i of idx) if (!found.has(i)) found.set(i, sid); want.delete(k); }
+        }
+      }
+      if (st.key !== key) return;
+      gxKey = key;
+      if (!any) { gxFailAt = Date.now(); return; }
+      gxAt = Date.now(); st.gx = found;
+      gxApply();
+    })().catch(() => { gxFailAt = Date.now(); gxKey = key; }).finally(() => { gxBusy = null; });
+    return gxBusy;
+  }
+  function gxApply() {
+    if (!st.gx || !st.list) return;
+    const now = Date.now();
+    for (const [i, sid] of st.gx) {
+      const ch = st.list[i]; if (!ch || (ch.sid && !gxSid(ch.sid))) continue;
+      ch.sid = sid;
+      EPG.set(sid, { at: now, list: (GXP.get(sid) || []).filter((p) => p.end > now) });
+    }
+    redraw(); homeSoon();
+  }
   async function fetchEpg(sid) {
+    if (gxSid(sid)) { const now = Date.now(); EPG.set(sid, { at: now, list: (GXP.get(sid) || []).filter((p) => p.end > now) }); return; }
     const x = st.xt; if (!x) return;
     // The full guide table (the short guide on many providers skips the show on now). Through the relay it is
     // trimmed to the next six hours; read directly, it is trimmed here.
@@ -5834,7 +5954,7 @@ const LV = (() => {
     }
   }
   function want(sid) {
-    if (!sid || !st.xt || pending.has(sid)) return;
+    if (!sid || (!st.xt && !gxSid(sid)) || pending.has(sid)) return;
     const c = EPG.get(sid);
     if (c && Date.now() - c.at < (c.failed ? EPG_RETRY : EPG_TTL)) return;
     pending.add(sid); queue.push(sid); pump();
@@ -5847,7 +5967,7 @@ const LV = (() => {
   }
   function guideHtml(ch) {
     const now = Date.now();
-    const real = !!(ch.sid && st.xt);
+    const real = !!(ch.sid && (st.xt || gxSid(ch.sid)));
     const c = real ? EPG.get(ch.sid) : null;
     let cur = c ? c.list.find((p) => p.start <= now && p.end > now) : null, nxt = c ? c.list.find((p) => p.start > now) : null;
     if (!cur && !nxt) { const fb = fallback(ch, now); if (fb) { if (fb.untimed || fb.start <= now) cur = fb; else nxt = fb; } }
@@ -6056,7 +6176,7 @@ const LV = (() => {
   }
   const homeGames = () => Object.values(SCHED).flatMap((x) => x.games || []).filter((g) => HOME_LEAGUES.has(g.L.id))
     .map((g) => ({ league: g.L.id, id: g.id, state: g.state, start: g.start, detail: g.detail, away: g.away, home: g.home, casts: g.casts }));
-  function progsOf(i) { const ch = st.list[i]; const c = ch && ch.sid && st.xt ? EPG.get(ch.sid) : null; return c && !c.failed ? c.list : []; }
+  function progsOf(i) { const ch = st.list[i]; const c = ch && ch.sid && (st.xt || gxSid(ch.sid)) ? EPG.get(ch.sid) : null; return c && !c.failed ? c.list : []; }
   function buildHome() {
     const now = Date.now();
     st.home = LH.home({ idx: st.idx, chs: st.chs, progs: progsOf, games: homeGames(), teams: teams(), now, eventOf: (i) => eventProg(st.list[i].raw, st.list[i].group, now) });
@@ -6186,6 +6306,7 @@ const LV = (() => {
       }
     }
     render(v);
+    if (st.status === "ok") gxLoad();
   }
 
   // ---------- player ----------
@@ -7239,7 +7360,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-28.2";
+const BUILD = "2026-10-29.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

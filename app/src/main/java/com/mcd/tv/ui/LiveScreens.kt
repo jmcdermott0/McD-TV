@@ -82,6 +82,7 @@ import com.mcd.tv.Screen
 import com.mcd.tv.data.Addons
 import com.mcd.tv.data.Channel
 import com.mcd.tv.data.Epg
+import com.mcd.tv.data.GuideExtra
 import com.mcd.tv.data.Game
 import com.mcd.tv.data.Games
 import com.mcd.tv.data.League
@@ -282,9 +283,14 @@ internal fun LiveBrowser(nav: Nav, index: LiveIndex, onPick: ((Channel) -> Unit)
             for (attempt in 0..2) {
                 if (attempt > 0) delay(91_000)
                 val g = Epg.load(url, index.source)
-                if (g.isNotEmpty()) { LiveSession.guide = g; break }
+                if (g.isNotEmpty()) { LiveSession.guide = GuideExtra.withCached(g, index.source); break }
             }
         }
+    }
+    // Extra guide for free streaming channels the provider's guide lacks (GuideExtra): added when it arrives.
+    LaunchedEffect(index) {
+        val x = GuideExtra.load(index.source)
+        if (x.isNotEmpty()) LiveSession.guide = GuideExtra.merge(LiveSession.guide, x)
     }
     // Start on the card last played (Back from the player). Otherwise on What's On's first tile, or in Schedules on
     // the open league's chip, else on the selected rail entry.
