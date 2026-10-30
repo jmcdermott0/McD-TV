@@ -679,6 +679,8 @@ const TMDB = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p/";
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+/** Settings > Playback > Live TV guide: "1" turns the extra guide for free channels off on this device. */
+const GX_OFF = "mcdtv_web_guide_extra_off";
 const LS = {
   get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
@@ -5891,6 +5893,16 @@ const LV = (() => {
   const GXP = new Map(); // "x<n>:<id>" -> programmes on now or in the next 8 hours
   let gxAt = 0, gxFailAt = 0, gxKey = "", gxBusy = null;
   const gxSid = (sid) => /^x\d+:/.test(String(sid || ""));
+  /** Settings > Playback > Live TV guide. On unless this device turned it off (key GX_OFF = "1"). */
+  const gxOn = () => LS.get(GX_OFF) !== "1";
+  /** Turned off: every channel the extra guide filled goes back to no guide, at once. */
+  function gxClear() {
+    gxAt = 0; gxFailAt = 0; gxKey = "";
+    if (st.list) for (const ch of st.list) if (gxSid(ch.sid)) ch.sid = "";
+    for (const k of [...EPG.keys()]) if (gxSid(k)) EPG.delete(k);
+    GXP.clear(); st.gx = null;
+    epgSave(); redraw(); homeSoon();
+  }
   function gxCore(s) {
     s = s.replace(/\([^)]*\)|\[[^\]]*\]/g, " ").toLowerCase().replace(/&/g, " and ")
       .replace(/\b(?:hd|fhd|uhd|sd|4k|raw|east|eastern|backup|hevc|1080p|720p|60fps|us|usa|feed|stream)\b/g, " ").replace(/[^a-z0-9+]+/g, "");
@@ -5962,6 +5974,7 @@ const LV = (() => {
   }
   /** Loads the extra guide (6 h) and gives it to every channel that has no guide of its own. */
   function gxLoad() {
+    if (!gxOn()) return null;
     if (gxBusy || st.status !== "ok" || !st.list || !("DecompressionStream" in window) || !("TextDecoderStream" in window)) return gxBusy;
     const now = Date.now();
     if (gxKey === st.key && (now - gxAt < GX_TTL || now - gxFailAt < GX_RETRY)) { gxApply(); return null; }
@@ -6642,6 +6655,8 @@ const LV = (() => {
     azMore() { view.azShown += PAGE; drawHome(true); },
     /** For tests: the rows as built now. */
     homeNow() { return st.idx ? buildHome() : null; },
+    /** Settings > Playback > Live TV guide changed. */
+    guideExtra(on) { if (on) gxLoad(); else gxClear(); },
   };
 })();
 function renderLive(v, tok) { LV.show(v, tok); }
@@ -6922,7 +6937,10 @@ function setPlaybackHTML() {
         <option value="">Same as the TV${o ? " (" + esc(oName[o] || o) + ")" : ""}</option>
         <option value="no_asia">Hide Asian-made titles</option><option value="us">Made in the US only</option><option value="all">All countries</option>
       </select>
-      <p class="muted" style="margin-top:10px">Adult titles are never shown.</p></section>`;
+      <p class="muted" style="margin-top:10px">Adult titles are never shown.</p></section>
+    <section class="sgroup"><h2>Live TV guide</h2>
+      <label class="switch"><input type="checkbox" id="gxOn" ${LS.get(GX_OFF) !== "1" ? "checked" : ""}> Guide for free channels</label>
+      <p class="muted">Adds listings for free streaming channels your provider's guide skips, from the Roku and Plex guides. Your provider's guide does not change. This device only.</p></section>`;
 }
 function setKeysHTML() {
   const k = keys(), i = S.init || {};
@@ -7001,6 +7019,11 @@ function renderSettings(v) {
     os.value = S.originPref || "";
     os.addEventListener("change", (e) => { S.originPref = e.target.value; if (S.originPref) LS.set("mcdtv_web_origin", S.originPref); else LS.del("mcdtv_web_origin"); toast("Saved"); });
   }
+  const gx = $("#gxOn", v); if (gx) gx.addEventListener("change", (e) => {
+    if (e.target.checked) LS.del(GX_OFF); else LS.set(GX_OFF, "1");
+    LV.guideExtra(e.target.checked);
+    toast(e.target.checked ? "Guide for free channels on" : "Guide for free channels off");
+  });
   const jl = $("#jvLocal", v); if (jl) jl.addEventListener("change", (e) => {
     if (e.target.checked) { LS.del(JLOCAL); if (S.link) askInit(); toast("Jarvis key will be saved on this device", "ok"); }
     else { LS.set(JLOCAL, "0"); LS.del(JKEY); toast("Jarvis key removed from this device"); }
@@ -7429,7 +7452,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-29.2";
+const BUILD = "2026-10-30.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

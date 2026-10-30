@@ -87,6 +87,17 @@ class GuideExtraTest {
     }
 
     @Test
+    fun turningItOffKeepsOnlyTheProviderRows() {
+        val p = Programme("WVTM 13 News at 6", now - 60_000, now + 1_800_000, "")
+        val x = Programme("Police Pursuits by Law&Crime", now - 60_000, now + 1_800_000, "")
+        val provider = mapOf("nbc" to listOf(p), "empty" to emptyList())
+        val shown = GuideExtra.merge(provider, mapOf("law" to listOf(x), "empty" to listOf(x), "nbc" to listOf(x)))
+        val off = GuideExtra.withoutExtra(shown, provider)
+        assertEquals(mapOf("nbc" to listOf(p)), off)
+        assertTrue(GuideExtra.withoutExtra(shown, emptyMap()).isEmpty())
+    }
+
+    @Test
     fun entitiesAndChunkBoundaries() = runBlocking {
         assertEquals("A&E's \"Best\" <1>", GuideExtra.unescape("A&amp;E&#39;s &quot;Best&quot; &lt;1&gt;"))
         // A big padding block pushes elements across the scanner's 64 KB reads.

@@ -261,7 +261,7 @@ object GuideExtra {
      * failure gives what was read so far, or nothing.
      */
     suspend fun load(channels: List<Channel>): Map<String, List<Programme>> {
-        if (channels.isEmpty()) return emptyMap()
+        if (channels.isEmpty() || !enabled()) return emptyMap()
         val sig = sigOf(channels)
         return try {
             lock.withLock {
@@ -313,9 +313,24 @@ object GuideExtra {
         }
     }
 
+    /** Settings > Addons and Live TV > Guide for free channels (Prefs.guideExtra, on by default). */
+    fun enabled(): Boolean = runCatching { Prefs.guideExtra }.getOrDefault(true)
+
+    /** The toggle was turned off: forget what was loaded, so nothing of it shows again until it is turned on. */
+    fun clear() {
+        cache = emptyMap()
+        cacheSig = ""
+        cacheAt = 0L
+        failAt = 0L
+    }
+
+    /** [guide] without the rows this layer added: the channels the provider has nothing for go back to empty. */
+    fun withoutExtra(guide: Map<String, List<Programme>>, provider: Map<String, List<Programme>>): Map<String, List<Programme>> =
+        guide.filterKeys { k -> !provider[k].isNullOrEmpty() }
+
     /** The extra guide already loaded for [channels], or nothing (no download). */
     fun cached(channels: List<Channel>): Map<String, List<Programme>> =
-        if (channels.isNotEmpty() && sigOf(channels) == cacheSig && System.currentTimeMillis() - cacheAt < CACHE_MS) cache else emptyMap()
+        if (channels.isNotEmpty() && enabled() && sigOf(channels) == cacheSig && System.currentTimeMillis() - cacheAt < CACHE_MS) cache else emptyMap()
 
     /** [guide] with the extra rows already loaded for [channels]; the provider's rows win. */
     fun withCached(guide: Map<String, List<Programme>>, channels: List<Channel>): Map<String, List<Programme>> = merge(guide, cached(channels))

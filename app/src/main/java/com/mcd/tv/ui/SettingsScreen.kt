@@ -456,6 +456,16 @@ private fun SourcesCategory(ctx: SettingsCtx, changed: () -> Unit) {
     InfoRow("Websites", Prefs.websites.joinToString(", ") { it.first }.ifBlank { "None" })
     SettingsNote("Long text such as links and keys stays on the Control page, so you never type it with the remote.")
 
+    // This TV only. The extra guide (GuideExtra) for free streaming channels; the provider's guide is never changed.
+    SettingsSection("Live TV guide")
+    ToggleRow(ctx.row(), "Guide for free channels", "Adds listings for free streaming channels your provider's guide skips, from the Roku and Plex guides.", Prefs.guideExtra) {
+        Prefs.guideExtra = it
+        if (!it) {
+            com.mcd.tv.data.GuideExtra.clear()
+            LiveSession.guide = com.mcd.tv.data.GuideExtra.withoutExtra(LiveSession.guide, com.mcd.tv.data.Epg.current)
+        }
+    }
+
     // Per profile, this TV. Hiding a league only hides it in Live Games; the playlist stays as it is.
     SettingsSection("Live Games")
     SettingsNote("Leagues ${Prefs.activeProfileName} sees in Live TV > Live Games. Hidden leagues stay in your playlist.")
