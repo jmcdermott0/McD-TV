@@ -169,15 +169,24 @@ for k in $(seq 0 14); do
   if grep -q 'text="True Crime"' qa-out/ui-browse-truecrime.xml; then sleep 1; shot browse-truecrime; TC_MENU=1; break; fi
 done
 if [ -n "$TC_MENU" ]; then pass "Browse: True Crime entry"; else fail "Browse: True Crime entry"; fi
-adb shell am start -S -n com.mcd.tv/.MainActivity >/dev/null; sleep 25
+# Launch Home the way every other Home check does (home_open): the "qa" extra skips "Who's watching?", so the
+# check sees Home with the last used profile. A bare launch stops on the profile picker (QA run 253 log).
+adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true >/dev/null; sleep 25
 TC_HOME=""
 for k in 0 1 2 3 4 5 6 7 8 9; do
   [ "$k" -gt 0 ] && { adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 2; }
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-home-truecrime.xml" >/dev/null 2>&1
+  # Diagnostics only (no effect on the result): what Home shows on this try. Row headings are upper case (RailHeader).
+  cp qa-out/ui-home-truecrime.xml "qa-out/ui-home-truecrime-$k.xml" 2>/dev/null
+  echo "      [home-truecrime $k] headings: $(grep -o 'text="[A-Z][A-Z0-9 &amp;;·:'"'"'.,!-]\{2,\}"' qa-out/ui-home-truecrime.xml 2>/dev/null | sed 's/^text=//' | tr '\n' ' ' | cut -c1-600)"
+  echo "      [home-truecrime $k] posters: $(grep -o 'content-desc="[^"]\+"' qa-out/ui-home-truecrime.xml 2>/dev/null | sed 's/content-desc=//' | tr '\n' ' ' | cut -c1-900)"
+  echo "      [home-truecrime $k] focused: $(grep -o '<node [^>]*focused="true"[^>]*>' qa-out/ui-home-truecrime.xml 2>/dev/null | grep -o 'text="[^"]*"\|content-desc="[^"]*"\|bounds="[^"]*"' | tr '\n' ' ' | cut -c1-300)"
   if grep -q 'text="TRUE CRIME"' qa-out/ui-home-truecrime.xml && grep -q 'content-desc="Making a Murderer"' qa-out/ui-home-truecrime.xml; then
     shot home-truecrime; TC_HOME=1; break
   fi
 done
+# Diagnostics only: every heading Home showed over all tries, in order of first sight.
+echo "      [home-truecrime] all headings seen: $(for f in qa-out/ui-home-truecrime-*.xml; do grep -o 'text="[A-Z][A-Z0-9 &amp;;·:'"'"'.,!-]\{2,\}"' "$f" 2>/dev/null | sed 's/^text=//'; done | awk '!seen[$0]++' | tr '\n' ' ' | cut -c1-1200)"
 if [ -n "$TC_HOME" ]; then pass "Home: True Crime row with Making a Murderer"; else shot home-truecrime; fail "Home: True Crime row with Making a Murderer"; fi
 
 # 4a) Settings with the remote: a screenshot of each category, a D-pad walk through its rows (the keyboard must
@@ -452,11 +461,17 @@ adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 10
 shot live-playing
 adb shell dumpsys activity activities | grep -q "com.mcd.tv" && pass "Live channel opens the player without leaving the app" || fail "Live channel opens the player without leaving the app"
 
-# Settings > Addons and Live TV > My teams: Dad's four Philadelphia teams (rows after the 8 league switches).
+# Settings > Addons and Live TV > My teams: Dad's four Philadelphia teams (rows after the guide switch and the 8 league switches).
 adb shell am start -S -n com.mcd.tv/.MainActivity --es screen settings:sources >/dev/null
 sleep 8
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 1
-for i in $(seq 1 12); do adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 1; done
+# Walk DOWN until the last team (76ers) is on screen, at most 16 presses: a fixed count breaks whenever a row is
+# added above My Teams (v0.2.218's "Guide for free channels" left 12 presses one short, on the Flyers).
+for i in $(seq 1 16); do
+  adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 1
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-settings-myteams.xml >/dev/null 2>&1
+  grep -q 'text="[^"]*  76ers"' qa-out/ui-settings-myteams.xml && break
+done
 shot settings-myteams
 describe settings-myteams
 MISSING=""
