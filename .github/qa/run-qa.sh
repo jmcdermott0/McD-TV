@@ -169,7 +169,9 @@ for k in $(seq 0 14); do
   if grep -q 'text="True Crime"' qa-out/ui-browse-truecrime.xml; then sleep 1; shot browse-truecrime; TC_MENU=1; break; fi
 done
 if [ -n "$TC_MENU" ]; then pass "Browse: True Crime entry"; else fail "Browse: True Crime entry"; fi
-adb shell am start -S -n com.mcd.tv/.MainActivity >/dev/null; sleep 25
+# Launch Home the way every other Home check does (home_open): the "qa" extra skips "Who's watching?", so the
+# check sees Home with the last used profile. A bare launch stops on the profile picker (QA run 253 log).
+adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true >/dev/null; sleep 25
 TC_HOME=""
 for k in 0 1 2 3 4 5 6 7 8 9; do
   [ "$k" -gt 0 ] && { adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 2; }
