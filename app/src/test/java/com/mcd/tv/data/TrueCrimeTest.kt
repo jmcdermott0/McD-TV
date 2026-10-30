@@ -148,6 +148,17 @@ class TrueCrimeTest {
         assertTrue("QA screen", src("com/mcd/tv/MainActivity.kt").contains("com.mcd.tv.data.TrueCrime.ID -> Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID"))
     }
 
+    @Test fun homeRowSurvivesARestart() {
+        // Emulator QA restarts the app and expects the Home row: the built shelf is kept on the TV
+        // ("truecrime_shelf", like the History hub's lookups) and a failed first load is tried once more.
+        val hub = src("com/mcd/tv/data/TrueCrimeHub.kt")
+        assertTrue("shelf kept on the TV", hub.contains("STORED_KEY = \"truecrime_shelf\"") && hub.contains("storeShelf(it, now)"))
+        assertTrue("stored shelf read before a rebuild", hub.contains("?: storedShelf(now, STORED_TTL_MS)"))
+        assertTrue("older shelf when TMDB fails", hub.contains("storedShelf(now, Long.MAX_VALUE) ?: throw e"))
+        val homeRow = hub.substringAfter("suspend fun homeRow(").substringBefore("\n    }\n")
+        assertTrue("one retry", homeRow.contains("for (attempt in 0..1)") && homeRow.contains("delay(RETRY_MS)"))
+    }
+
     @Test fun categoryReadsNoViewingHistory() {
         val forbidden = listOf(
             "Library.history", "Library.likes", "Library.favorites", "Library.isWatched", "Recommender.moreLikeThis",
