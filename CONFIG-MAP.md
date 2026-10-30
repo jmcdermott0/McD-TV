@@ -42,6 +42,7 @@ How every setting is entered, stored, synced and read across the TV app, the Con
 |---|---|---|---|---|
 | Playlist (M3U or Xtream Codes) | Control page, TV home Wi-Fi page | `m3u_url`. Xtream user and password are read from the `get.php?username=&password=` link; there are no separate fields. | HouseSync, `web_init`. The phone loads it through `jarvis-rd.netlify.app/iptv`. | yes (the link holds the login) |
 | Guide (XMLTV) | no field | taken from the playlist header (`url-tvg`, `x-tvg-url`) or Xtream `xmltv.php`; kept in memory on the TV; phone cache `mcdtv_web_epg` | none | through the link |
+| Extra guide for free streaming channels | no field (built in, additive) | i.mjh.nz Roku and Plex XMLTV from raw.githubusercontent.com; kept in memory on the TV (6 h) and in the page on the phone; its rows can land in `mcdtv_web_epg` under `x<n>:<id>` ids | none | public file, no link or key |
 | Live TV favorites | star on the TV or phone | `live_favorites@pN`; phone `mcdtv_web_plists` | ProfileSync, `web_init` | no |
 | Recents, last channel, channel stats | automatic | `live_recents@pN`, `live_last_url@pN`, `live_stats` (JSON list; `b` = measured stream bitrate in kbps, 0 in older entries) | this TV only | no |
 | Quality memory (up-front 4K or 1080p pick) | automatic | `quality_memory` = JSON `{est, estAt, ch: {guideKey: {br, down, clr}}}`: last throughput (bps) and when, per 4K channel its measured bitrate, last step-down and when a step-down was forgiven | this TV only, never synced, not per profile | no |

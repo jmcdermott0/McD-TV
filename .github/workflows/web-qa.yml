@@ -6,7 +6,7 @@ name: Web QA
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "tools/webtest/**", "tools/livehome/**", ".github/workflows/web-qa.yml"]
+    paths: ["docs/**", "tools/webtest/**", "tools/livehome/**", "tools/truecrime/**", ".github/workflows/web-qa.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -30,8 +30,12 @@ jobs:
           done
       - name: Quality fallback unit tests
         run: node tools/webtest/qf-test.mjs
+      - name: Guide matching (real channel names; same expected file as the TV's GuideMatchTest) and coverage audit
+        run: node tools/epg/guidematch-test.mjs && node tools/epg/coverage.mjs
       - name: Live TV default view (stand-in playlist and guide snapshot; same expected file as the TV's LiveHomeTest)
         run: node tools/webtest/livehome-test.mjs
+      - name: True Crime category (real TMDB fixture; same expected file as the TV's TrueCrimeTest)
+        run: node tools/webtest/truecrime-test.mjs
       - name: Install Playwright Chromium
         working-directory: tools/webtest
         run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
@@ -47,6 +51,19 @@ jobs:
           curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
           sleep 1
           node livehome-qa.mjs
+      - name: True Crime in the browser (Home row and Browse grid from the real TMDB capture)
+        working-directory: tools/webtest
+        run: |
+          curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
+          sleep 1
+          node truecrime-qa.mjs
+      - name: True Crime screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: truecrime-web-screens
+          path: tools/truecrime/qa/*.png
+          if-no-files-found: ignore
       - name: Live TV screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +71,12 @@ jobs:
           name: livehome-web-screens
           path: tools/livehome/qa/*.png
           if-no-files-found: ignore
+      - name: Extra guide for free streaming channels (real i.mjh.nz excerpt; provider guide keeps its rows)
+        working-directory: tools/webtest
+        run: |
+          curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
+          sleep 1
+          node guide-extra-qa.mjs
       - name: Throttled quality fallback test (real HLS, 6 Mbps 4K and 1.9 Mbps 1080p, Chrome network throttling)
         working-directory: tools/webtest
         run: |

@@ -49,6 +49,7 @@ import androidx.tv.material3.Text
 import com.mcd.tv.Nav
 import com.mcd.tv.Screen
 import com.mcd.tv.data.Addons
+import com.mcd.tv.data.Epg
 import com.mcd.tv.data.HouseSync
 import com.mcd.tv.data.FavoriteTeam
 import com.mcd.tv.data.Games
@@ -492,6 +493,10 @@ private fun SourcesCategory(ctx: SettingsCtx, changed: () -> Unit) {
 
     SettingsSection("Live TV health")
     InfoRow("This TV", remember { LiveStats.device(c) })
+    // Guide coverage of the last guide read: shows on the TV whether a guide change helped or broke matching.
+    remember { Epg.lastStats }?.let { g ->
+        InfoRow("Guide", "%,d of %,d channels have listings. %,d have a guide id.".format(g.listed, g.channels, g.withId))
+    }
     val sessions = remember { LiveStats.recent() }
     if (sessions.isEmpty()) {
         SettingsNote("Watch a few live channels, then come back. Jarvis notes how each one played.")

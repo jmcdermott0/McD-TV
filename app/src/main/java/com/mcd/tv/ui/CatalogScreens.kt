@@ -42,6 +42,7 @@ import com.mcd.tv.data.POPULAR_COLLECTIONS
 import com.mcd.tv.data.SERVICES
 import com.mcd.tv.data.Title
 import com.mcd.tv.data.Tmdb
+import com.mcd.tv.data.TrueCrime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -62,6 +63,8 @@ private fun browseMenu(): List<MenuEntry> = buildList {
     add(MenuEntry("Genres", "Action, Comedy, Drama, Horror…", Screen.Genres))
     add(MenuEntry("Collections", "Movie franchises", Screen.BrowseGrid("collections")))
     if (!com.mcd.tv.data.Prefs.isKidsProfile) add(MenuEntry("History", "Ken Burns, historical dramas, every era", Screen.History))
+    // True Crime: the same shelf as the Home row (TrueCrimeHub.shelf), one category id on both surfaces.
+    if (com.mcd.tv.data.TrueCrimeHub.showFor()) add(MenuEntry(TrueCrime.LABEL, TrueCrime.SUBTITLE, Screen.BrowseGrid(TrueCrime.ID, "", TrueCrime.LABEL)))
     SERVICES.forEachIndexed { i, s ->
         add(MenuEntry(s.name, "Current catalog", Screen.ServiceGrid(s), section = if (i == 0) "Streaming services" else null))
     }
@@ -151,6 +154,7 @@ private fun defaultHeading(kind: String) = when (kind) {
     "collections" -> "Collections"
     "collection" -> "Collection"
     "history" -> "History"
+    TrueCrime.ID -> TrueCrime.LABEL
     else -> "Browse"
 }
 
@@ -176,6 +180,7 @@ private suspend fun fetchGrid(kind: String, param: String, type: String, chip: S
     "collection" -> if (page == 1) param.toIntOrNull()?.let { Tmdb.collection(it).parts } ?: emptyList() else emptyList()
     "collections" -> if (page == 1) popularCollections() else emptyList()
     "history" -> if (page == 1) com.mcd.tv.data.HistoryHub.shelf(param) else emptyList()
+    TrueCrime.ID -> if (page == 1) com.mcd.tv.data.TrueCrimeHub.shelf() else emptyList()
     else -> emptyList()
 }
 

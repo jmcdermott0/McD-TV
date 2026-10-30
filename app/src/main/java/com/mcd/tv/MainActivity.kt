@@ -59,7 +59,7 @@ sealed interface Screen {
     /** Catalog menu: Trending, Top Rated, New Releases, By Year, By Language, Genres, Collections, services, Sports, Noise. */
     data object Browse : Screen
     /**
-     * A full poster grid with "See more" paging. kind: trending, popular, top, new, year, lang, collections, collection, history.
+     * A full poster grid with "See more" paging. kind: trending, popular, top, new, year, lang, collections, collection, history, truecrime.
      * param: kind-specific (type "movie"/"tv" for popular/top, a language code, a collection id, a History shelf id…). title: page heading.
      */
     data class BrowseGrid(val kind: String, val param: String = "", val title: String = "") : Screen
@@ -252,6 +252,7 @@ class MainActivity : ComponentActivity() {
             "library" -> Screen.Library
             "browse" -> Screen.Browse
             "history" -> Screen.History
+            com.mcd.tv.data.TrueCrime.ID -> Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID, "", com.mcd.tv.data.TrueCrime.LABEL)
             "live" -> Screen.Live
             "multiview" -> Screen.Multiview
             "games" -> Screen.Games(com.mcd.tv.data.League.NFL)

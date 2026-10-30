@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import com.mcd.tv.Nav
 import com.mcd.tv.data.Channel
 import com.mcd.tv.data.Epg
+import com.mcd.tv.data.GuideExtra
 import com.mcd.tv.data.LiveFill
 import com.mcd.tv.data.LiveOrganizer
 import com.mcd.tv.data.LiveStats
@@ -139,7 +140,9 @@ fun LivePlayerScreen(nav: Nav, index: Int) {
             if (url.isNotBlank()) {
                 val all = runCatching { M3u.load() }.getOrDefault(emptyList())
                 val g = Epg.load(url, all)
-                if (g.isNotEmpty()) LiveSession.guide = g
+                if (g.isNotEmpty()) LiveSession.guide = GuideExtra.withCached(g, all)
+                val x = GuideExtra.load(all)
+                if (x.isNotEmpty()) LiveSession.guide = GuideExtra.merge(LiveSession.guide, x)
             }
         }
     }

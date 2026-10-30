@@ -57,16 +57,26 @@ class LiveHomeTest {
     private class Fixture(val chs: List<Channel>, val idx: LiveGroups, val progs: (Int) -> List<Programme>)
 
     private val fixture: Fixture by lazy {
-        val chs = LiveOrganizer.build(M3u.parse(gz("tools/livehome/fixture/playlist.m3u.gz"))).channels
+        val raw = M3u.parse(gz("tools/livehome/fixture/playlist.m3u.gz"))
+        val chs = LiveOrganizer.build(raw).channels
         val guide = xmltv(gz("tools/livehome/fixture/guide.xml.gz"))
-        // A channel's own guide id, else the guide of a copy of the same network (Epg.parse's donor match).
-        val donor = HashMap<String, String>()
-        for (c in chs) { val id = c.tvgId; if (id != null && guide.containsKey(id)) { val k = LiveFill.guideKey(c.name); if (k.isNotEmpty() && k !in donor) donor[k] = id } }
-        val gid = chs.map { c -> c.tvgId?.takeIf { guide.containsKey(it) } ?: donor[LiveFill.guideKey(c.name)] ?: "" }
+        // Epg.parse's match: GuideMatch over the whole playlist (as the TV hands it over), guide ids case-insensitive.
+        val plan = GuideMatch.plan(raw)
+        val lower = guide.keys.associateBy { it.lowercase() }
+        val gid = chs.map { c -> plan.idOf[Epg.keyOf(c)]?.let { lower[it] } ?: "" }
+        // A West feed: East listings 3 hours later; live events stay at their real time and replace what they overlap.
+        fun progs(i: Int): List<Programme> {
+            val l = if (gid[i].isEmpty()) emptyList() else guide[gid[i]].orEmpty()
+            if (Epg.keyOf(chs[i]) !in plan.shifted) return l
+            val sh = GuideMatch.WEST_SHIFT_MS
+            val live = l.filter { it.live }
+            return l.filter { p -> p.live || live.none { x -> p.start + sh < x.end && x.start < p.end + sh } }
+                .map { p -> if (p.live) p else p.copy(start = p.start + sh, end = p.end + sh) }.sortedBy { it.start }
+        }
         val country = chs.map { LiveOrganizer.country(it.group, it.name) }
         val section = chs.mapIndexed { i, c -> LiveOrganizer.section(c.group, c.name, country[i]) }
         val idx = LiveHome.groups(chs, { country[it] }, { section[it] })
-        Fixture(chs, idx, { i -> if (gid[i].isEmpty()) emptyList() else guide[gid[i]].orEmpty() })
+        Fixture(chs, idx, { i -> progs(i) })
     }
 
     @Test
