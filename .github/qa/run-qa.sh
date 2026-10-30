@@ -174,10 +174,17 @@ TC_HOME=""
 for k in 0 1 2 3 4 5 6 7 8 9; do
   [ "$k" -gt 0 ] && { adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 2; }
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-home-truecrime.xml" >/dev/null 2>&1
+  # Diagnostics only (no effect on the result): what Home shows on this try. Row headings are upper case (RailHeader).
+  cp qa-out/ui-home-truecrime.xml "qa-out/ui-home-truecrime-$k.xml" 2>/dev/null
+  echo "      [home-truecrime $k] headings: $(grep -o 'text="[A-Z][A-Z0-9 &amp;;·:'"'"'.,!-]\{2,\}"' qa-out/ui-home-truecrime.xml 2>/dev/null | sed 's/^text=//' | tr '\n' ' ' | cut -c1-600)"
+  echo "      [home-truecrime $k] posters: $(grep -o 'content-desc="[^"]\+"' qa-out/ui-home-truecrime.xml 2>/dev/null | sed 's/content-desc=//' | tr '\n' ' ' | cut -c1-900)"
+  echo "      [home-truecrime $k] focused: $(grep -o '<node [^>]*focused="true"[^>]*>' qa-out/ui-home-truecrime.xml 2>/dev/null | grep -o 'text="[^"]*"\|content-desc="[^"]*"\|bounds="[^"]*"' | tr '\n' ' ' | cut -c1-300)"
   if grep -q 'text="TRUE CRIME"' qa-out/ui-home-truecrime.xml && grep -q 'content-desc="Making a Murderer"' qa-out/ui-home-truecrime.xml; then
     shot home-truecrime; TC_HOME=1; break
   fi
 done
+# Diagnostics only: every heading Home showed over all tries, in order of first sight.
+echo "      [home-truecrime] all headings seen: $(for f in qa-out/ui-home-truecrime-*.xml; do grep -o 'text="[A-Z][A-Z0-9 &amp;;·:'"'"'.,!-]\{2,\}"' "$f" 2>/dev/null | sed 's/^text=//'; done | awk '!seen[$0]++' | tr '\n' ' ' | cut -c1-1200)"
 if [ -n "$TC_HOME" ]; then pass "Home: True Crime row with Making a Murderer"; else shot home-truecrime; fail "Home: True Crime row with Making a Murderer"; fi
 
 # 4a) Settings with the remote: a screenshot of each category, a D-pad walk through its rows (the keyboard must
