@@ -835,7 +835,10 @@ function pavHTML(p) {
 // version as the TV (app/src/main/java/com/mcd/tv/data/PhotoCodec.kt). web_init says which version each TV has.
 const PHOTO_KEY = "mcdtv_web_photos";
 const PH = (() => {
-  const SIDE = 192, CHUNK = 1600, MAX = 30000, TV_MAX = 32000;
+  // MAX keeps a photo to 7 pieces. Each piece is about one message on the house topic and a TV sends at most 25
+  // at once (then one per 20 min), so all three photos reach the other TVs within that burst. A 30 KB limit made
+  // 14 to 17 pieces per photo, and TVs that were off missed them for days. TVs still accept bigger ones (TV_MAX).
+  const SIDE = 192, CHUNK = 1600, MAX = 10000, TV_MAX = 32000;
   const HOLD = 120000; // after a change here, the TV's older answer is ignored this long (it may not have the photo yet)
   const asked = {}, resent = {}, parts = {};
   const all = () => { const o = readJSON(PHOTO_KEY); return o && typeof o === "object" ? o : {}; };
@@ -867,7 +870,7 @@ const PH = (() => {
     g.imageSmoothingQuality = "high";
     g.drawImage(src, (w - side) / 2, (h - side) * (h > w ? 0.3 : 0.5), side, side, 0, 0, SIDE, SIDE);
     if (src.close) src.close();
-    for (const q of [0.85, 0.75, 0.62, 0.5, 0.4]) {
+    for (const q of [0.85, 0.75, 0.62, 0.5, 0.4, 0.32, 0.25]) {
       const d = c.toDataURL("image/jpeg", q).split(",")[1] || "";
       if (valid(d) && d.length <= MAX) return d;
     }
@@ -901,8 +904,11 @@ const PH = (() => {
     const r = parseRoute().path;
     if (r[0] === "profiles" || (r[0] === "settings" && r[1] === "profile")) route();
   }
-  /** web_init's "photos" ({p1: version or ""}, newer TVs only). The TV holds the house's copy. */
-  function onTv(photos) {
+  /**
+   * web_init's "photos" ({p1: version or ""}, newer TVs only). The TV holds the house's copy. [removed]: profiles
+   * whose photo was removed on purpose (newer TVs). A TV that just has not got a photo yet gets this device's copy.
+   */
+  function onTv(photos, removed) {
     if (!photos || typeof photos !== "object" || !S.link) return;
     const o = all(), now = Date.now();
     let changed = false;
@@ -912,8 +918,10 @@ const PH = (() => {
       if (tv === have) { if (o[pid] && !mine.ok) { mine.ok = true; changed = true; } continue; }
       if (now - (mine.at || 0) < HOLD) continue; // our own change may still be on its way
       if (!tv) {
-        // The TV has none. Removed elsewhere (this photo reached a TV before), or the TV never got it: send it again.
-        if (mine.ok) { delete o[pid]; changed = true; }
+        // The TV has none. Removed on purpose (a newer TV says so, or an older TV after this photo reached a TV):
+        // drop ours. Else the TV never got it (it was off while the house shared it): send it.
+        const gone = Array.isArray(removed) ? removed.includes(pid) : !!mine.ok;
+        if (gone) { delete o[pid]; changed = true; }
         else if (have && !resent[pid]) { resent[pid] = 1; send(pid, have, mine.d); }
       } else if (now - (asked[pid + tv] || 0) > 300000) {
         asked[pid + tv] = now;
@@ -1407,7 +1415,7 @@ function applyInit(m) {
   if (S.link) m.relay_id = S.link.id;
   S.init = m; saveInit();
   updateProfileUI();
-  PH.onTv(m.photos);
+  PH.onTv(m.photos, m.photos_removed);
   if (m3uChanged) LV.reset();
   if (!hadKey && keys().tmdb) { route(); return; }
   if (listsChanged || filtersChanged) onListsChanged();
@@ -7452,7 +7460,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-30.1";
+const BUILD = "2026-10-30.2";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;
