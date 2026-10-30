@@ -1,11 +1,14 @@
 package com.mcd.tv.data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -23,6 +26,12 @@ import org.json.JSONObject
 object TrueCrimeHub {
     private const val SHELF_TTL_MS = 15 * 60_000L
     private const val MAX = 60
+
+    /** The built shelf kept on the TV ("truecrime_shelf"), so Home has the row right after the app restarts. */
+    private const val STORED_KEY = "truecrime_shelf"
+    private const val STORED_TTL_MS = 24 * 3_600_000L
+    private const val STORED_VERSION = 1 // bump when TrueCrime's rules change, so an old shelf is rebuilt
+    private const val RETRY_MS = 3_000L
 
     private fun keyOf(t: Title) = "${t.type}:${t.id}"
 
@@ -115,14 +124,40 @@ object TrueCrimeHub {
         val all = buildLock.withLock {
             val now = System.currentTimeMillis()
             synchronized(shelves) { shelves[""] }?.takeIf { now - it.at < SHELF_TTL_MS }?.titles
-                ?: build().also { if (it.isNotEmpty()) synchronized(shelves) { shelves[""] = Cached(it, now) } }
+                ?: storedShelf(now, STORED_TTL_MS)?.also { synchronized(shelves) { shelves[""] = Cached(it, now) } }
+                ?: try {
+                    build().also { if (it.isNotEmpty()) { synchronized(shelves) { shelves[""] = Cached(it, now) }; storeShelf(it, now) } }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    storedShelf(now, Long.MAX_VALUE) ?: throw e // TMDB unreachable: an older shelf beats no row
+                }
         }
         val kws = HistoryHub.keywordsOf(all) // cached on the TV by now: no requests
         val block = HistoryHub.blocked(profile)
         return all.filterNot { block(it, kws[keyOf(it)].orEmpty()) }.take(max)
     }
 
-    /** Home's True Crime row: the first 20 titles of the same shelf Browse > True Crime shows. */
-    suspend fun homeRow(profile: String = Prefs.activeProfile): Pair<String, List<Title>>? =
-        runCatching { shelf(profile, 20) }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { TrueCrime.LABEL to it }
+    /** Home's True Crime row: the first 20 titles of the same shelf Browse > True Crime shows. A failed load is tried once more. */
+    suspend fun homeRow(profile: String = Prefs.activeProfile): Pair<String, List<Title>>? {
+        for (attempt in 0..1) {
+            if (attempt > 0) delay(RETRY_MS)
+            val row = runCatching { shelf(profile, 20) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            if (row != null) return TrueCrime.LABEL to row
+        }
+        return null
+    }
+
+    /** The shelf kept on the TV, when it is younger than [maxAge] and built by the current rules. */
+    private fun storedShelf(now: Long, maxAge: Long): List<Title>? = runCatching {
+        val o = HistoryHub.loadMap(STORED_KEY)
+        if (o.optInt("v") != STORED_VERSION || now - o.optLong("at") >= maxAge) return null
+        val a = o.optJSONArray("t") ?: return null
+        (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let { j -> with(HistoryHub) { j.toTitle() } } }
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+
+    private fun storeShelf(titles: List<Title>, now: Long) {
+        val a = JSONArray().apply { titles.forEach { put(with(HistoryHub) { it.toJson() }) } }
+        Prefs.putJson(STORED_KEY, JSONObject().put("v", STORED_VERSION).put("at", now).put("t", a).toString())
+    }
 }
