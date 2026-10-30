@@ -461,11 +461,17 @@ adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 10
 shot live-playing
 adb shell dumpsys activity activities | grep -q "com.mcd.tv" && pass "Live channel opens the player without leaving the app" || fail "Live channel opens the player without leaving the app"
 
-# Settings > Addons and Live TV > My teams: Dad's four Philadelphia teams (rows after the 8 league switches).
+# Settings > Addons and Live TV > My teams: Dad's four Philadelphia teams (rows after the guide switch and the 8 league switches).
 adb shell am start -S -n com.mcd.tv/.MainActivity --es screen settings:sources >/dev/null
 sleep 8
 adb shell input keyevent KEYCODE_DPAD_RIGHT; sleep 1
-for i in $(seq 1 12); do adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 1; done
+# Walk DOWN until the last team (76ers) is on screen, at most 16 presses: a fixed count breaks whenever a row is
+# added above My Teams (v0.2.218's "Guide for free channels" left 12 presses one short, on the Flyers).
+for i in $(seq 1 16); do
+  adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 1
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-settings-myteams.xml >/dev/null 2>&1
+  grep -q 'text="[^"]*  76ers"' qa-out/ui-settings-myteams.xml && break
+done
 shot settings-myteams
 describe settings-myteams
 MISSING=""
