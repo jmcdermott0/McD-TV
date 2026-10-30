@@ -419,6 +419,8 @@ object Relay {
         }
         // Photo versions only ("" = none). A phone that lacks one asks with "profile_photo_get".
         val photos = JSONObject().apply { Prefs.PROFILE_IDS.forEach { id -> put(id, ProfilePhotos.version(id)) } }
+        // Profiles whose photo was removed on purpose. "" without this means "not here yet", so the phone sends its copy.
+        val photosRemoved = JSONArray().apply { Prefs.PROFILE_IDS.forEach { id -> if (ProfilePhotos.version(id).isEmpty() && com.mcd.tv.data.sync.ProfileSync.photoRemoved(id)) put(id) } }
         // Addon URLs can be long (their config is in the URL): if they don't fit, they go in follow-up "addons" messages.
         var withAddons = true
         var withSites = true
@@ -431,6 +433,7 @@ object Relay {
                 .put("profile", pid)
                 .put("profiles", profiles)
                 .put("photos", photos)
+                .put("photos_removed", photosRemoved)
                 // Who this TV is, so the phone can name it and aim commands at it.
                 .put("device_id", Prefs.deviceId)
                 .put("tv_label", Prefs.tvLabel)

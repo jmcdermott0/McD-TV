@@ -606,7 +606,7 @@ for (const w of [390,1280]) {
   await p.waitForFunction(()=>{ try{ return JSON.parse(localStorage.mcdtv_web_photos).p2.d.length>0; }catch{ return false; } },null,{timeout:8000}).catch(()=>fails.push('photos: nothing saved'));
   await p.waitForTimeout(800);
   const saved=await p.evaluate(async()=>{ const r=JSON.parse(localStorage.mcdtv_web_photos).p2; const i=new Image(); i.src='data:image/jpeg;base64,'+r.d; await i.decode();
-    return {v:r.v,d:r.d,small:r.d.length<=30000,jpeg:r.d.startsWith('/9j/'),size:i.naturalWidth+'x'+i.naturalHeight,vOk:(await PH.version(r.d))===r.v}; });
+    return {v:r.v,d:r.d,small:r.d.length<=10000,jpeg:r.d.startsWith('/9j/'),size:i.naturalWidth+'x'+i.naturalHeight,vOk:(await PH.version(r.d))===r.v}; });
   got.saved={small:saved.small,jpeg:saved.jpeg,size:saved.size,vOk:saved.vOk}; want.saved={small:true,jpeg:true,size:'192x192',vOk:true};
   const pieces=(await decryptPosts(toTv())).filter(x=>x.m&&x.m.cmd==='profile_photo').sort((a,b)=>a.m.part-b.m.part);
   got.sent={many:pieces.length>=1,parts:[...new Set(pieces.map(x=>x.m.parts))].join(),reqs:new Set(pieces.map(x=>x.m.req)).size,to:[...new Set(pieces.map(x=>x.m.to))].join(),
@@ -623,13 +623,22 @@ for (const w of [390,1280]) {
   got.pill=await p.$eval('#profav',x=>x.classList.contains('photo')+':'+x.textContent); want.pill='true:';
   // The TV's answers.
   let ts=Date.now()+1000;
+  posts.length=0;
   got.sync=await p.evaluate(async([v,PROFS,ts])=>{ const r={}, init=(o)=>applyInit({type:'web_init',profile:'p2',tmdb_key:'x',profiles:PROFS,watchlist:[],favorites:[],continue:[],...o});
     init({ts:ts++,photos:{p1:'',p2:v,p3:''}}); r.confirmed=JSON.parse(localStorage.mcdtv_web_photos).p2.ok===true;
     init({ts:ts++}); r.oldTvKeeps=!!PH.get('p2');
     const o=JSON.parse(localStorage.mcdtv_web_photos); o.p2.at=Date.now()-600000; localStorage.mcdtv_web_photos=JSON.stringify(o);
-    init({ts:ts++,photos:{p1:'',p2:'',p3:''}}); r.removedElsewhere=!PH.get('p2');
+    // A newer TV that just has not got it yet (off while the house shared it): keep ours and send it to that TV.
+    init({ts:ts++,photos:{p1:'',p2:'',p3:''},photos_removed:[]}); r.notYetKeeps=!!PH.get('p2');
+    await sleep(600);
+    init({ts:ts++,photos:{p1:'',p2:'',p3:''},photos_removed:['p2']}); r.removedOnPurpose=!PH.get('p2');
     return r; },[saved.v,PROFS,ts]); ts+=10;
-  want.sync={confirmed:true,oldTvKeeps:true,removedElsewhere:true};
+  want.sync={confirmed:true,oldTvKeeps:true,notYetKeeps:true,removedOnPurpose:true};
+  got.resent=(await decryptPosts(toTv())).some(x=>x.m&&x.m.cmd==='profile_photo'&&x.m.profile==='p2'&&x.m.v===saved.v); want.resent=true;
+  // An older TV (no photos_removed) with no photo after this one reached a TV: removed elsewhere (old behaviour).
+  got.syncOld=await p.evaluate(async([d,PROFS,ts])=>{ const o=JSON.parse(localStorage.mcdtv_web_photos); o.p2={v:await PH.version(d),d,at:Date.now()-600000,ok:true}; localStorage.mcdtv_web_photos=JSON.stringify(o);
+    applyInit({type:'web_init',profile:'p2',tmdb_key:'x',profiles:PROFS,watchlist:[],favorites:[],continue:[],ts,photos:{p1:'',p2:'',p3:''}}); return !PH.get('p2'); },[saved.d,PROFS,ts]); ts+=10;
+  want.syncOld=true;
   // Set on another phone: this one asks the TV, which answers in pieces (out of order here). A damaged copy is refused.
   posts.length=0;
   got.fetch=await p.evaluate(async([d,PROFS,ts])=>{ const v=await PH.version(d), n=d.match(/.{1,1600}/g);

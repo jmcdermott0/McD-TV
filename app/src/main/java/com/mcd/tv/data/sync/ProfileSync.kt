@@ -272,6 +272,16 @@ object ProfileSync {
         writes.forEach { (k, value) -> recordLocal(profile, SyncSpec.META, k, value) }
     }
 
+    /**
+     * True when [profile]'s photo was removed on purpose (the house's photo header is a tombstone), so a phone that
+     * still has the old photo drops it. False when the photo is there, or simply has not reached this TV yet.
+     */
+    fun photoRemoved(profile: String): Boolean {
+        if (profile !in Prefs.PROFILE_IDS || dir == null) return false
+        ensureLoaded()
+        return synchronized(lock) { stores[profile]?.collection(SyncSpec.META)?.get(PhotoCodec.HEADER_KEY)?.deleted == true }
+    }
+
     private fun recordLocal(p: String, c: String, key: String, value: String?) {
         if (p !in Prefs.PROFILE_IDS || dir == null) return
         ensureLoaded()
@@ -628,8 +638,13 @@ object ProfileSync {
     /** Packs [items] (newest first) into encrypted messages under the budget. Empty when nothing fits. */
     private fun seal(
         type: String, items: List<Item>, floors: Map<String, Long>, headers: Map<String, GroupMeta>, rqs: Set<String> = emptySet(),
-    ): List<String> {
-        if (items.isEmpty()) return emptyList()
+    ): List<String> = sealParts(type, items, floors, headers, rqs).first
+
+    /** [seal], plus the items that went into the messages (a long transfer can leave a tail that did not fit). */
+    private fun sealParts(
+        type: String, items: List<Item>, floors: Map<String, Long>, headers: Map<String, GroupMeta>, rqs: Set<String> = emptySet(),
+    ): Pair<List<String>, List<Item>> {
+        if (items.isEmpty()) return emptyList<String>() to emptyList()
         val sid = randomSid()
         val packed = Packer.pack(
             items,
@@ -640,7 +655,8 @@ object ProfileSync {
         )
         val n = packed.parts.size
         val truncated = packed.skipped > 0
-        return packed.parts.mapIndexed { i, part -> HouseSync.sealForHouse(buildMessage(type, part, floors, headers, sid, i, n, truncated, rqs)) }
+        return packed.parts.mapIndexed { i, part -> HouseSync.sealForHouse(buildMessage(type, part, floors, headers, sid, i, n, truncated, rqs)) } to
+            packed.parts.flatten()
     }
 
     /**
@@ -852,7 +868,7 @@ object ProfileSync {
             entries.sortWith { a, b -> NEWEST_FIRST.compare(a.second, b.second) }
             entries.forEach { items.add(Item(it.first, it.second)) }
         }
-        val messages = runCatching { seal("pdelta", items, floors, emptyMap()) }.getOrDefault(emptyList())
+        val (messages, packedItems) = runCatching { sealParts("pdelta", items, floors, emptyMap()) }.getOrDefault(emptyList<String>() to emptyList())
         if (messages.isEmpty()) {
             synchronized(lock) { keys.forEach { (k, ks) -> outbox[k]?.removeAll(ks) }; outbox.entries.removeAll { it.value.isEmpty() }; if (outbox.isEmpty()) flush.sent() }
             return
@@ -864,13 +880,17 @@ object ProfileSync {
         val sent = post(messages)
         synchronized(lock) {
             if (sent) {
-                // Keys changed again while sending stay in the outbox (their new version goes next time).
+                // Keys changed again while sending stay in the outbox (their new version goes next time). So do keys
+                // that did not fit in this send (more than MAX_PARTS messages, e.g. several profile photos at once):
+                // they go in the next pdelta instead of waiting for a digest.
+                val packedKeys = packedItems.mapNotNull { it.entry?.let { e -> it.pc to e.key } }.toHashSet()
                 keys.forEach { (pcKey, ks) ->
                     val pending = outbox[pcKey] ?: return@forEach
                     val col = stores[pcKey.substringBefore('/')]?.collection(pcKey.substringAfter('/'))
                     ks.forEach { k ->
                         val sentEntry = items.firstOrNull { it.pc == pcKey && it.entry?.key == k }?.entry
-                        if (sentEntry == null || col?.get(k) == sentEntry) pending.remove(k)
+                        if (sentEntry == null) pending.remove(k)
+                        else if ((pcKey to k) in packedKeys && col?.get(k) == sentEntry) pending.remove(k)
                     }
                 }
                 outbox.entries.removeAll { it.value.isEmpty() }
