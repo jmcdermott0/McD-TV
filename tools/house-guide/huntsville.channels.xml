@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<channels>
+  <channel site="tvpassport.com" site_id="nbc-waff-hunstville-al-hd/6724" lang="en" xmltv_id="WAFF481.us@HD">NBC 48 (WAFF) HUNTSVILLE</channel>
+  <channel site="tvpassport.com" site_id="cbs-whnt-huntsville-al-hd/6719" lang="en" xmltv_id="WHNTTV191.us@HD">CBS 19 (WHNT) HUNTSVILLE</channel>
+  <channel site="tvpassport.com" site_id="abc-waay-huntsville-al-hd/5758" lang="en" xmltv_id="WAAYTV311.us@HD">ABC 31 HUNTSVILLE AL (WAAY)</channel>
+  <channel site="tvpassport.com" site_id="espn2-hd/3379" lang="en" xmltv_id="ESPN2.us@HD">ESPN2</channel>
+  <channel site="tvpassport.com" site_id="espn-u-hd/6245" lang="en" xmltv_id="ESPNU.us@HD">ESPNU</channel>
+  <channel site="tvpassport.com" site_id="nfl-redzone-hd/7536" lang="en" xmltv_id="NFLRedZone.us@HD">NFL REDZONE</channel>
+</channels>
