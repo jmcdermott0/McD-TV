@@ -36,7 +36,7 @@ SYNC_FILES=(ProfileStore.kt)
 # Pure UI logic (no Compose) under ui/.
 UI_FILES=(SettingsModel.kt)
 # Live TV's extra guide for free streaming channels (pure parser, tests in GuideExtraTest).
-MAIN_FILES+=(GuideExtra.kt)
+MAIN_FILES+=(GuideExtra.kt GuideDiag.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

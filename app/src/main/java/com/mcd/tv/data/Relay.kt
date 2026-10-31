@@ -192,6 +192,15 @@ object Relay {
         if (to.isNotBlank() && to != Prefs.deviceId) return
         when (cmd.optString("cmd")) {
             "hello" -> publishState("Connected")
+            // How this TV's last guide downloads went (GuideDiag), as its own small message: read it from a phone or
+            // a browser without adb. Hosts only, never a link, user name or password.
+            "guide_diag" -> runCatching {
+                val o = JSONObject().put("type", "guide_diag").put("req", cmd.optString("req")).put("ts", System.currentTimeMillis())
+                    .put("version", com.mcd.tv.BuildConfig.VERSION_NAME).put("model", android.os.Build.MODEL.orEmpty())
+                    .put("guide_extra_on", Prefs.guideExtra).put("diag", GuideDiag.json())
+                    .put("coverage", Epg.lastStats?.let { JSONObject().put("listed", it.listed).put("channels", it.channels).put("with_id", it.withId) } ?: JSONObject.NULL)
+                Http.postText(BASE + outTopic, encrypt(o.toString()))
+            }
             // Jarvis Wall on this TV, from the Control page. An optional "mode": "photos" (photos only) or "" (photos and calendar).
             "wall_start", "wall_stop" -> {
                 if (isStale(cmd)) return

@@ -107,16 +107,26 @@ object Epg {
                 if (key == failKey && System.currentTimeMillis() - failAt < RETRY_MS) return@withLock lastGood(key)
                 val t0 = System.currentTimeMillis()
                 lastError = ""
+                val tried = Attempt(GuideTry.hostOf(url))
                 val guide = try {
-                    withContext(Dispatchers.IO) { download(url, channels) }
+                    withContext(Dispatchers.IO) { download(url, channels, tried) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    lastError = why(e)
+                    tried.error = GuideTry.words(e)
                     emptyMap() // OutOfMemoryError included: a guide is never worth a crash
                 }
+                // What really happened, for Settings > Live TV health and the phone (GuideDiag).
+                GuideDiag.provider(
+                    GuideTry(t0, System.currentTimeMillis() - t0, tried.host, tried.ua, tried.http, tried.bytes, tried.programmes, guide.size, tried.error),
+                )
+                // The house "tv_guide" report (lastAt, lastMs, lastError) reads the same attempt: its HTTP code and error.
                 lastAt = System.currentTimeMillis()
                 lastMs = lastAt - t0
+                if (lastError.isEmpty()) {
+                    val httpBad = tried.http != 0 && tried.http !in 200..299
+                    lastError = listOfNotNull(if (httpBad) "HTTP ${tried.http}" else null, tried.error.ifEmpty { null }).joinToString(": ")
+                }
                 if (guide.isEmpty() && lastError.isEmpty()) lastError = "empty guide: no programme matched a channel"
                 if (guide.isEmpty()) {
                     // Failed, refused or empty: keep the last good guide and try again in [RETRY_MS].
@@ -151,26 +161,69 @@ object Epg {
         return cur to next
     }
 
-    private suspend fun download(url: String, channels: List<Channel>): Map<String, List<Programme>> {
-        val c = URL(url).openConnection() as HttpURLConnection
-        try {
-            c.connectTimeout = 20_000
-            c.readTimeout = 90_000
-            c.instanceFollowRedirects = true
-            c.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
-            val code = c.responseCode
-            if (code !in 200..299) { lastError = "HTTP $code"; return emptyMap() }
-            val raw = BufferedInputStream(c.inputStream, 64 * 1024)
-            raw.mark(4)
-            val b0 = raw.read()
-            val b1 = raw.read()
-            raw.reset()
-            val input: InputStream = if (b0 == 0x1f && b1 == 0x8b) BufferedInputStream(GZIPInputStream(raw, 64 * 1024), 64 * 1024) else raw
-            return input.use { parse(it, channels) }
-        } finally {
-            c.disconnect()
-        }
+    /** Filled in by [download] as it goes, so a failure still says how far it got. */
+    private class Attempt(val host: String) {
+        var ua = ""
+        var http = 0
+        var bytes = 0L
+        var programmes = 0
+        var error = ""
     }
+
+    /** Counts what the parser reads. */
+    private class Counting(inner: InputStream, private val tried: Attempt) : java.io.FilterInputStream(inner) {
+        override fun read(): Int = super.read().also { if (it >= 0) tried.bytes++ }
+        override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) tried.bytes += it }
+    }
+
+    /**
+     * The guide download. User agents: the one that loaded the channel list first (M3u.userAgent), then the other
+     * player names, because some providers answer only certain players; before Oct 31, 2026 this sent VLC's only.
+     * Redirects are followed by hand, also from http to https (HttpURLConnection will not switch protocols).
+     */
+    private suspend fun download(url: String, channels: List<Channel>, tried: Attempt): Map<String, List<Programme>> {
+        val agents = (listOf(M3u.userAgent) + GUIDE_AGENTS).filter { it.isNotBlank() }.distinct()
+        for ((n, ua) in agents.withIndex()) {
+            tried.ua = ua
+            var target = url
+            var c: HttpURLConnection? = null
+            try {
+                for (hop in 0..3) {
+                    c?.disconnect()
+                    c = (URL(target).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 20_000
+                        readTimeout = 120_000
+                        instanceFollowRedirects = false
+                        setRequestProperty("User-Agent", ua)
+                        setRequestProperty("Accept", "*/*")
+                    }
+                    tried.http = c.responseCode
+                    val loc = c.getHeaderField("Location")
+                    if (tried.http in 300..399 && !loc.isNullOrBlank()) { target = URL(URL(target), loc).toString(); continue }
+                    break
+                }
+                val conn = c ?: continue
+                if (tried.http !in 200..299) { if (n < agents.lastIndex) continue else return emptyMap() }
+                val raw = BufferedInputStream(Counting(conn.inputStream, tried), 64 * 1024)
+                raw.mark(4)
+                val b0 = raw.read()
+                val b1 = raw.read()
+                raw.reset()
+                if (b0 < 0) { tried.error = "empty answer"; if (n < agents.lastIndex) continue else return emptyMap() }
+                val input: InputStream = if (b0 == 0x1f && b1 == 0x8b) BufferedInputStream(GZIPInputStream(raw, 64 * 1024), 64 * 1024) else raw
+                tried.error = ""
+                val g = input.use { parse(it, channels) }
+                tried.programmes = g.values.sumOf { it.size }
+                return g
+            } finally {
+                c?.disconnect()
+            }
+        }
+        return emptyMap()
+    }
+
+    /** Player names tried for the guide after the one that loaded the channel list (same list as M3u). */
+    private val GUIDE_AGENTS = listOf("IPTVSmartersPro", "okhttp/4.12.0", "VLC/3.0.20 LibVLC/3.0.20")
 
     private suspend fun parse(input: InputStream, channels: List<Channel>): Map<String, List<Programme>> {
         // Guide id per channel: its own tvg-id, else a copy of the same network that has one ([GuideMatch]).
