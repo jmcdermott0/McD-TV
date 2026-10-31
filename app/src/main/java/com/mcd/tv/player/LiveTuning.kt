@@ -3,6 +3,7 @@ package com.mcd.tv.player
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -35,6 +36,24 @@ object LiveTuning {
 
     /** Reconnects in a row (no picture in between) before the player shows an error. */
     const val MAX_RECOVERIES = 4
+
+    /** The live player whose stream is open now (one at a time: many IPTV accounts allow one connection). */
+    private var current: Player? = null
+
+    /**
+     * A new live channel is about to open in [next]: stop the stream of the one still open (it is released when its
+     * screen goes, a moment later). Main thread only.
+     */
+    fun takeOver(next: Player) {
+        val old = current
+        if (old != null && old !== next) runCatching { old.stop() }
+        current = next
+    }
+
+    /** [player] is being released. Main thread only. */
+    fun left(player: Player) {
+        if (current === player) current = null
+    }
 
     private const val TS_FLAGS =
         DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS
