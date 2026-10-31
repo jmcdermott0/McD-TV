@@ -507,6 +507,13 @@ private fun SourcesCategory(ctx: SettingsCtx, changed: () -> Unit) {
     remember { Epg.lastStats }?.let { g ->
         InfoRow("Guide", "%,d of %,d channels have listings. %,d have a guide id.".format(g.listed, g.channels, g.withId))
     }
+    // How the last guide downloads on this TV really went (GuideDiag): the provider's guide, then the free channels guide.
+    val clock = { t: Long -> java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(t)) }
+    val provTry = remember { com.mcd.tv.data.GuideDiag.provider }
+    InfoRow("Provider guide", provTry?.let { "${it.line(clock)} [${it.host}${if (it.ua.isNotBlank()) ", " + it.ua.substringBefore('/') else ""}]" } ?: "Not loaded yet on this run. Open Live TV, then come back.")
+    remember { com.mcd.tv.data.GuideDiag.extra }.forEach { x ->
+        InfoRow("Free channels guide", "${x.line(clock)} [${x.host.substringAfter('/')}]")
+    }
     val sessions = remember { LiveStats.recent() }
     if (sessions.isEmpty()) {
         SettingsNote("Watch a few live channels, then come back. Jarvis notes how each one played.")

@@ -271,16 +271,25 @@ object GuideExtra {
                 val want = wanted(channels)
                 val out = HashMap<String, List<Programme>>()
                 val now = System.currentTimeMillis()
+                val tries = ArrayList<GuideTry>()
                 for (src in SOURCES) {
+                    val t0 = System.currentTimeMillis()
+                    val st = IntArray(1)
+                    val bytes = LongArray(1)
+                    var err = ""
                     val part = try {
-                        withContext(Dispatchers.IO) { download(src, want, now) }
+                        withContext(Dispatchers.IO) { download(src, want, now, st, bytes) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Throwable) {
+                        err = GuideTry.words(e)
                         emptyMap() // OutOfMemoryError included: a guide is never worth a crash
                     }
                     for ((k, v) in part) if (k !in out) out[k] = v
+                    tries += GuideTry(t0, System.currentTimeMillis() - t0, GuideTry.hostOf(src) + "/" + src.substringAfterLast("master/"),
+                        "", st[0], bytes[0], part.values.sumOf { it.size }, part.size, err)
                 }
+                GuideDiag.extra(tries)
                 cacheSig = sig
                 if (out.isEmpty()) { failAt = t; return@withLock cache }
                 cache = out
@@ -294,14 +303,21 @@ object GuideExtra {
         }
     }
 
-    private suspend fun download(url: String, want: MutableMap<String, MutableList<String>>, now: Long): Map<String, List<Programme>> {
+    private suspend fun download(
+        url: String, want: MutableMap<String, MutableList<String>>, now: Long, http: IntArray, bytes: LongArray,
+    ): Map<String, List<Programme>> {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.connectTimeout = 20_000
             c.readTimeout = 60_000
             c.instanceFollowRedirects = true
-            if (c.responseCode !in 200..299) return emptyMap()
-            val raw = BufferedInputStream(c.inputStream, 64 * 1024)
+            http[0] = c.responseCode
+            if (http[0] !in 200..299) return emptyMap()
+            val counted = object : java.io.FilterInputStream(c.inputStream) {
+                override fun read(): Int = super.read().also { if (it >= 0) bytes[0]++ }
+                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) bytes[0] += it }
+            }
+            val raw = BufferedInputStream(counted, 64 * 1024)
             raw.mark(4)
             val b0 = raw.read()
             val b1 = raw.read()
