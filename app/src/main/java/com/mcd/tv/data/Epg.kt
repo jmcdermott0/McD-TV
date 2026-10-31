@@ -72,6 +72,26 @@ object Epg {
     @Volatile var lastStats: Stats? = null
         private set
 
+    /**
+     * What the last guide load did, for the house "tv_guide" report (phones read it; no link, no login):
+     * when it ran, how long it took, how many programmes were kept, and why it failed ("" when it worked).
+     */
+    @Volatile var lastAt = 0L
+        private set
+    @Volatile var lastMs = 0L
+        private set
+    @Volatile var lastKept = 0
+        private set
+    @Volatile var lastError = ""
+        private set
+    /** <channel> and <programme> elements in the last guide read (before matching). */
+    @Volatile var lastXmlChannels = 0
+        private set
+    @Volatile var lastXmlProgrammes = 0
+        private set
+
+    private fun why(e: Throwable): String = (e.javaClass.simpleName + ": " + (e.message ?: "")).take(160)
+
     /** The last good guide when it was for the same playlist, else nothing. */
     private fun lastGood(key: String): Map<String, List<Programme>> = if (key == cacheKey) current else emptyMap()
 
@@ -85,13 +105,19 @@ object Epg {
             lock.withLock {
                 if (key == cacheKey && System.currentTimeMillis() - cacheAt < CACHE_MS) return@withLock current
                 if (key == failKey && System.currentTimeMillis() - failAt < RETRY_MS) return@withLock lastGood(key)
+                val t0 = System.currentTimeMillis()
+                lastError = ""
                 val guide = try {
                     withContext(Dispatchers.IO) { download(url, channels) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
+                    lastError = why(e)
                     emptyMap() // OutOfMemoryError included: a guide is never worth a crash
                 }
+                lastAt = System.currentTimeMillis()
+                lastMs = lastAt - t0
+                if (guide.isEmpty() && lastError.isEmpty()) lastError = "empty guide: no programme matched a channel"
                 if (guide.isEmpty()) {
                     // Failed, refused or empty: keep the last good guide and try again in [RETRY_MS].
                     failKey = key
@@ -107,6 +133,7 @@ object Epg {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
+            lastError = why(e)
             emptyMap() // OutOfMemoryError included: a guide is never worth a crash
         }
     }
@@ -131,7 +158,8 @@ object Epg {
             c.readTimeout = 90_000
             c.instanceFollowRedirects = true
             c.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
-            if (c.responseCode !in 200..299) return emptyMap()
+            val code = c.responseCode
+            if (code !in 200..299) { lastError = "HTTP $code"; return emptyMap() }
             val raw = BufferedInputStream(c.inputStream, 64 * 1024)
             raw.mark(4)
             val b0 = raw.read()
@@ -167,6 +195,8 @@ object Epg {
         val until = now + WINDOW_MS
         val out = HashMap<String, ArrayList<Programme>>()
         var kept = 0
+        var xmlCh = 0
+        var xmlPr = 0
         val ctx = coroutineContext
 
         val p = Xml.newPullParser()
@@ -179,8 +209,9 @@ object Epg {
                 if (event == XmlPullParser.START_TAG) {
                     if (++counter % 2000 == 0) ctx.ensureActive()
                     when (p.name) {
-                        "channel" -> readChannel(p, byTvgId, byName, byKey)?.let { (id, keys) -> idMap[id] = keys }
+                        "channel" -> { xmlCh++; readChannel(p, byTvgId, byName, byKey)?.let { (id, keys) -> idMap[id] = keys } }
                         "programme" -> {
+                            xmlPr++
                             val keys = keysFor(p.getAttributeValue(null, "channel") ?: "")
                             val start = parseTime(p.getAttributeValue(null, "start"))
                             val end = parseTime(p.getAttributeValue(null, "stop"))
@@ -207,6 +238,7 @@ object Epg {
             throw e
         } catch (e: Exception) {
             // Malformed or cut-off guide: keep what was read so far.
+            lastError = "guide cut off: " + why(e)
         }
         // Sort each channel's list and drop duplicates (a channel matched by two guide ids).
         val result = HashMap<String, List<Programme>>(out.size)
@@ -222,6 +254,9 @@ object Epg {
             for (prog in list) if (prog.start != lastStart) { clean.add(prog); lastStart = prog.start }
             result[k] = clean
         }
+        lastKept = kept
+        lastXmlChannels = xmlCh
+        lastXmlProgrammes = xmlPr
         val keys = channels.mapTo(HashSet()) { keyOf(it) }
         lastStats = Stats(keys.size, plan.how.size, result.keys.count { it in keys }, plan.how.values.groupingBy { it }.eachCount())
         return result

@@ -313,6 +313,9 @@ object GuideExtra {
         }
     }
 
+    /** Channels the extra guide has listings for right now (0 before it loads), for the house "tv_guide" report. */
+    fun loadedCount(): Int = cache.size
+
     /** Settings > Addons and Live TV > Guide for free channels (Prefs.guideExtra, on by default). */
     fun enabled(): Boolean = runCatching { Prefs.guideExtra }.getOrDefault(true)
 

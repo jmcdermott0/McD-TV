@@ -283,6 +283,33 @@ object HouseSync {
         }
     }
 
+    /**
+     * "tv_guide": how this TV's Live TV guide loaded, sent with each answer to "tv_who", so the guide can be checked
+     * from a phone without the TV in hand. Counts and the failure reason only: never the guide link or a login.
+     */
+    private fun guideReport(now: Long): JSONObject {
+        val st = Epg.lastStats
+        return JSONObject()
+            .put("type", "tv_guide")
+            .put("from", Prefs.deviceId)
+            .put("ts", now)
+            .put("version", com.mcd.tv.BuildConfig.VERSION_NAME)
+            .put("model", Build.MODEL.orEmpty())
+            .put("guide_url", M3u.guideUrl.isNotBlank())
+            .put("at", Epg.lastAt)
+            .put("ms", Epg.lastMs)
+            .put("err", Epg.lastError)
+            .put("xml_channels", Epg.lastXmlChannels)
+            .put("xml_programmes", Epg.lastXmlProgrammes)
+            .put("kept", Epg.lastKept)
+            .put("channels", st?.channels ?: 0)
+            .put("with_id", st?.withId ?: 0)
+            .put("listed", st?.listed ?: 0)
+            .put("current", Epg.current.size)
+            .put("extra_on", GuideExtra.enabled())
+            .put("extra", GuideExtra.loadedCount())
+    }
+
     /** Sends "tv_link" (this TV's setup link and who it is) to the house. Never logged: it holds the relay key. */
     private suspend fun publishLink(): Boolean {
         val id = Prefs.relayId
@@ -460,13 +487,14 @@ object HouseSync {
         if (from == Prefs.deviceId) return
         when (m.optString("type")) {
             // Phones and TVs finding each other's setup link, and playback state. Not peers for profile sync, never applied.
-            "tv_link", "tv_status" -> return
+            "tv_link", "tv_status", "tv_guide" -> return
             "tv_who" -> {
                 if (!linkAllowed()) return
                 val now = System.currentTimeMillis()
                 if (!TvLink.replyDue(now, lastLinkReplyAt) || !canPublish(now)) return
                 lastLinkReplyAt = now
                 runCatching { publishLink() }
+                runCatching { post(guideReport(now)) }
                 return
             }
         }
