@@ -446,6 +446,7 @@ internal fun LiveBrowser(nav: Nav, index: LiveIndex, onPick: ((Channel) -> Unit)
                     MyGuidePane(
                         index = index,
                         items = forYou.items,
+                        groups = forYou.subgroups,
                         matcher = forYouResult?.matcher,
                         guide = guide,
                         now = now,

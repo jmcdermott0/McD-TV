@@ -48,6 +48,7 @@ import com.mcd.tv.data.Channel
 import com.mcd.tv.data.LiveFill
 import com.mcd.tv.data.LiveForYou
 import com.mcd.tv.data.LiveIndex
+import com.mcd.tv.data.LiveSubgroup
 import com.mcd.tv.data.Programme
 import com.mcd.tv.data.Taste
 
@@ -87,11 +88,14 @@ internal fun MyGuidePane(
     onPlay: (IntArray, Int) -> Unit,
     onMenu: (Channel) -> Unit,
     onFocusChannel: (Channel?, String) -> Unit,
+    groups: List<LiveSubgroup> = emptyList(),
 ) {
     // Window: from the current half hour, three hours ahead (the guide keeps 8 hours).
     val start = now / SLOT_MS * SLOT_MS
     val end = start + LiveForYou.WINDOW_MS
     var onlyMine by rememberSaveable { mutableStateOf(false) }
+    // One group of the lineup (Huntsville Locals, Sports, Crime, Movies, More to Watch), or "" for all of them.
+    var group by rememberSaveable { mutableStateOf("") }
     var focused by remember { mutableStateOf<FocusedShow?>(null) }
 
     // Listings per channel: the real guide, else the event title or the network's game (schedules already
@@ -105,8 +109,10 @@ internal fun MyGuidePane(
     val rows = remember(listings, start, matcher) {
         items.map { i -> i to blocksFor(listings[i].orEmpty(), start, end, matcher) }
     }
-    val shown = remember(rows, onlyMine) {
-        if (!onlyMine) rows else rows.filter { (_, b) -> b.any { it.match >= 0.5 } }
+    val inGroup = remember(groups, group) { groups.firstOrNull { it.label == group }?.items?.toHashSet() }
+    val shown = remember(rows, onlyMine, inGroup) {
+        val base = if (inGroup == null) rows else rows.filter { (i, _) -> i in inGroup }
+        if (!onlyMine) base else base.filter { (_, b) -> b.any { it.match >= 0.5 } }
     }
     val shownItems = remember(shown) { shown.map { it.first }.toIntArray() }
     // Starting in the next 30 minutes on these channels: shows that fit your taste first, then by start time.
@@ -120,10 +126,14 @@ internal fun MyGuidePane(
 
     Column(Modifier.fillMaxSize().padding(end = 24.dp)) {
         GuidePreview(focused, now)
-        Row(Modifier.padding(top = 6.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            ActionButton("All my channels  ${rows.size}", { onlyMine = false }, primary = !onlyMine)
-            val mine = rows.count { (_, b) -> b.any { it.match >= 0.5 } }
-            ActionButton("★ Shows for me  $mine", { onlyMine = true }, primary = onlyMine)
+        val mine = rows.count { (_, b) -> b.any { it.match >= 0.5 } }
+        LazyRow(Modifier.padding(top = 6.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            item { ActionButton("All my channels  ${rows.size}", { onlyMine = false; group = "" }, primary = !onlyMine && group.isEmpty()) }
+            items(count = groups.size) { k ->
+                val g = groups[k]
+                ActionButton("${g.label}  ${g.items.size}", { onlyMine = false; group = if (group == g.label) "" else g.label }, primary = group == g.label && !onlyMine)
+            }
+            item { ActionButton("★ Shows for me  $mine", { onlyMine = true; group = "" }, primary = onlyMine) }
         }
         if (soon.isNotEmpty()) {
             Text("STARTING SOON", style = hudLabelStyle(11.sp, McdColors.Accent), modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))

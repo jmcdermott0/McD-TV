@@ -1,0 +1,188 @@
+# Live TV lineup fixture: real channel names from J's playlist (Oct 31, 2026), every copy of the lineup networks
+# plus the networks left out for having no guide, and some Canadian copies as decoys. Playlist order kept.
+# Columns: group | guide id | name | listings ("P" provider guide rows in the next 6 h, "X" Roku/Plex guide, "-" none).
+# No links. Groups are numbered; the names are in the GROUP lines.
+GROUP|0|US| AT&T ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|1|US| PRIME ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|2|US| TUBI ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|3|US| TV ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|4|US| PEACOCK ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|5|US| ENTERTAINMENT ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|6|US| MOVIES ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|7|US| ROKU ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|8|US| NBC ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|9|US| FOX ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|10|US| CBS ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|11|US| ABC ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|12|US| SPORT ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|13|CA| PRIME ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+GROUP|14|CA| CANADA ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ
+0||AT&T: A&E ᴿᴬᵂ|-
+0||AT&T: ACC NETWORK ᴿᴬᵂ|-
+0||AT&T: AMC ᴿᴬᵂ|-
+0||AT&T: AMC ᴿᴬᵂ|-
+0||AT&T: BIG TEN NETWORK ᴿᴬᵂ|-
+0||AT&T: CINEMAX ᴿᴬᵂ|-
+0||AT&T: COMEDY CENTRAL ᴿᴬᵂ|-
+0||AT&T: COURT TV ᴿᴬᵂ|X
+0||AT&T: DISCOVERY ᴿᴬᵂ|-
+0||AT&T: ESPN ᴿᴬᵂ|-
+0||AT&T: ESPN2 ᴿᴬᵂ|-
+0||AT&T: ESPNU ᴿᴬᵂ|-
+0||AT&T: FOOD NETWORK ᴿᴬᵂ|-
+0||AT&T: FOX SPORTS 1 ᴿᴬᵂ|-
+0||AT&T: FOX SPORTS 2 ᴿᴬᵂ|-
+0||AT&T: FX ᴿᴬᵂ|-
+0||AT&T: FXM ᴿᴬᵂ|-
+0||AT&T: HBO EAST ᴿᴬᵂ|-
+0||AT&T: HGTV ᴿᴬᵂ|-
+0||AT&T: HISTORY ᴿᴬᵂ|-
+0||AT&T: INVESTIGATION DISCOVERY ᴿᴬᵂ|-
+0||AT&T: LAW & CRIME ᴿᴬᵂ|X
+0||AT&T: MGM+ ᴿᴬᵂ|-
+0||AT&T: MLB NETWORK ᴿᴬᵂ|X
+0||AT&T: NATIONAL GEOGRAPHIC ᴿᴬᵂ|-
+0||AT&T: NBA TV ᴿᴬᵂ|X
+0||AT&T: NBA TV ᴿᴬᵂ|X
+0||AT&T: NFL NETWORK ᴿᴬᵂ|X
+0||AT&T: NFL REDZONE ᴿᴬᵂ|-
+0||AT&T: NHL NETWORK ᴿᴬᵂ|X
+0||AT&T: OXYGEN TRUE CRIME ᴿᴬᵂ|-
+0||AT&T: PARAMOUNT NETWORK ᴿᴬᵂ|-
+0||AT&T: REELZ ᴿᴬᵂ|-
+0||AT&T: SEC NETWORK ᴿᴬᵂ|-
+0||AT&T: STARZ ᴿᴬᵂ|-
+0||AT&T: TBS ᴿᴬᵂ|-
+0||AT&T: TCM ᴿᴬᵂ|-
+0||AT&T: TNT ᴿᴬᵂ|-
+0||AT&T: USA ᴿᴬᵂ|-
+1||PRIME: AMC ᴿᴬᵂ|-
+1||PRIME: CINEMAX EAST ᴿᴬᵂ|-
+1||PRIME: COURT TV ᴿᴬᵂ|X
+1||PRIME: HBO ᴿᴬᵂ|-
+1||PRIME: HBO 2 ᴿᴬᵂ|-
+1||PRIME: HBO SIGNATURE ᴿᴬᵂ|-
+1||PRIME: LAW & CRIME ᴿᴬᵂ|X
+1||PRIME: MGM+ ᴿᴬᵂ|-
+1||PRIME: REELZ FAMOUS AND INFAMOUS ᴿᴬᵂ|-
+1||PRIME: SHOWTIME ᴿᴬᵂ|-
+2||TUBI: COURT TV ᴿᴬᵂ|X
+2||TUBI: REELZ FAMOUS & INFAMOUS ᴿᴬᵂ|-
+3||TV: A&E ᴿᴬᵂ|-
+3||TV: ACC NETWORK ᴿᴬᵂ|-
+3||TV: AMC ᴿᴬᵂ|-
+3||TV: BTN ᴿᴬᵂ|-
+3||TV: CBS SPORTS NETWORK ᴿᴬᵂ|-
+3||TV: CINEMAX EAST ᴿᴬᵂ|-
+3||TV: COMEDY CENTRAL ᴿᴬᵂ|-
+3||TV: COURT TV ᴿᴬᵂ|X
+3||TV: DISCOVERY ᴿᴬᵂ|-
+3||TV: ESPN ᴿᴬᵂ|-
+3||TV: ESPN2 ᴿᴬᵂ|-
+3||TV: ESPNU ᴿᴬᵂ|-
+3||TV: FOOD NETWORK ᴿᴬᵂ|-
+3||TV: FOX SPORTS 1 ᴿᴬᵂ|-
+3||TV: FOX SPORTS 2 ᴿᴬᵂ|-
+3||TV: FX ᴿᴬᵂ|-
+3||TV: HBO EAST ᴿᴬᵂ|-
+3||TV: HGTV ᴿᴬᵂ|-
+3||TV: HISTORY ᴿᴬᵂ|-
+3||TV: INVESTIGATION DISCOVERY ᴿᴬᵂ|-
+3||TV: MLB NETWORK ᴿᴬᵂ|X
+3||TV: NATIONAL GEOGRAPHIC ᴿᴬᵂ|-
+3||TV: NBA TV ᴿᴬᵂ|X
+3||TV: NFL NETWORK ᴿᴬᵂ|X
+3||TV: NFL REDZONE ᴿᴬᵂ|-
+3||TV: NHL NETWORK ᴿᴬᵂ|X
+3||TV: OXYGEN TRUE CRIME ᴿᴬᵂ|-
+3||TV: PARAMOUNT NETWORK ᴿᴬᵂ|-
+3||TV: REELZCHANNEL ᴿᴬᵂ|-
+3||TV: SEC NETWORK ᴿᴬᵂ|-
+3||TV: SMITHSONIAN CHANNEL ᴿᴬᵂ|-
+3||TV: STARZ EAST ᴿᴬᵂ|-
+3||TV: TBS ᴿᴬᵂ|-
+3||TV: TCM ᴿᴬᵂ|-
+3||TV: TNT ᴿᴬᵂ|-
+3||TV: USA NETWORK ᴿᴬᵂ|-
+4||US: COURT TV ᴿᴬᵂ|X
+4||US: LAW & CRIME NETWORK ᴿᴬᵂ|X
+4||US: REELZ ᴿᴬᵂ|-
+5|AandE.us|US: A&E HD|P
+5|ACCNetwork.us|US: ACC NETWORK HD|P
+5|AMC.us|US: AMC HD|P
+5|ComedyCentral.us|US: COMEDY CENTRAL HD|P
+5|CourtTV.us|US: COURT TV HD|P
+5|DiscoveryChannel.us|US: DISCOVERY HD|P
+5|foodnetwork.us|US: FOOD NETWORK HD|P
+5|FX.us|US: FX HD|P
+5||US: FXM HD|-
+5|hgtv.us|US: HGTV HD|P
+5|HistoryChannel.us|US: HISTORY HD|P
+5|Oxygen.us|US: OXYGEN HD|P
+5|reelzchannel.us|US: REELZ FAMUS HD|P
+5|SECNetwork.us|US: SEC NETWORK HD|P
+5|SmithsonianChannel.us|US: SMITHSONIAN CHANNEL HD|P
+5||US: TBS HD|-
+5||US: TCM HD|-
+5|TNT.us|US: TNT HD|P
+5|TNT.us|US: TNT SD|P
+5||US: TNT 4K|-
+5||US: TNT EAST 4K|-
+5|USANetwork.us|US: USA NETWORK 4K|P
+5|USANetwork.us|US: USA NETWORK HD|P
+5||US: LAW & CRIME|X
+6|HBO.us|US: HBO HD|P
+6|HBO2.us|US: HBO 2 HD|-
+6|HBOSignature.us|US: HBO SIGNATURE HD|P
+6|Showtime.us|US: SHOWTIME HD|P
+6||US: SHOWTIME EAST HD|-
+6|Cinemax.us|US: CINEMAX HD|P
+6||US: CINEMAX EAST HD|-
+6|Starz.us|US: STARZ HD|P
+6||US: STARZ EAST HD|-
+7||RK: AMC ᴿᴬᵂ|-
+7||RK: CINEMAX EAST ᴿᴬᵂ|-
+7||RK: COURT TV ᴿᴬᵂ|X
+7||RK: LAW & CRIME ᴿᴬᵂ|X
+7||RK: MGM+ ᴿᴬᵂ|-
+7||RK: REELZ FAMOUS AND INFAMOUS ᴿᴬᵂ|-
+7||RK: SHOWTIME EAST ᴿᴬᵂ|-
+7||RK: STARZ ᴿᴬᵂ|-
+8||US: NBC SPORTS PHILADELPHIA (D) ᴿᴬᵂ|-
+8||US: NBC 48 (WAFF) HUNTSVILLE (D) ᴿᴬᵂ|-
+8||US: NBC 48 (WAFF) HUNTSVILLE (H) ᴿᴬᵂ|-
+9|FoxSports1.us|US: FOX SPORTS 1 4K|P
+9|FoxSports2.us|US: FOX SPORTS 2 4K|P
+9|FoxSports1.us|US: FOX SPORTS 1 HD|P
+9|FoxSports2.us|US: FOX SPORTS 2 HD|P
+9|FoxSports1.us|US: FOX SPORTS 1|P
+9||US: FOX SPORTS 2|-
+9|WZDX.us|US: FOX 54 (WZDX) HUNTSVILLE HD|P
+10||US: CBS 19 (WHNT) HUNTSVILLE HD|-
+10|CBSSportsNetwork.us|US: CBS SPORTS NETWORK HD|P
+10|CBSSportsNetwork.us|US: CBS SPORTS NETWORK HD|P
+10|CBSSportsNetwork.us|US: CBS SPORTS NETWORK HD|P
+11||US: ABC 31 HUNTSVILLE AL (WAAY)|-
+12|FoxSports1.us|US: FOX SPORTS 1 HD|P
+12|FoxSports2.us|US: FOX SPORTS 2 HD|P
+12|NFLNetwork.us|US: NFL NETWORK HD|P
+12|ESPNNews.us|US: ESPN NEWS HD|P
+12|ESPN.us|US: ESPN USA HD|P
+12|ESPN.us|US: ESPN HD|P
+12||US: ESPN 2 HD|-
+12||US: ESPN U HD|-
+12|BigTenNetwork.us|US: BIG TEN NETWORK HD|P
+12|CBSSportsNetwork.us|US: CBS SPORTS NETWORK HD|P
+12|MLBNetwork.us|US: MLB NETWORK|P
+12|NBCSportsPhiladelphia.us|US: NBC SPORTS PHILADELFIA|P
+12|SECNetwork.us|US: SEC NETWORK HD|P
+13||PRIME: DISCOVERY CHANNEL ᴿᴬᵂ|-
+13||PRIME: FOOD NETWORK ᴿᴬᵂ|-
+13||PRIME: HISTORY ᴿᴬᵂ|-
+13||PRIME: INVESTIGATION DISCOVERY ᴿᴬᵂ|-
+14|AandE.ca|CA: A & E|P
+14|AMC.ca|CA: AMC|P
+14|HBO2.ca|CA: HBO 2|P
+14|HistoryChannel.ca|CA: HISTORY|P
+14|NBATV.ca|CA: NBA TV|P
+14|Smithsonian.ca|CA: SMITHSONIAN|P
