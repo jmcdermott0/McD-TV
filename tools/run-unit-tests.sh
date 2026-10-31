@@ -33,6 +33,8 @@ OUT="$ROOT/app/build/local-unit-tests"
 MAIN_FILES=(JarvisReply.kt LiveCatalog.kt LiveHome.kt Live.kt Games.kt StreamInfo.kt Epg.kt Http.kt Taste.kt SourceQueue.kt BabyCountdown.kt RdErrors.kt RdFilter.kt RdLimiter.kt SeekAccumulator.kt StillWatching.kt ContinueRules.kt LiveFavMerge.kt TvLink.kt XtreamVod.kt TvIdentity.kt NowPlaying.kt RecentErrors.kt WallCycle.kt KeepAwake.kt WallWatch.kt PlaybackRescue.kt SourceHealth.kt ProgressMerge.kt HistoryEras.kt TrueCrime.kt QualityFallback.kt Wall.kt WallFeed.kt WallSpotlight.kt PhotoCodec.kt DailyPicks.kt WatchListRow.kt)
 # Profile sync's pure store (CRDT, packing, budgets) under data/sync/.
 SYNC_FILES=(ProfileStore.kt)
+# Live TV: what a stream link really answered (pure parts, tests in StreamDiagTest).
+MAIN_FILES+=(StreamDiag.kt)
 # Pure UI logic (no Compose) under ui/.
 UI_FILES=(SettingsModel.kt)
 # Live TV's extra guide for free streaming channels (pure parser, tests in GuideExtraTest).

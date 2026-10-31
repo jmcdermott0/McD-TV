@@ -59,6 +59,7 @@ import androidx.tv.material3.Text
 import com.mcd.tv.data.Library
 import com.mcd.tv.data.NowPlaying
 import com.mcd.tv.data.PlayMeta
+import com.mcd.tv.data.StreamDiag
 import com.mcd.tv.data.Prefs
 import com.mcd.tv.data.BitrateMeter
 import com.mcd.tv.data.QualityFallback
@@ -202,6 +203,8 @@ fun PlayerScreen(
     var rescueNoteTick by remember { mutableIntStateOf(0) }
     var rescueJob by remember { mutableStateOf<Job?>(null) }
 
+    // Live TV: the data source the player was built with, so a channel can be reopened in its other format.
+    val liveSource = remember { arrayOfNulls<androidx.media3.datasource.DataSource.Factory>(1) }
     val player = remember {
         // Follow http->https redirects (common with debrid and CDN links).
         val http = DefaultHttpDataSource.Factory()
@@ -212,6 +215,7 @@ fun PlayerScreen(
             .setConnectTimeoutMs(12_000)
             .setReadTimeoutMs(20_000)
         val dataSource = DefaultDataSource.Factory(context, http)
+        liveSource[0] = dataSource
 
         // Decoder fallback: if the Fire Stick's main decoder refuses a stream,
         // try the next one instead of failing.
@@ -232,7 +236,9 @@ fun PlayerScreen(
                 if (qualityMode == QualityMode.MAX_1080) {
                     trackSelectionParameters = trackSelectionParameters.buildUpon().setMaxVideoSize(1920, 1080).build()
                 }
-                if (live) setMediaSource(LiveTuning.mediaSource(dataSource, url)) else setMediaItem(mediaItemFor(url))
+                // Live: once a channel only played as MPEG-TS on this run, open the next ones that way at once.
+                val liveUrl = (if (StreamDiag.preferTs) StreamDiag.tsUrl(url) else null) ?: url
+                if (live) setMediaSource(LiveTuning.mediaSource(dataSource, liveUrl)) else setMediaItem(mediaItemFor(url))
                 // Resume where you left off (Continue Watching), on this TV or another device.
                 if (resumeMs > 0) seekTo(resumeMs)
                 prepare()
@@ -404,9 +410,24 @@ fun PlayerScreen(
         if (runtimeMs > 0 && player.playbackState == Player.STATE_READY) checkSource()
     }
 
+    /** Live: asks the provider for [link] again, off the main thread, and notes what it answered (no link kept). */
+    suspend fun probeNow(link: String, format: String) {
+        val ua = headers["User-Agent"] ?: "McDTV/0.1 (Android TV)"
+        val name = title.ifBlank { "channel" }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val p = runCatching { StreamDiag.probe(link, ua, name, format) }.getOrNull()
+            if (p != null) com.mcd.tv.data.RecentErrors.note("Live: $name ($format): the provider sent ${p.words()}")
+        }
+    }
+
+    fun probeStream(link: String, format: String) {
+        scope.launch { probeNow(link, format) }
+    }
+
     DisposableEffect(player) {
         var networkRetries = 0
         var retryJob: Job? = null
+        var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 paused = !playWhenReady
@@ -424,6 +445,7 @@ fun PlayerScreen(
                 }
                 stallWatch.check(now).let { if (it.isNotEmpty()) onStruggle(it) }
                 if (state == Player.STATE_READY) {
+                    if (live && tsTried) StreamDiag.preferTs = true
                     networkRetries = 0 // playing again: reset the retry budget
                     liveNote = null
                     if (rescueNote == "Reconnecting…") rescueNote = null
@@ -480,6 +502,28 @@ fun PlayerScreen(
                 }
                 // HTTP status of a refused stream (403 and friends): retrying won't help, so say why at once.
                 val http = (e.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode
+                // Live: the provider answered the channel's playlist link with something that is not a playlist
+                // ("Input does not start with the #EXTM3U header"). Note what it really sent (StreamDiag: HTTP code,
+                // type, first bytes; never the link), then open the same channel once as MPEG-TS (".ts"), the format
+                // IPTV apps use by default and which this provider also allows.
+                if (live && e.errorCode == PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED) {
+                    val ts = StreamDiag.tsUrl(url)
+                    val ds = liveSource[0]
+                    if (!tsTried && ts != null && ds != null) {
+                        tsTried = true
+                        liveNote = "Opening this channel another way…"
+                        // One connection at a time (many accounts allow only one): the check first, then the channel.
+                        retryJob?.cancel()
+                        retryJob = scope.launch {
+                            probeNow(url, "m3u8")
+                            player.setMediaSource(LiveTuning.mediaSource(ds, ts))
+                            player.prepare()
+                            player.playWhenReady = true
+                        }
+                        return
+                    }
+                    if (!tsTried) probeStream(url, "m3u8")
+                }
                 // Video (not live): a source that fails at one spot (often the resume point from another device)
                 // is reconnected, started over, skipped past or swapped for the next source. Never a dead stop.
                 // Network (2xxx) and parsing (3xxx, e.g. a seek into a file the source can't serve right) errors.
@@ -507,6 +551,8 @@ fun PlayerScreen(
                     }
                     return
                 }
+                // The other format failed too: note what the provider sent for it as well.
+                if (live && tsTried) StreamDiag.tsUrl(url)?.let { probeStream(it, "ts") }
                 error = RdErrors.stream(http) ?: "${e.errorCodeName}\n${e.cause?.message ?: e.message ?: ""}"
                 com.mcd.tv.data.RecentErrors.note("Playback: ${title.ifBlank { "video" }}: ${RdErrors.stream(http) ?: e.errorCodeName}")
             }

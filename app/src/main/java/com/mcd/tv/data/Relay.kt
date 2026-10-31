@@ -49,6 +49,8 @@ sealed interface RemoteNav {
  */
 object Relay {
     private const val BASE = "https://ntfy.sh/"
+    private const val VLC_UA = "VLC/3.0.20 LibVLC/3.0.20"
+    @Volatile private var lastStreamProbe = 0L
     /** A torrent info hash: 40 hex or 32 base32 characters. */
     private val HASH = Regex("[A-Fa-f0-9]{40}|[A-Za-z2-7]{32}")
     const val CONTROL_PAGE = "https://jfortress0.github.io/McD-TV/"
@@ -292,6 +294,32 @@ object Relay {
             }
             // Progress from "Play here", so Continue Watching on the TV stays in sync.
             "progress" -> runCatching { recordWebProgress(cmd) }
+            // Live TV: what the provider answers for this TV's stream links (StreamDiag), for "Can't play this
+            // stream" reports. "id": a stream number to test now (playlist format and MPEG-TS, the player's user
+            // agent, then VLC's). The reply holds HTTP codes, types and what the first bytes look like, never a link.
+            "stream_diag" -> {
+                if (isStale(cmd)) return
+                val req = cmd.optString("req")
+                val id = cmd.optString("id").filter { it.isDigit() }.take(12)
+                scope.launch {
+                    runCatching {
+                        if (id.isNotEmpty() && System.currentTimeMillis() - lastStreamProbe > 30_000L) {
+                            lastStreamProbe = System.currentTimeMillis()
+                            val ch = runCatching { M3u.load() }.getOrDefault(emptyList()).firstOrNull { "/$id." in it.url || it.url.endsWith("/$id") }
+                            if (ch != null) {
+                                val ua = M3u.userAgent
+                                StreamDiag.probe(ch.url, ua, ch.name, "as listed")
+                                StreamDiag.tsUrl(ch.url)?.let { StreamDiag.probe(it, ua, ch.name, "ts") }
+                                if (ua != VLC_UA) StreamDiag.probe(ch.url, VLC_UA, ch.name, "as listed")
+                            }
+                        }
+                        val o = JSONObject().put("type", "stream_diag").put("req", req).put("ts", System.currentTimeMillis())
+                            .put("version", com.mcd.tv.BuildConfig.VERSION_NAME).put("model", android.os.Build.MODEL.orEmpty())
+                            .put("player_ua", M3u.userAgent).put("probes", StreamDiag.json())
+                        Http.postText(BASE + outTopic, encrypt(o.toString()))
+                    }
+                }
+            }
             // Ask Jarvis from the web app. The key stays on the TV; the answer can take up to 30 s,
             // so it runs on its own and doesn't hold up other commands.
             "ask" -> {
