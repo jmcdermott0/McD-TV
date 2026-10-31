@@ -38,7 +38,7 @@ MAIN_FILES+=(StreamDiag.kt)
 # Pure UI logic (no Compose) under ui/.
 UI_FILES=(SettingsModel.kt)
 # Live TV's extra guide for free streaming channels (pure parser, tests in GuideExtraTest).
-MAIN_FILES+=(GuideExtra.kt GuideDiag.kt)
+MAIN_FILES+=(GuideExtra.kt GuideDiag.kt HouseHost.kt)
 # Live TV: My Guide's curated lineup (tests in LiveLineupTest).
 MAIN_FILES+=(LiveLineup.kt)
 

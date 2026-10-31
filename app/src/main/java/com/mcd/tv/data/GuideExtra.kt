@@ -37,8 +37,20 @@ import kotlin.coroutines.coroutineContext
 object GuideExtra {
     private const val BASE = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/master/"
 
-    /** In order: a channel found in the first file is not looked up in the next. */
-    val SOURCES = listOf(BASE + "Roku/all.xml.gz", BASE + "Plex/us.xml.gz")
+    /**
+     * The house guide on McD-Server (Oct 31, 2026): iptv-org's grabber fills the Huntsville stations (WAFF, WHNT,
+     * WAAY), ESPN2, ESPNU and NFL RedZone, which no public source in the app carries, every 4 hours. Served on the
+     * home network only (tools/house-guide). Its address is looked up by McD-Server's Bonjour name each time
+     * ([HouseHost]), so a new address from the router needs no change; this fixed address is only the fallback.
+     * Away from home the lookup finds nothing and the other sources still load.
+     */
+    const val HOUSE = "http://192.168.1.50:8787/huntsville.xml.gz"
+
+    /**
+     * In order: a channel found in the first file is not looked up in the next. The house guide is last so a
+     * TV away from home never waits on it before the public files (its channels are in neither of them).
+     */
+    val SOURCES = listOf(BASE + "Roku/all.xml.gz", BASE + "Plex/us.xml.gz", HOUSE)
 
     private const val WINDOW_MS = 8 * 3600_000L
     private const val CACHE_MS = 6 * 3600_000L
@@ -278,7 +290,10 @@ object GuideExtra {
                     val bytes = LongArray(1)
                     var err = ""
                     val part = try {
-                        withContext(Dispatchers.IO) { download(src, want, now, st, bytes) }
+                        withContext(Dispatchers.IO) {
+                            val url = if (src == HOUSE) HouseHost.guideUrl() ?: HOUSE else src
+                            download(url, want, now, st, bytes)
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Throwable) {
@@ -286,7 +301,7 @@ object GuideExtra {
                         emptyMap() // OutOfMemoryError included: a guide is never worth a crash
                     }
                     for ((k, v) in part) if (k !in out) out[k] = v
-                    tries += GuideTry(t0, System.currentTimeMillis() - t0, GuideTry.hostOf(src) + "/" + src.substringAfterLast("master/"),
+                    tries += GuideTry(t0, System.currentTimeMillis() - t0, if (src == HOUSE) "McD-Server/huntsville.xml.gz" else GuideTry.hostOf(src) + "/" + src.substringAfterLast("master/"),
                         "", st[0], bytes[0], part.values.sumOf { it.size }, part.size, err)
                 }
                 GuideDiag.extra(tries)
@@ -308,7 +323,8 @@ object GuideExtra {
     ): Map<String, List<Programme>> {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
-            c.connectTimeout = 20_000
+            // The house server is on the home network: answer fast or not at all.
+            c.connectTimeout = if (url.endsWith(":${HouseHost.PORT}/huntsville.xml.gz")) 4_000 else 20_000
             c.readTimeout = 60_000
             c.instanceFollowRedirects = true
             http[0] = c.responseCode
