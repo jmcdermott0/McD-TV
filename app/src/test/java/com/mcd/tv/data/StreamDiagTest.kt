@@ -86,4 +86,16 @@ class StreamDiagTest {
             assertEquals("playlist", StreamDiag.probe(url, "VLC/3.0.20 LibVLC/3.0.20", "x", "m3u8").hops.last().body)
         } finally { srv.close(); serve.join(2_000) }
     }
+
+    @Test fun busy() {
+        assertEquals(true, StreamDiag.isBusy(409))
+        assertEquals(false, StreamDiag.isBusy(403))
+        assertEquals(false, StreamDiag.isBusy(null))
+        assertEquals(listOf(3_000L, 8_000L, 15_000L, 20_000L), (0..3).map { StreamDiag.busyWait(it) })
+        assertNull(StreamDiag.busyWait(4))
+        assertEquals(true, StreamDiag.busyMessage(1).contains("allows 1 screen at a time"))
+        assertEquals(true, StreamDiag.busyMessage(2).contains("allows 2 screens"))
+        assertEquals(false, StreamDiag.busyMessage(0).contains("allows"))
+        assertEquals(false, StreamDiag.busyMessage(1).contains("\u2014"))
+    }
 }
