@@ -241,9 +241,19 @@ fun PlayerScreen(
                 if (live) setMediaSource(LiveTuning.mediaSource(dataSource, liveUrl)) else setMediaItem(mediaItemFor(url))
                 // Resume where you left off (Continue Watching), on this TV or another device.
                 if (resumeMs > 0) seekTo(resumeMs)
-                prepare()
-                playWhenReady = true
+                // Live opens in the effect below, after the previous channel's player is released: with a
+                // one-screen IPTV account, two streams open at once makes the provider refuse the new one (409).
+                if (!live) {
+                    prepare()
+                    playWhenReady = true
+                }
             }
+    }
+    if (live) {
+        LaunchedEffect(player) {
+            player.prepare()
+            player.playWhenReady = true
+        }
     }
 
     fun logQuality(from: String, to: String, code: String) {
@@ -428,6 +438,7 @@ fun PlayerScreen(
         var networkRetries = 0
         var retryJob: Job? = null
         var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
+        var busyTries = 0
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 paused = !playWhenReady
@@ -446,6 +457,8 @@ fun PlayerScreen(
                 stallWatch.check(now).let { if (it.isNotEmpty()) onStruggle(it) }
                 if (state == Player.STATE_READY) {
                     if (live && tsTried) StreamDiag.preferTs = true
+                    if (live && busyTries > 0) com.mcd.tv.data.RecentErrors.note("Live: ${title.ifBlank { "channel" }}: played after $busyTries busy answers (HTTP 409)")
+                    busyTries = 0
                     networkRetries = 0 // playing again: reset the retry budget
                     liveNote = null
                     if (rescueNote == "Reconnecting…") rescueNote = null
@@ -523,6 +536,27 @@ fun PlayerScreen(
                         return
                     }
                     if (!tsTried) probeStream(url, "m3u8")
+                }
+                // Live: the provider says the account's connection is in use (HTTP 409). Often the stream this TV
+                // just left is still counted for a few seconds; otherwise another TV is playing. Try again a few
+                // times (3, 8, 15, 20 s), then say plainly what is wrong instead of a raw code.
+                if (live && StreamDiag.isBusy(http)) {
+                    val wait = StreamDiag.busyWait(busyTries)
+                    if (wait != null) {
+                        busyTries++
+                        liveNote = "Your connection is busy. Trying again…"
+                        retryJob?.cancel()
+                        retryJob = scope.launch {
+                            delay(wait)
+                            stallWatch.restart(SystemClock.elapsedRealtime())
+                            player.seekToDefaultPosition()
+                            player.prepare()
+                        }
+                        return
+                    }
+                    error = StreamDiag.busyMessage(com.mcd.tv.data.M3u.maxConnections)
+                    com.mcd.tv.data.RecentErrors.note("Live: ${title.ifBlank { "channel" }}: HTTP 409, connection in use, ${busyTries + 1} tries over ~46 s")
+                    return
                 }
                 // Video (not live): a source that fails at one spot (often the resume point from another device)
                 // is reconnected, started over, skipped past or swapped for the next source. Never a dead stop.

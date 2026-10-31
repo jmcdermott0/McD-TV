@@ -70,6 +70,29 @@ object StreamDiag {
         }
     }
 
+    /**
+     * The provider refused a live channel because the account's connection is in use (HTTP 409 Conflict). With a
+     * one-screen account this happens when another TV is playing, and for a few seconds after a channel change while
+     * the provider still counts the old stream. Pure, for tests.
+     */
+    fun isBusy(http: Int?): Boolean = http == 409
+
+    /** Wait before try number [attempt] (0 = first retry) after a busy answer; null = stop and say why. Pure. */
+    fun busyWait(attempt: Int): Long? = BUSY_WAITS.getOrNull(attempt)
+
+    private val BUSY_WAITS = listOf(3_000L, 8_000L, 15_000L, 20_000L)
+
+    /** What the TV says after the last busy answer. [max]: screens the plan allows (0 = not known). Pure. */
+    fun busyMessage(max: Int): String {
+        val plan = when {
+            max == 1 -> "Your IPTV plan allows 1 screen at a time. "
+            max > 1 -> "Your IPTV plan allows $max screens at a time. "
+            else -> ""
+        }
+        return "Your IPTV provider says your connection is in use (HTTP 409). " + plan +
+            "Stop the channel on the other TV, wait a few seconds, then try again."
+    }
+
     /** "http://host:8080/live/u/p/1.m3u8?x" -> "host:8080". Nothing else of a link is ever kept. */
     fun hostOf(url: String): String =
         runCatching { java.net.URL(url).let { if (it.port > 0) "${it.host}:${it.port}" else it.host } }.getOrDefault("")

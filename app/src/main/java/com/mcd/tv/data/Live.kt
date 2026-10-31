@@ -97,6 +97,10 @@ object M3u {
         "Mozilla/5.0 (Linux; Android 11; AFTKA) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
     )
 
+    /** How many screens the provider's account allows at once (Xtream "max_connections"); 0 when not known. */
+    @Volatile var maxConnections: Int = 0
+        private set
+
     /** The user agent the playlist server last accepted; Live TV streams are requested with it too. */
     @Volatile var userAgent: String = USER_AGENTS.first()
         private set
@@ -150,6 +154,7 @@ object M3u {
             if (status.isNotBlank() && !status.equals("Active", ignoreCase = true)) {
                 throw Exception("Your IPTV account is not active (status: $status). Check with your provider.")
             }
+            maxConnections = info.optString("max_connections").trim().toIntOrNull() ?: 0
             val formats = info.optJSONArray("allowed_output_formats")
             val allowed = if (formats == null) emptyList() else List(formats.length()) { formats.optString(it) }
             val ext = if (allowed.isEmpty() || "m3u8" in allowed) "m3u8" else allowed.first()
