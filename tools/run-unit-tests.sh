@@ -39,6 +39,8 @@ MAIN_FILES+=(StreamDiag.kt)
 UI_FILES=(SettingsModel.kt)
 # Live TV's extra guide for free streaming channels (pure parser, tests in GuideExtraTest).
 MAIN_FILES+=(GuideExtra.kt GuideDiag.kt)
+# Live TV: My Guide's curated lineup (tests in LiveLineupTest).
+MAIN_FILES+=(LiveLineup.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

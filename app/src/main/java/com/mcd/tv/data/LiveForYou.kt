@@ -4,7 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Live TV > For You: a short channel list picked for the active profile out of the whole playlist.
+ * Live TV > My Guide. Grown-up profiles: the curated lineup ([LiveLineup], since Oct 31, 2026). Kids profile:
+ * a short channel list picked for it out of the whole playlist, as below.
  * Three groups: channels the profile already watches, channels showing something it likes right now,
  * and the kinds of channels its movie and show taste points to (war and history, crime, comedy...).
  * One copy per network; international feeds, 24/7 loops and PPV are left out unless watched.
@@ -29,7 +30,27 @@ object LiveForYou {
     ): Result {
         val taste = runCatching { Recommender.taste(profile) }.getOrDefault(TasteProfile.EMPTY)
         val stats = Prefs.liveStats(profile)
-        return withContext(Dispatchers.Default) { rank(index, favorites, guide, taste, stats, profile == Prefs.KIDS_PROFILE, now) }
+        val kids = profile == Prefs.KIDS_PROFILE
+        return withContext(Dispatchers.Default) {
+            if (kids) {
+                rank(index, favorites, guide, taste, stats, true, now)
+            } else {
+                // Oct 31, 2026: the grown-up profiles get the curated lineup (LiveLineup), one copy per network, in
+                // groups. The profile's taste still lights up the shows it likes.
+                Result(LiveLineup.section(index.channels, guide, now), Taste.ProgrammeMatcher(taste, tagMinutes(index, stats), false))
+            }
+        }
+    }
+
+    /** Minutes per network tag, so Live TV habits feed back into the kinds of shows lit up. */
+    private fun tagMinutes(index: LiveIndex, stats: Map<String, Pair<Double, Long>>): Map<Taste.Tag, Double> {
+        val out = HashMap<Taste.Tag, Double>()
+        for ((url, st) in stats) {
+            val i = index.indexOf(url)
+            if (i < 0) continue
+            for (t in Taste.channelTags(index.names[i])) out[t] = (out[t] ?: 0.0) + st.first
+        }
+        return out
     }
 
     private fun rank(
@@ -46,12 +67,7 @@ object LiveForYou {
         for (s in index.sections) for (i in s.items) if (i in 0 until n && section[i] == null) section[i] = s.name
 
         // Minutes per network tag, so Live TV habits feed back into the kinds of channels shown.
-        val tagMinutes = HashMap<Taste.Tag, Double>()
-        for ((url, st) in stats) {
-            val i = index.indexOf(url)
-            if (i < 0) continue
-            for (t in Taste.channelTags(index.names[i])) tagMinutes[t] = (tagMinutes[t] ?: 0.0) + st.first
-        }
+        val tagMinutes = tagMinutes(index, stats)
 
         // Games from schedules already loaded, read once; channels with no guide fall back to them (no network).
         val games = LiveFill.loadedGames()
