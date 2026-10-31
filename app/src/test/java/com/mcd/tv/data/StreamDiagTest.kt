@@ -45,20 +45,37 @@ class StreamDiagTest {
     }
 
     @Test fun probeFollowsRedirectsAndKeepsNoLink() {
-        val srv = com.sun.net.httpserver.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0)
-        srv.createContext("/live/") { ex ->
-            ex.responseHeaders.add("Location", "/blocked?token=secret")
-            ex.sendResponseHeaders(302, -1); ex.close()
-        }
-        srv.createContext("/blocked") { ex ->
-            val ua = ex.requestHeaders.getFirst("User-Agent")
-            val body = if (ua == "IPTVSmartersPro") "<!DOCTYPE html><p>Access denied</p>" else "#EXTM3U\n"
-            ex.responseHeaders.add("Content-Type", "text/html; charset=utf-8")
-            val b = body.toByteArray(); ex.sendResponseHeaders(200, b.size.toLong()); ex.responseBody.write(b); ex.close()
-        }
-        srv.start()
+        // A plain socket server (com.sun.net.httpserver is not on Android's unit test classpath).
+        // "/live/..." answers 302 to "/blocked?token=secret"; "/blocked" answers an HTML page to
+        // IPTVSmartersPro and a playlist to any other user agent.
+        val srv = java.net.ServerSocket(0, 50, java.net.InetAddress.getByName("127.0.0.1"))
+        val serve = Thread {
+            while (!srv.isClosed) {
+                val s = runCatching { srv.accept() }.getOrNull() ?: break
+                s.use { sock ->
+                    val inp = sock.getInputStream().bufferedReader(Charsets.ISO_8859_1)
+                    val path = (inp.readLine() ?: "").split(" ").getOrElse(1) { "" }
+                    var ua = ""
+                    while (true) {
+                        val h = inp.readLine() ?: break
+                        if (h.isEmpty()) break
+                        if (h.startsWith("User-Agent:", ignoreCase = true)) ua = h.substringAfter(':').trim()
+                    }
+                    val out = sock.getOutputStream()
+                    if (path.startsWith("/live/")) {
+                        out.write("HTTP/1.1 302 Found\r\nLocation: /blocked?token=secret\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+                    } else {
+                        val body = if (ua == "IPTVSmartersPro") "<!DOCTYPE html><p>Access denied</p>" else "#EXTM3U\n"
+                        val b = body.toByteArray()
+                        out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ${b.size}\r\nConnection: close\r\n\r\n").toByteArray())
+                        out.write(b)
+                    }
+                    out.flush()
+                }
+            }
+        }.apply { isDaemon = true; start() }
         try {
-            val url = "http://127.0.0.1:${srv.address.port}/live/user/pass/1.m3u8"
+            val url = "http://127.0.0.1:${srv.localPort}/live/user/pass/1.m3u8"
             val p = StreamDiag.probe(url, "IPTVSmartersPro", "US: ESPN HD", "m3u8")
             assertEquals(2, p.hops.size)
             assertEquals(302, p.hops[0].http)
@@ -67,6 +84,6 @@ class StreamDiagTest {
             assertEquals("HTTP 302 redirect, then HTTP 200, text/html, HTML page", p.words())
             assertEquals(false, p.json().toString().contains("pass") || p.json().toString().contains("secret"))
             assertEquals("playlist", StreamDiag.probe(url, "VLC/3.0.20 LibVLC/3.0.20", "x", "m3u8").hops.last().body)
-        } finally { srv.stop(0) }
+        } finally { srv.close(); serve.join(2_000) }
     }
 }
