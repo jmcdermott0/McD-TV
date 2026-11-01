@@ -54,6 +54,8 @@ Ranked upgrades from the October 2026 review by the four focus agents (.claude/a
 
 ## TV app (agent: tv-app)
 
+- Play Next at credits (Nov 1): read the house "tv_guide" report's `playnext` block after the TVs update, to see which of J's real files carry a credits chapter (MKV from Real-Debrid, MP4 and MKV from the IPTV provider). If most carry only generic chapter names, the learned offset and the setting do the work. MP4 files with moov at the end are not read (no extra request on purpose). S
+
 1. Move watch history out of SharedPreferences into files (it is rewritten every 15 s on the main thread). M
 2. Buffer settings for 1 GB sticks (Media3 LoadControl). S
 3. Jarvis Wall photos now decode as RGB565 (app-wide image loader): if gradients band, add `allowRgb565(false)` to the Wall's image request. S

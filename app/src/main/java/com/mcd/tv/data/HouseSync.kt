@@ -308,6 +308,8 @@ object HouseSync {
             .put("current", Epg.current.size)
             .put("extra_on", GuideExtra.enabled())
             .put("extra", GuideExtra.loadedCount())
+            // Play Next at credits: which signals this TV's recent files carried (container, chapters). No links.
+            .put("playnext", runCatching { PlayNextStore.report() }.getOrNull() ?: JSONObject())
     }
 
     /** Sends "tv_link" (this TV's setup link and who it is) to the house. Never logged: it holds the relay key. */

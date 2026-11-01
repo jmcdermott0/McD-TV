@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -240,6 +241,14 @@ class MainActivity : ComponentActivity() {
             // "history:kenburns", "history:era:civilwar": one History shelf's See all grid.
             val shelf = screenExtra.substringAfter(":")
             Screen.BrowseGrid("history", shelf, com.mcd.tv.ui.historyShelfLabel(shelf))
+        } else if (screenExtra.startsWith("playnext:") && intent?.getBooleanExtra("qa_mode", false) == true) {
+            // Automated QA only: "playnext:<video url>" plays it as S1E1 of a test show whose next episode is known,
+            // so the run can show the Play next card at the file's credits chapter.
+            com.mcd.tv.data.PlayNextQa.on = true
+            Screen.Player(
+                screenExtra.substringAfter(":"), "QA Show  S1E1",
+                com.mcd.tv.data.PlayMeta("tv", com.mcd.tv.data.PlayNextQa.TMDB_ID, "QA Show", null, null, 1, 1), "tt0000000",
+            )
         } else if (screenExtra.startsWith("person:")) {
             screenExtra.substringAfter(":").toIntOrNull()?.let { Screen.Person(it) }
         } else when (screenExtra) {
@@ -470,8 +479,22 @@ private fun ScreenContent(screen: Screen, nav: Nav, isOnlyEntry: Boolean) {
         is Screen.Web -> WebScreen(s.url) { url, headers, title -> nav.push(Screen.Player(url, title, headers = headers)) }
         is Screen.Player -> {
             val m = s.meta
+            // The episode after this one, from TMDB's season list (usually cached by Detail). Unknown until it answers.
+            val nextEp by androidx.compose.runtime.produceState<com.mcd.tv.data.NextEpisode.Result>(com.mcd.tv.data.NextEpisode.Unknown, m) {
+                if (m != null && m.type == "tv") value = com.mcd.tv.data.PlayNextQa.next(m) ?: runCatching {
+                    val d = com.mcd.tv.data.Tmdb.details("tv", m.tmdbId)
+                    com.mcd.tv.data.NextEpisode.after(
+                        m.season, m.episode, d.seasons.map { it.number to it.episodeCount },
+                        d.nextEpisode?.let { it.season to it.number },
+                    )
+                }.getOrDefault(com.mcd.tv.data.NextEpisode.Unknown)
+            }
             val next: (() -> Unit)? = if (m != null && m.type == "tv" && s.imdbId != null) {
-                { nav.replace(Screen.Sources(m.copy(episode = m.episode + 1), s.imdbId, autoPlay = true)) }
+                {
+                    val target = (nextEp as? com.mcd.tv.data.NextEpisode.Known)?.let { m.copy(season = it.season, episode = it.episode) }
+                        ?: m.copy(episode = m.episode + 1) // TMDB did not answer: the old guess
+                    nav.replace(Screen.Sources(target, s.imdbId, autoPlay = true))
+                }
             } else null
             androidx.compose.runtime.key(s.url, s.queuePos) {
                 // A failed stream offers "Try next source" from the list it was picked from.
@@ -497,13 +520,16 @@ private fun ScreenContent(screen: Screen, nav: Nav, isOnlyEntry: Boolean) {
                 val stepDown = if (nextSource == null || s.stepped) null else reSource
                 val notice = if (s.stepped) com.mcd.tv.data.QualityFallback.NOTICE else null
                 val startMs = s.startMs
-                if (m != null && next != null) {
-                    // TV episode: "Up next" countdown card before rolling into the next episode.
+                // Movies take the episode player only when Settings > Playback > Credits card for movies is on.
+                val movieCard = m != null && m.type == "movie" && androidx.compose.runtime.remember { com.mcd.tv.data.PlayNextStore.movieCard }
+                if (m != null && (next != null || movieCard)) {
+                    // TV episode: "Play next" at the credits, then the "Up next" countdown card at the end.
                     com.mcd.tv.ui.UpNextPlayer(
                         url = s.url, title = s.title, meta = m, headers = s.headers,
-                        onNext = next, onCancel = { nav.back() }, onSleep = { nav.back() },
+                        onNext = next ?: {}, onCancel = { nav.back() }, onSleep = { nav.back() },
                         nextSource = nextSource, sourceKey = sourceKey,
                         qualityLabel = label, onStepDown = stepDown, startPositionMs = startMs, startNotice = notice,
+                        next = if (next != null) nextEp else com.mcd.tv.data.NextEpisode.None,
                     )
                 } else {
                     PlayerScreen(

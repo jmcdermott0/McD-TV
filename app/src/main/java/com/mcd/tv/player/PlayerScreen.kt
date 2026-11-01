@@ -144,6 +144,10 @@ fun PlayerScreen(
     qualityKey: String = "",
     /** SourceHealth.key of the playing file: a file that stops far short of the title is flagged for the house. */
     sourceKey: String? = null,
+    /** Non-live: position, seeks and the file's first bytes for Play Next at credits (ui/UpNext.kt). */
+    hook: PlayerHook? = null,
+    /** Drawn over the video (the Play next card). */
+    overlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
@@ -226,7 +230,8 @@ fun PlayerScreen(
 
         ExoPlayer.Builder(context, renderers)
             .setTrackSelector(selector)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource))
+            // Play Next at credits: keep the file's first bytes as the player reads them (chapters), no extra request.
+            .setMediaSourceFactory(DefaultMediaSourceFactory(if (hook != null && !live) HeaderTap.factory(dataSource, hook.header) else dataSource))
             .apply { if (live) setLoadControl(LiveTuning.loadControl()) }
             .setSeekBackIncrementMs(SEEK_MS)
             .setSeekForwardIncrementMs(SEEK_MS)
@@ -433,6 +438,7 @@ fun PlayerScreen(
         var retryJob: Job? = null
         var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
         var busyTries = 0
+        var hookReady = false
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 paused = !playWhenReady
@@ -458,6 +464,10 @@ fun PlayerScreen(
                     if (rescueNote == "Reconnecting…") rescueNote = null
                     report.update(player)
                     checkSource()
+                    if (!hookReady && !live && player.duration > 0) {
+                        hookReady = true
+                        hook?.onReady?.invoke(player.duration)
+                    }
                 }
                 if (state == Player.STATE_ENDED && !live) {
                     if (checkSource()) return
@@ -483,7 +493,10 @@ fun PlayerScreen(
 
             override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
                 // A seek buffers by design: not a stall.
-                if (reason == Player.DISCONTINUITY_REASON_SEEK) stallWatch.onSeek()
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    stallWatch.onSeek()
+                    if (!live) hook?.onSeek?.invoke(oldPosition.positionMs, newPosition.positionMs, player.duration)
+                }
             }
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -692,6 +705,7 @@ fun PlayerScreen(
             rescueJob?.cancel()
             progress.save(player, force = true)
             report.clear()
+            if (!live) runCatching { hook?.onLeave?.invoke(player.currentPosition, player.duration, player.playbackState == Player.STATE_ENDED) }
             player.removeListener(listener)
             if (live) LiveTuning.left(player)
             player.release() // frees the hardware decoder; important on low-RAM Fire Sticks
@@ -799,6 +813,15 @@ fun PlayerScreen(
             if (player.isPlaying) rescue.onPlaying(player.currentPosition)
             progress.save(player)
             report.update(player)
+        }
+    }
+
+    // Play Next at credits: position twice a second (UpNext decides; nothing is sent anywhere).
+    LaunchedEffect(player, hook) {
+        if (hook == null || live) return@LaunchedEffect
+        while (true) {
+            delay(500)
+            hook.onTick?.invoke(player.currentPosition, player.duration, player.isPlaying)
         }
     }
 
@@ -971,6 +994,8 @@ fun PlayerScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
             )
         }
+
+        if (error == null) overlay?.invoke(this)
 
         val failed = error
         if (failed != null && nextSource != null) {

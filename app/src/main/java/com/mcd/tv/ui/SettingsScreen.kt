@@ -60,6 +60,8 @@ import com.mcd.tv.data.OriginFilter
 import com.mcd.tv.data.Prefs
 import com.mcd.tv.data.QualityLog
 import com.mcd.tv.data.QualityMode
+import com.mcd.tv.data.PlayNextRules
+import com.mcd.tv.data.PlayNextStore
 import com.mcd.tv.data.RealDebrid
 import com.mcd.tv.data.RecentErrors
 import com.mcd.tv.data.Relay
@@ -401,6 +403,21 @@ private fun PlaybackCategory(ctx: SettingsCtx, changed: () -> Unit) {
         },
     )
 
+    // Play Next at credits (data/PlayNext.kt, PlayNextStore). New keys, this TV only; nothing else changes.
+    SettingsSection("Play Next")
+    ToggleRow(ctx.row(), "Play Next at the credits", "Shows Play next when the credits start: from the file's credits chapter, or where you skipped the credits of this show twice.", PlayNextStore.creditsOn) { PlayNextStore.creditsOn = it }
+    val ends = PlayNextRules.END_CHOICES
+    DialogRow(ctx, ctx.row(), "Play Next before the end", endLabel(PlayNextStore.endSeconds), RowEnd.Change) {
+        SettingsDialog.Choice("Play Next before the end", ends.map(::endLabel), ends.indexOf(PlayNextStore.endSeconds).coerceAtLeast(0)) { i -> PlayNextStore.endSeconds = ends[i] }
+    }
+    SettingsNote("Used when a file has no credits chapter and Jarvis has not learned the show yet.")
+    ToggleRow(ctx.row(), "Credits card for movies", "Shows Done or Keep watching when a movie's credits chapter starts.", PlayNextStore.movieCard) { PlayNextStore.movieCard = it }
+    val playLog = remember { PlayNextStore.log().take(5) }
+    if (playLog.isNotEmpty()) {
+        playLog.forEach { e -> SettingsRow(e.title, {}, ctx.row().modifier, value = e.line(), end = RowEnd.None) }
+    }
+    SettingsNote("Watch credits on a learned card makes Jarvis learn that show again.")
+
     SettingsSection("Source list")
     DialogRow(ctx, ctx.row(), "Movie size limit", sizeLimitLabel(Prefs.maxMovieGb), RowEnd.Change) {
         SettingsDialog.Choice("Movie size limit", MOVIE_LIMITS.map(::sizeLimitLabel), MOVIE_LIMITS.indexOf(Prefs.maxMovieGb)) { i -> Prefs.maxMovieGb = MOVIE_LIMITS[i] }
@@ -720,3 +737,6 @@ fun RdConnectScreen(nav: Nav) {
         Text(status, fontSize = 18.sp, color = McdColors.Muted)
     }
 }
+
+/** "Off", "30 seconds" for Settings > Playback > Play Next before the end. */
+private fun endLabel(sec: Int): String = if (sec <= 0) "Off" else "$sec seconds"

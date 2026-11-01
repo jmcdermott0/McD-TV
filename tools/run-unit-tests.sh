@@ -41,6 +41,8 @@ UI_FILES=(SettingsModel.kt)
 MAIN_FILES+=(GuideExtra.kt GuideDiag.kt HouseHost.kt)
 # Live TV: My Guide's curated lineup (tests in LiveLineupTest).
 MAIN_FILES+=(LiveLineup.kt)
+# Play Next at credits: chapter parser and the card rules (tests in PlayNextTest).
+MAIN_FILES+=(Chapters.kt PlayNext.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }
