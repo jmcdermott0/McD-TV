@@ -9,7 +9,7 @@ on:
     branches: [main]
     # Docs and web pages do not change the app, so they do not need a new build.
     paths-ignore: ["docs/**", "**/*.md", "wall/**", "rd-proxy/**", "tools/webtest/**", ".claude/**"]
-  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab (on a branch other than main: test APK, no Release)
 
 permissions:
   contents: write # needed to create Releases
@@ -91,7 +91,10 @@ jobs:
           name: McD-TV-v${{ env.VERSION }}
           path: McD-TV-v${{ env.VERSION }}.apk
 
+      # Only main publishes a Release (the TVs update from it). "Run workflow" on any other branch
+      # makes a test APK: download it from this run's artifacts and sideload it on one TV.
       - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
