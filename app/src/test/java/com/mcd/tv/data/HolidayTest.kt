@@ -122,7 +122,7 @@ class HolidayTest {
         val intro = src("com/mcd/tv/ui/IntroScreen.kt")
         assertTrue("the original video still plays", intro.contains("R.raw.intro_video"))
         assertTrue("jingle only in Holiday mode", intro.contains("if (!holiday) null else"))
-        assertTrue("skin only in Holiday mode", intro.contains("if (holiday) HolidaySkin()"))
+        assertTrue("skin only in Holiday mode", intro.contains("if (holiday) HolidaySkin("))
         val picker = src("com/mcd/tv/ui/ProfilesScreen.kt")
         assertTrue("hat only in Holiday mode", picker.contains("if (hat) SantaHat("))
         assertTrue("hat comes from Holiday mode", picker.contains("HolidayHub.active()"))
