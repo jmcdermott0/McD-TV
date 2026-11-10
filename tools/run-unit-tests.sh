@@ -43,6 +43,8 @@ MAIN_FILES+=(GuideExtra.kt GuideDiag.kt HouseHost.kt)
 MAIN_FILES+=(LiveLineup.kt)
 # Play Next at credits: chapter parser and the card rules (tests in PlayNextTest).
 MAIN_FILES+=(Chapters.kt PlayNext.kt)
+# State machines (STATE-MACHINES.md): pure phase types (tests in SourcePickTest).
+MAIN_FILES+=(SourcePick.kt SleepTimer.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

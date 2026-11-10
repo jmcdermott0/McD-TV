@@ -41,14 +41,11 @@ Ranked upgrades from the October 2026 review by the four focus agents (.claude/a
 ## State machines (open items from the November 9 audit; details in STATE-MACHINES.md)
 
 1. Web VOD player (`renderPlayer`) as a pure reducer with shared vectors, like QF: `brokenDone` means two things, and `started` and `goodT` are not reset per candidate. L
-2. Sources screen: one phase value in place of `status` + `busy`; Retry clears the old message. M
-3. Sleep timer survives a source or episode change (hoist out of PlayerScreen). S
-4. House membership: Joining (stamp 0) needs a timeout and a note in Settings. M
-5. Games board: request ids so refreshes that finish out of order can't overwrite newer data. S
-6. Web Live TV player: a timeout for a lower copy that never loads. S
-7. Profile photos (web): a failed send must not be undone by the TV's older copy. M
-8. Playlist load (`M3u`): a failure state; reset `maxConnections` per account. S
-9. Real-Debrid client and token written as one unit (house-synced keys; high risk). M
+2. House membership: Joining (stamp 0) needs a timeout and a note in Settings. M
+3. Profile photos (web): a failed send must not be undone by the TV's older copy. M
+4. Real-Debrid client and token written as one unit (house-synced keys; high risk). M
+5. Resume push: retry a failed "stopped" push. S
+6. qf-net.mjs case C sometimes counts one freeze at 3 Mbps on the old page and the new one alike (flaky test). S
 
 ## Live TV (agent: live-tv)
 

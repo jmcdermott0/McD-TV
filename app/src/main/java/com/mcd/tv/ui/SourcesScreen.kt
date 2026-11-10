@@ -54,6 +54,7 @@ import com.mcd.tv.data.StreamSource
 import com.mcd.tv.data.XtreamVod
 import com.mcd.tv.player.NextSource
 import kotlinx.coroutines.CancellationException
+import com.mcd.tv.data.SourcePick
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -67,8 +68,10 @@ fun SourcesScreen(nav: Nav, meta: PlayMeta, imdbId: String, autoPlay: Boolean) {
     val streamId = if (meta.type == "tv") "$imdbId:${meta.season}:${meta.episode}" else imdbId
     var retry by remember { mutableIntStateOf(0) }
     val sources by rememberLoad(streamId, retry) { Addons.streams(meta.type, streamId, meta.tmdbId) }
-    var status by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
+    // One phase value (data/SourcePick.kt) in place of `busy` + `status`, which drifted apart (a stale message under
+    // Retry's spinner; `busy` stuck when an auto-play was cancelled by a reload).
+    var pick by remember { mutableStateOf<SourcePick>(SourcePick.Idle()) }
+    val retryList = { pick = SourcePick.retry(pick); retry++ }
     val scope = rememberCoroutineScope()
     val firstFocus = remember { FocusRequester() }
     // Files the house flagged as incomplete for this title (any device): marked, listed last, tried last.
@@ -79,44 +82,53 @@ fun SourcesScreen(nav: Nav, meta: PlayMeta, imdbId: String, autoPlay: Boolean) {
 
     /** [order] is the list on screen, so "Try next source" in the player goes down the same list. */
     fun start(s: StreamSource, order: List<StreamSource>, index: Int) {
-        if (busy) return
-        busy = true
-        status = "Getting stream from ${s.addon}…"
+        pick = SourcePick.begin(pick, "Getting stream from ${s.addon}…") ?: return
         scope.launch {
-            runCatching { Resolver.resolve(s) }
-                .onSuccess { url ->
-                    val queue = SourceQueue.put(order)
-                    nav.replace(Screen.Player(url, meta.label, meta, imdbId, headers = s.headers, queue = queue, queuePos = index))
-                }
-                .onFailure { status = it.message ?: "Could not open this source"; busy = false; if (it !is kotlinx.coroutines.CancellationException) com.mcd.tv.data.RecentErrors.note("Source: $status") }
+            try {
+                val url = Resolver.resolve(s)
+                val queue = SourceQueue.put(order)
+                pick = SourcePick.opened(pick)
+                nav.replace(Screen.Player(url, meta.label, meta, imdbId, headers = s.headers, queue = queue, queuePos = index))
+            } catch (e: CancellationException) {
+                pick = SourcePick.cancelled(pick)
+                throw e
+            } catch (e: Exception) {
+                val msg = e.message ?: "Could not open this source"
+                pick = SourcePick.fail(pick, msg)
+                com.mcd.tv.data.RecentErrors.note("Source: $msg")
+            }
         }
     }
 
     /** The Play button's pick: try the sources best first and play the first that opens. */
     suspend fun playBest(all: List<StreamSource>) {
-        if (busy) return
-        busy = true
-        status = "Finding the best source…"
+        pick = SourcePick.begin(pick, "Finding the best source…") ?: return
+        try {
         // Back leaves the screen and cancels this, including a wait between Real-Debrid adds.
         // Continue Watching opens this with autoPlay at once: get the house's flags first (a few seconds at most).
         kotlinx.coroutines.withTimeoutOrNull(4_000) { BadSources.refresh(titleKey) }
         val bad = BadSources.scores(titleKey)
-        runCatching { Resolver.best(all, meta, onStatus = { status = it }, flagged = bad) }
+        runCatching { Resolver.best(all, meta, onStatus = { pick = SourcePick.progress(pick, it) }, flagged = bad) }
             .onSuccess { (src, url) ->
                 // Same order Resolver.best tried, so "Try next source" picks up after the one that worked.
                 val order = SourceHealth.demote(
                     StreamInfo.playOrder(all, episode = meta.type == "tv" || all.any { it.episode != null }), bad, SourceHealth::key,
                 )
                 val queue = SourceQueue.put(order)
+                pick = SourcePick.opened(pick)
                 nav.replace(Screen.Player(url, meta.label, meta, imdbId, headers = src.headers, queue = queue, queuePos = order.indexOf(src)))
             }
             .onFailure {
                 if (it is CancellationException) throw it
-                status = "${it.message} Pick one below."
-                busy = false
+                pick = SourcePick.fail(pick, "${it.message} Pick one below.")
                 withFrameNanos { }
                 runCatching { firstFocus.requestFocus() }
             }
+        } catch (e: CancellationException) {
+            // Cancelled mid-search (Retry or a reload restarted the auto-play): back to Idle, so the next pick runs.
+            pick = SourcePick.cancelled(pick)
+            throw e
+        }
     }
 
     val l = sources
@@ -155,13 +167,13 @@ fun SourcesScreen(nav: Nav, meta: PlayMeta, imdbId: String, autoPlay: Boolean) {
         Text("SELECT SOURCE", style = broadcastStyle(30.sp))
         Text(meta.label, color = McdColors.Muted, fontSize = 16.sp)
         if (Prefs.slowConnection) Text("Slow connection mode: smaller files listed first", color = McdColors.Muted, fontSize = 13.sp)
-        if (status.isNotBlank()) Text(status, color = McdColors.Amber, fontSize = 15.sp, modifier = Modifier.padding(top = 8.dp))
+        if (pick.note.isNotBlank()) Text(pick.note, color = McdColors.Amber, fontSize = 15.sp, modifier = Modifier.padding(top = 8.dp))
 
         when (l) {
             is Load.Loading -> StatusText("Asking your addons…")
             is Load.Err -> {
                 StatusText(l.message)
-                ActionButton("Retry", { retry++ }, primary = true)
+                ActionButton("Retry", { retryList() }, primary = true)
             }
             is Load.Ok -> if (l.value.isEmpty()) {
                 // Say why: no addons, addons that did not answer (often a VPN), or nothing listed for this title.
@@ -178,7 +190,7 @@ fun SourcesScreen(nav: Nav, meta: PlayMeta, imdbId: String, autoPlay: Boolean) {
                 )
                 if (all > 0) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ActionButton("Retry", { retry++ }, Modifier.focusRequester(firstFocus), primary = true)
+                        ActionButton("Retry", { retryList() }, Modifier.focusRequester(firstFocus), primary = true)
                         if (RealDebrid.connected) ActionButton("Real-Debrid Cloud", { nav.push(Screen.RdCloud) })
                     }
                     LaunchedEffect(Unit) { withFrameNanos { }; runCatching { firstFocus.requestFocus() } }

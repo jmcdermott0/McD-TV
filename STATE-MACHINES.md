@@ -32,11 +32,11 @@ Status values:
 | Player phase | `player/PlayerScreen.kt` `fail()` | Playing, Reconnecting, SwitchingSource, Restarting, Failed (terminal) | fixed 11-09: every failure goes through `fail()`, which stops the player and cancels `rescueJob` and `retryJob`. Before, the live "keeps freezing" panel played on behind itself, and a reconnect job could reload a source behind an error. | glue untested; `PlaybackRescueTest` covers the decider |
 | Rescue decider | `data/PlaybackRescue.kt` | RECONNECT, FROM_START, NEXT_SOURCE, SKIP_AHEAD, GIVE_UP | explicit | `PlaybackRescueTest` |
 | Quality step-down | `PlayerScreen.onStruggle`, `QualityTele` | NATIVE, CAPPED, SWITCH_ASKED, LOCKED | fixed 11-09: LOCKED no longer steps down again, so a 1080p stall no longer logs a "4K" step and biases `QualityMemory` | `QualityFallbackTest`, `QualityVectorsTest` (StallWatch) |
-| Sleep timer | `PlayerScreen` `sleepStep` | Off, Minutes, EndOfVideo | fixed 11-09: EndOfVideo blocks the early Play next card (`PlayerHook.stopAtEnd`). Open: the timer resets when the source or episode changes. | none |
+| Sleep timer | `data/SleepTimer.kt`, `PlayerScreen` `AppSleep` | Off, At(minutes, deadline), EndOfVideo | explicit (11-10): one app-wide timer, so it survives a source or episode change; it drops if no player runs for 3 minutes. EndOfVideo blocks the early Play next card. | `SleepTimerTest` |
 | Play Next card | `ui/UpNext.kt`, `data/PlayNext.kt` `PlayNextTrigger` | Hidden, Showing, Held, Dismissed, then the end card | fixed 11-09: `hold()` puts back a SHOW the screen could not use (next episode not known yet, a failure, "Still watching?"), so the card still comes. The card takes no keys after the player fails. | `PlayNextTest` (23) |
 | Multiview tile | `ui/MultiviewScreen.kt` | Playing, Retrying, Failed | fixed 11-09: the retry budget comes back after a READY, and a failed tile is prepared again on resume | none |
 | Live retry budgets | `PlayerScreen` `networkRetries`, `busyTries`, `tsTried`, `recoveries` | NetRetry(n), Busy409(n), TsFallback, StallRecover(n) | open: these budgets do not share one cap (they do not overlap in practice) | `StreamDiagTest` (busyWait) |
-| Stall watch | `data/QualityFallback.kt` `StallWatch` | stall list plus `started`, `seekPending` | open: a seek that never leaves READY hides the next stall | `QualityFallbackTest` |
+| Stall watch | `data/QualityFallback.kt` `StallWatch` | stall list plus `started`, `seekPending` | fixed 11-10: `onSeek(now)` ignores buffering only for 2 s after the seek, so a seek inside the buffer no longer hides the next stall | `QualityFallbackTest` |
 | Live zap / pre-swap | `ui/LivePlayer.kt` | Zapping, Resolving, Playing | open (no bug found; depends on effect order) | none |
 
 ### TV data and sync
@@ -49,7 +49,7 @@ Status values:
 | IPTV VOD index | `data/IptvVod.kt` | Memory, File, Downloading(account), Failed | fixed 11-09: a load is shared only with callers of the same account. Before, a new playlist could wait on the old account's index and build its links. | `XtreamVodTest` (parsing) |
 | Extra guide cache | `data/GuideExtra.kt` | Fresh (6 h), Partial (1 h), Failed (retry 10 min) | fixed 11-09: another playlist's rows are never served, and a partial load (McD-Server away) is fetched again after an hour, not 6 | `GuideExtraTest` (parsing) |
 | Provider guide cache | `data/Epg.kt` | Empty, Fresh, Failed-90s, Expired | open (mostly sound: mutex) | `EpgTimeTest`, `GuideMatchTest` |
-| Playlist load | `data/Live.kt` `M3u` | Cached, Loading | open: no failure state, and `maxConnections` carries over between accounts | `M3uTest` |
+| Playlist load | `data/Live.kt` `M3u` | Cached, Loading, Failed (30 s) | fixed 11-10: a failure is kept for 30 s (no retry storm unless forced), and `maxConnections` resets when the playlist changes | `M3uTest` |
 | Real-Debrid sign-in / tokens | `data/RealDebrid.kt` | Disconnected, Valid, Expired, Refreshing, GrantDead | open (high risk: house-synced keys) | `RdErrorsTest` |
 | Resume push | `data/ResumeCloud.kt` | Idle, Scheduled, Pushing | open: a failed "stopped" push is not retried | `ProgressMergeTest` |
 | Profile sync scheduler | `data/sync/ProfileSync.kt` | many timers | open (policies explicit: FlushPolicy, Backoff) | `SyncPolicyTest` |
@@ -62,8 +62,8 @@ Status values:
 | Search | `ui/BrowseScreens.kt` SearchScreen | Typing, Searching, Results, Failed | fixed 11-09: submitting the same words again retries the title search too, not only Ask Jarvis | none |
 | Service catalog grid | `ui/BrowseScreens.kt` ServiceGridScreen | Loading, Shown, Failed, Ended | fixed 11-09: an empty catalog said "Loading…" forever and Load more never stopped | none |
 | Real-Debrid Cloud | `ui/RdCloudScreen.kt` | List, Folder, Opening | fixed 11-09: one file opens at a time, old notes clear on folder change or Refresh, and Refresh reloads an open folder | none |
-| Sources | `ui/SourcesScreen.kt` | Fetching, Listed, Empty, Error, Resolving, BestSearching | open: `status` and `busy` are two values; a stale message survives Retry | `SourceQueueTest` |
-| Games board | `ui/GamesScreen.kt` `LeagueLoad` | Loading, Ok, Failed | open: refreshes that run at once can finish out of order | `GamesParseTest` |
+| Sources | `ui/SourcesScreen.kt`, `data/SourcePick.kt` | Idle(note), Working(note), Opened | explicit (11-10): one `SourcePick` value; Retry clears the old message; a cancel no longer leaves the screen busy | `SourcePickTest`, `SourceQueueTest` |
+| Games board | `ui/GamesScreen.kt` `LeagueLoad` | Loading, Ok, Failed | fixed 11-10: a request number per league; an older answer is dropped, and a cancel puts back the previous state | `GamesParseTest` |
 | Screen loads | `ui/Common.kt` `Load<T>`, `rememberLoad` | Loading, Ok, Err | explicit (no Empty or Refreshing state; callers add retry keys) | indirect |
 | Settings dialogs | `ui/SettingsScreen.kt` `SettingsDialog?` | sealed | explicit | `SettingsModelTest` |
 
@@ -76,7 +76,7 @@ Status values:
 | Real-Debrid device sign-in | `RDL`, `rdLoginStart()` | Idle, Waiting(code), Connected | fixed 11-09: each poll belongs to one code. Cancel during a poll saves nothing and starts no second loop. | `qa.mjs` "state machines" |
 | Watchlist queue | `WLQ.flush()` | Queued, Sent, Acked | fixed 11-09: a flush re-reads each title, so an edit made during the flush wins | `qa.mjs` "state machines" |
 | VOD player | `renderPlayer` | loading(i), needTap, playing, stalled, stepping, broken, gone | open (largest): `brokenDone` means two things; `started` and `goodT` are not reset per candidate | `interchange.mjs` |
-| Live TV player | `LV.play` | started, stepped, locked, done | open: a lower copy that hangs has no timeout | `qf-net.mjs` |
+| Live TV player | `LV.play` | started, stepped, locked, done | fixed 11-10: a switch gets its own 25 s limit (`armSwitch`), then goes back to the copy that played or fails; nothing runs after `done` | `qf-net.mjs` |
 | Profile photos | `PH` | pending, confirmed, tombstone | open: a failed send can be undone by the TV's older copy | `qa.mjs` photos |
 | Update flow | `updateBusy()` | idle, ready, busy | open: busy is worked out from the DOM, not from a registry | `qa.mjs` update |
 | Control page save | `docs/index.html` `dirtyFlag` | clean, dirty, sent | open: a state message can overwrite a save still in flight | none |

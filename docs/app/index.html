@@ -6536,9 +6536,16 @@ const LV = (() => {
     $("#lvClose", box).addEventListener("click", closePlayer);
     const feedSel = $("#lvFeed", box);
     if (feedSel) feedSel.addEventListener("change", () => play(+feedSel.value, feeds));
-    vid.addEventListener("playing", () => { started = true; clearTimeout(timer); tapBtn.classList.add("hidden"); });
+    let swTimer = 0; // the switch limit (armSwitch, below)
+    vid.addEventListener("playing", () => { started = true; clearTimeout(timer); clearTimeout(swTimer); tapBtn.classList.add("hidden"); });
     // The 25 s stall timer runs only while the video is really trying to play, not while it waits for a tap.
-    const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!started && vid.readyState < 2) fail(LIVE_NO); }, 25000); };
+    // On time-out: back to the copy that was playing when this was a switch, else the failure message.
+    // (failOrBack is defined below, before any timer can fire.)
+    const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!started && vid.readyState < 2) failOrBack(LIVE_NO); }, 25000); };
+    // A switch (step down, or back to the copy that played) gets its own 25 s limit, without touching `started`
+    // (the quality watch keeps running). Before, a lower copy that never loaded and never failed (native HLS on
+    // iPhone) left the player spinning for good (STATE-MACHINES.md, "Web Live TV player").
+    const armSwitch = () => { clearTimeout(swTimer); swTimer = setTimeout(() => { if (!done && vid.readyState < 2) failOrBack(LIVE_NO); }, 25000); };
     // iPhone blocks autoplay until a tap: show the big Play button and hold the timer until it is tapped.
     const needTap = () => { if (done || started) return; clearTimeout(timer); tapBtn.classList.remove("hidden"); };
     tapBtn.addEventListener("click", () => { tapBtn.classList.add("hidden"); arm(); start(); });
@@ -6613,11 +6620,15 @@ const LV = (() => {
     const qTimer = setInterval(() => { if (done || !document.body.contains(vid)) { clearInterval(qTimer); return; } if (started) watch(); }, 1000);
     /** If the lower copy won't play, go back to the channel that was playing. */
     const failOrBack = (text) => {
+      if (done) return;
       if (!prevUrl) { fail(text); return; }
       const u = prevUrl; prevUrl = ""; attach(u);
     };
     let Hls = null, native = false;
+    let attached = 0;
     async function attach(u) {
+      if (done) return;
+      if (attached++ > 0) armSwitch();
       try { if (hls) hls.destroy(); } catch {}
       hls = null; segBr = []; lastH = 0; native = false;
       mon.restart(Date.now());
@@ -7488,7 +7499,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-11-09.1";
+const BUILD = "2026-11-09.2";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

@@ -180,8 +180,14 @@ fun PlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnSleep by rememberUpdatedState(onSleep)
     val currentOnEnded by rememberUpdatedState(onEnded)
-    // Sleep timer: index into SLEEP_STEPS (0 = off). Each MENU press moves to the next step.
-    var sleepStep by remember { mutableIntStateOf(0) }
+    // Sleep timer: one for the app (AppSleep.timer), so it carries over to the next episode or source.
+    // sleepRev redraws and restarts the countdown when it changes. Each MENU press moves to the next step.
+    val sleep = AppSleep.timer
+    var sleepRev by remember { mutableIntStateOf(0) }
+    DisposableEffect(Unit) {
+        sleep.onPlayerStart()
+        onDispose { sleep.onPlayerLeave() }
+    }
     var sleepToast by remember { mutableStateOf<String?>(null) }
     var sleepToastTick by remember { mutableIntStateOf(0) }
     // Target time while LEFT / RIGHT presses add up (TvPlayerView seeks once they stop).
@@ -493,9 +499,10 @@ fun PlayerScreen(
                 }
                 if (state == Player.STATE_ENDED) {
                     progress.save(player, force = true)
-                    if (SLEEP_STEPS[sleepStep] == SLEEP_END_OF_VIDEO) {
+                    if (sleep.mode == com.mcd.tv.data.SleepTimer.Mode.EndOfVideo) {
                         // "End of this video": stop here instead of rolling into the next episode.
-                        sleepStep = 0
+                        sleep.fired()
+                        sleepRev++
                         player.pause()
                         currentOnSleep?.invoke()
                     } else {
@@ -507,7 +514,7 @@ fun PlayerScreen(
             override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
                 // A seek buffers by design: not a stall.
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
-                    stallWatch.onSeek()
+                    stallWatch.onSeek(SystemClock.elapsedRealtime())
                     if (!live) hook?.onSeek?.invoke(oldPosition.positionMs, newPosition.positionMs, player.duration)
                 }
             }
@@ -840,12 +847,19 @@ fun PlayerScreen(
     }
 
     // Sleep timer countdown (restarts whenever the setting changes).
-    LaunchedEffect(sleepStep) {
-        val minutes = SLEEP_STEPS[sleepStep]
-        hook?.stopAtEnd = minutes == SLEEP_END_OF_VIDEO
-        if (minutes > 0) {
-            delay(minutes * 60_000L)
-            sleepStep = 0
+    LaunchedEffect(sleepRev) {
+        if (live) return@LaunchedEffect // the timer is for videos, as before; Live TV leaves it as it is
+        hook?.stopAtEnd = sleep.mode == com.mcd.tv.data.SleepTimer.Mode.EndOfVideo
+        // Carried over from the last episode or source: say so once, so it is never a surprise.
+        if (sleepRev == 0 && sleep.mode != com.mcd.tv.data.SleepTimer.Mode.Off) {
+            sleepToast = sleep.label()
+            sleepToastTick++
+        }
+        val left = sleep.remainingMs()
+        if (left >= 0) {
+            delay(left)
+            sleep.fired()
+            sleepRev++
             player.pause()
             progress.save(player, force = true)
             currentOnSleep?.invoke()
@@ -866,13 +880,9 @@ fun PlayerScreen(
             false
         } else {
             if (e.action == KeyEvent.ACTION_UP) {
-                sleepStep = (sleepStep + 1) % SLEEP_STEPS.size
-                val step = SLEEP_STEPS[sleepStep]
-                sleepToast = when {
-                    step == 0 -> "Sleep timer: Off"
-                    step == SLEEP_END_OF_VIDEO -> "Sleep timer: End of this video"
-                    else -> "Sleep timer: $step min"
-                }
+                sleep.next()
+                sleepRev++
+                sleepToast = sleep.label()
                 sleepToastTick++
             }
             true
@@ -1037,9 +1047,10 @@ fun PlayerScreen(
     }
 }
 
-/** Sleep timer steps in minutes; 0 = off, [SLEEP_END_OF_VIDEO] = stop when this video ends. */
-private const val SLEEP_END_OF_VIDEO = -1
-private val SLEEP_STEPS = intArrayOf(0, 30, 60, 90, SLEEP_END_OF_VIDEO)
+/** The app's one sleep timer (main thread), shared by every player screen. */
+object AppSleep {
+    val timer = com.mcd.tv.data.SleepTimer { SystemClock.elapsedRealtime() }
+}
 
 /** How long the screen stays on while the player is paused. */
 private const val SCREEN_ON_WHILE_PAUSED_MS = 10 * 60_000L

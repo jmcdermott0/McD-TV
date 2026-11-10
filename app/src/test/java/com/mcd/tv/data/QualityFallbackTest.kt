@@ -61,6 +61,16 @@ class QualityFallbackTest {
     }
 
     @Test
+    fun aSeekThatNeverBufferedDoesNotHideTheNextStall() {
+        val w = playing()
+        w.onSeek(20_000) // a seek inside the buffer: no buffering, no READY after it
+        w.onBuffering(20_500) // the seek's own buffering, if any, is still ignored
+        assertEquals("", w.check(29_000))
+        w.onBuffering(40_000) // a real stall, long after the seek
+        assertEquals("long_stall", w.check(48_000))
+    }
+
+    @Test
     fun aSeekDuringAStallCancelsIt() {
         val w = playing()
         w.onBuffering(20_000)
