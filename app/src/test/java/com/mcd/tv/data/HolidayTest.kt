@@ -113,6 +113,10 @@ class HolidayTest {
         val home = src("com/mcd/tv/ui/HomeScreen.kt")
         val row = Regex("val holidayRow by rememberLoad[^}]*\\}").find(home)?.value ?: ""
         assertTrue("Home's row loads for every profile", row.contains("HolidayHub.homeRow()") && !row.contains("kids"))
+        // The emulator QA reads Home's first screen: the row must not push Picked for <name> below it.
+        val picked = home.indexOf("item(key = \"suggested\")")
+        val holiday = home.indexOf("item(key = com.mcd.tv.data.Holiday.ID)")
+        assertTrue("Holiday Movies comes after Picked for <name>", picked in 0 until holiday)
         val browse = src("com/mcd/tv/ui/CatalogScreens.kt")
         assertTrue("Browse entry", browse.contains("MenuEntry(Holiday.LABEL, Holiday.SUBTITLE, Screen.BrowseGrid(Holiday.ID, \"\", Holiday.LABEL))"))
         assertTrue("Browse grid loads the shelf", browse.contains("Holiday.ID -> if (page == 1) com.mcd.tv.data.HolidayHub.shelf() else emptyList()"))

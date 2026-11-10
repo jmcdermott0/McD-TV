@@ -243,6 +243,11 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
         }
         liveRow?.let { (label, channels) -> item(key = "live") { Box(rowFocus("live")) { LiveChannelsRow(label, channels, nav) } } }
         if (!heroOnTop && heroes.isNotEmpty()) item(key = "hero") { Box(rowFocus("hero")) { Hero(heroes, nav, heroFocus, takeFocus = false) } }
+        item(key = "suggested") {
+            val sg = suggestions
+            if (sg is Load.Ok && sg.value.isNotEmpty()) TitleRail("Picked for ${Prefs.activeProfileName}", sg.value.visible().filterNot { "${it.type}-${it.id}" in listed }, null, openTitle, focus, "suggested")
+        }
+        // Holiday Movies sits after Picked for <name>, so the first screen of Home is the same as without Holiday mode.
         item(key = com.mcd.tv.data.Holiday.ID) {
             val hd = (holidayRow as? Load.Ok)?.value
             if (hd != null) TitleRail(
@@ -250,10 +255,6 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
                 { nav.push(Screen.BrowseGrid(com.mcd.tv.data.Holiday.ID, "", com.mcd.tv.data.Holiday.LABEL)) },
                 openTitle, focus, com.mcd.tv.data.Holiday.ID,
             )
-        }
-        item(key = "suggested") {
-            val sg = suggestions
-            if (sg is Load.Ok && sg.value.isNotEmpty()) TitleRail("Picked for ${Prefs.activeProfileName}", sg.value.visible().filterNot { "${it.type}-${it.id}" in listed }, null, openTitle, focus, "suggested")
         }
         item(key = "because") {
             val b = (because as? Load.Ok)?.value
