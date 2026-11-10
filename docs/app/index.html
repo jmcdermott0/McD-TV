@@ -1752,11 +1752,17 @@ async function askInit() {
   try { await relaySend(cmd); } catch { setStatus("offline"); }
 }
 
+// Connection generation (STATE-MACHINES.md, "Web relay connection"): each connect() takes a number, and only the
+// newest may attach its live stream. Two connects that overlapped (back from the background, then a tap on a
+// source) used to open two EventSources and leak one; an unpair during the history poll left a stream open.
+let connGen = 0;
 async function connect() {
+  const gen = ++connGen;
   if (S.es) { S.es.close(); S.es = null; }
   if (!S.link) { setStatus("none"); return; }
   setStatus("connecting");
-  const topic = RELAY + "mcdtv-" + S.link.id + "-out";
+  const linkId = S.link.id;
+  const topic = RELAY + "mcdtv-" + linkId + "-out";
   // 1) recent replies (keys and lists while the TV is off), 2) live updates, 3) ask the TV for fresh ones.
   try {
     const t = await (await fetch(topic + "/json?poll=1&since=12h")).text();
@@ -1764,6 +1770,7 @@ async function connect() {
       try { const e = JSON.parse(line); if (e.event === "message") await onRelay(e.message, false); } catch {}
     }
   } catch {}
+  if (gen !== connGen || !S.link || S.link.id !== linkId) return; // a newer connect() or an unpair took over
   const es = new EventSource(topic + "/sse");
   es.onmessage = (e) => { try { const ev = JSON.parse(e.data); if (ev.event === "message") onRelay(ev.message, true); } catch {} };
   S.es = es;
@@ -1797,6 +1804,7 @@ async function pair(l) {
   connect();
 }
 function unpair() {
+  connGen++; // a connect() still in its history poll must not attach a stream afterwards
   if (S.es) S.es.close();
   S.es = null; S.link = null; S.key = null; S.init = null; S.plists = {};
   LS.del(LINK_KEY); LS.del(INIT_KEY); LS.del(PLISTS_KEY); LS.del(JKEY); LV.reset();
@@ -2503,7 +2511,14 @@ const WLQ = (() => {
     if (!S.link || !S.key || S.status !== "online" || Date.now() - lastFlush < 30000) return;
     const a = load(); if (!a.length) return;
     lastFlush = Date.now();
-    for (const item of a) { try { await post(item); } catch { return; } await sleep(300); }
+    for (const item of a) {
+      // Re-read each title before resending: an edit made during this flush (or an ack) wins over the snapshot,
+      // so the TV never gets an older on/off last.
+      const cur = load().find((x) => same(x, item.pid, item.cmd.type, item.cmd.id));
+      if (!cur || cur.at !== item.at) continue;
+      try { await post(cur); } catch { return; }
+      await sleep(300);
+    }
   }
   /** Applies edits the TV hasn't confirmed to a profile's lists [L] (from the TV or the house copy). */
   function overlay(pid, L) {
@@ -3456,13 +3471,19 @@ async function rdLoginStart() {
   Object.assign(RDL, { code: res.o.device_code, user: res.o.user_code, url: res.o.direct_verification_url || res.o.verification_url || "https://real-debrid.com/device",
     until: Date.now() + (+res.o.expires_in || 600) * 1000 });
   const every = Math.min(60, Math.max(2, +res.o.interval || 5)) * 1000;
+  // Sign-in phases (STATE-MACHINES.md, "Web Real-Debrid sign-in"): Idle (code null), Waiting(code), Connected.
+  // Each poll belongs to one code: after Cancel, expiry or a new sign-in, an answer still in flight is dropped,
+  // never saved, and never re-arms the timer (two poll loops used to run on the new code).
+  const mine = RDL.code;
   const poll = async () => {
-    if (!RDL.code) return;
+    if (!RDL.code || RDL.code !== mine) return;
     if (Date.now() > RDL.until) { RDL.code = null; rdLoginUi(); return; }
     try {
-      const c = await rdFetch("GET", "oauth/v2/device/credentials?client_id=" + RD_CLIENT + "&code=" + encodeURIComponent(RDL.code));
+      const c = await rdFetch("GET", "oauth/v2/device/credentials?client_id=" + RD_CLIENT + "&code=" + encodeURIComponent(mine));
+      if (RDL.code !== mine) return;
       if (c.ok && c.o && c.o.client_id && c.o.client_secret) {
-        const tk = await rdFetch("POST", "oauth/v2/token", { client_id: c.o.client_id, client_secret: c.o.client_secret, code: RDL.code, grant_type: RD_GRANT });
+        const tk = await rdFetch("POST", "oauth/v2/token", { client_id: c.o.client_id, client_secret: c.o.client_secret, code: mine, grant_type: RD_GRANT });
+        if (RDL.code !== mine) return;
         if (tk.ok && tk.o && tk.o.access_token) {
           saveRdc({ id: c.o.client_id, secret: c.o.client_secret, t: tk.o.access_token, r: tk.o.refresh_token, exp: Date.now() + (+tk.o.expires_in || 3600) * 1000 - 60000 });
           RDL.code = null; rdLoginUi(); toast("Real-Debrid connected on this device", "ok");
@@ -3470,7 +3491,7 @@ async function rdLoginStart() {
         }
       }
     } catch {}
-    RDL.timer = setTimeout(poll, every);
+    if (RDL.code === mine) RDL.timer = setTimeout(poll, every);
   };
   RDL.timer = setTimeout(poll, every);
   rdLoginUi();
@@ -5425,6 +5446,8 @@ const LV = (() => {
   // In memory only (this session): the playlist is not stored on the device.
   let st = { status: "idle", list: null, msg: "", key: "" };
   let view = { sec: "", q: "", shown: 0 };
+  // The playlist load in flight: { url, p }. Keyed by link, so a new link never waits on the old link's load
+  // (that load's answer is dropped by load()'s key guard, which left the new view on its spinner for good).
   let loading = null;
   const PAGE = 120;
 
@@ -6389,9 +6412,14 @@ const LV = (() => {
     if (st.status === "idle" || st.status === "loading" || st.key !== String((S.init && S.init.m3u_url) || "").trim()) {
       if (!(S.init && S.init.m3u_url)) st = { status: "none", list: null, msg: "", key: "" };
       else {
-        st.status = "loading"; render(v);
-        if (!loading) loading = load().finally(() => { loading = null; });
-        await loading;
+        const url = String(S.init.m3u_url).trim();
+        st = { ...st, status: "loading" }; render(v); // a new object, like every other change of st
+        if (!loading || loading.url !== url) {
+          const job = { url, p: null };
+          job.p = load().finally(() => { if (loading === job) loading = null; });
+          loading = job;
+        }
+        await loading.p;
         if (tok !== routeTok) return;
       }
     }
@@ -6508,9 +6536,16 @@ const LV = (() => {
     $("#lvClose", box).addEventListener("click", closePlayer);
     const feedSel = $("#lvFeed", box);
     if (feedSel) feedSel.addEventListener("change", () => play(+feedSel.value, feeds));
-    vid.addEventListener("playing", () => { started = true; clearTimeout(timer); tapBtn.classList.add("hidden"); });
+    let swTimer = 0; // the switch limit (armSwitch, below)
+    vid.addEventListener("playing", () => { started = true; clearTimeout(timer); clearTimeout(swTimer); tapBtn.classList.add("hidden"); });
     // The 25 s stall timer runs only while the video is really trying to play, not while it waits for a tap.
-    const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!started && vid.readyState < 2) fail(LIVE_NO); }, 25000); };
+    // On time-out: back to the copy that was playing when this was a switch, else the failure message.
+    // (failOrBack is defined below, before any timer can fire.)
+    const arm = () => { clearTimeout(timer); timer = setTimeout(() => { if (!started && vid.readyState < 2) failOrBack(LIVE_NO); }, 25000); };
+    // A switch (step down, or back to the copy that played) gets its own 25 s limit, without touching `started`
+    // (the quality watch keeps running). Before, a lower copy that never loaded and never failed (native HLS on
+    // iPhone) left the player spinning for good (STATE-MACHINES.md, "Web Live TV player").
+    const armSwitch = () => { clearTimeout(swTimer); swTimer = setTimeout(() => { if (!done && vid.readyState < 2) failOrBack(LIVE_NO); }, 25000); };
     // iPhone blocks autoplay until a tap: show the big Play button and hold the timer until it is tapped.
     const needTap = () => { if (done || started) return; clearTimeout(timer); tapBtn.classList.remove("hidden"); };
     tapBtn.addEventListener("click", () => { tapBtn.classList.add("hidden"); arm(); start(); });
@@ -6585,11 +6620,15 @@ const LV = (() => {
     const qTimer = setInterval(() => { if (done || !document.body.contains(vid)) { clearInterval(qTimer); return; } if (started) watch(); }, 1000);
     /** If the lower copy won't play, go back to the channel that was playing. */
     const failOrBack = (text) => {
+      if (done) return;
       if (!prevUrl) { fail(text); return; }
       const u = prevUrl; prevUrl = ""; attach(u);
     };
     let Hls = null, native = false;
+    let attached = 0;
     async function attach(u) {
+      if (done) return;
+      if (attached++ > 0) armSwitch();
       try { if (hls) hls.destroy(); } catch {}
       hls = null; segBr = []; lastH = 0; native = false;
       mon.restart(Date.now());
@@ -6647,7 +6686,7 @@ const LV = (() => {
   }
   return {
     show, play, closePlayer, xtreamOf, gkey,
-    reset() { st = { status: "idle", list: null, msg: "", key: "" }; view = { sec: "", q: "", shown: 0 }; },
+    reset() { st = { status: "idle", list: null, msg: "", key: "" }; view = { sec: "", q: "", shown: 0 }; loading = null; },
     redraw,
     section(sec) { view.sec = sec; view.sub = ""; view.q = ""; view.shown = 0; const q = $("#lvQ"); if (q) q.value = ""; drawGrid(); },
     sport(sub) { view.sec = "Sports"; view.sub = sub; view.q = ""; view.shown = 0; const q = $("#lvQ"); if (q) q.value = ""; drawGrid(); },
@@ -7460,7 +7499,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-10-30.2";
+const BUILD = "2026-11-09.2";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

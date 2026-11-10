@@ -571,6 +571,61 @@ for (const w of [390,1280]) {
   if(errs.length) fails.push(...errs.map(e=>`source health pageerror ${e}`));
   await ctx.close();
 }
+// State machines (STATE-MACHINES.md): races that used to break the web relay connection, the Real-Debrid
+// device sign-in and the watchlist queue. Each step drives the real functions with slow stand-ins for the network.
+{
+  const {ctx,p,errs}=await mk({width:390,height:844});
+  await p.goto(B); await p.evaluate(()=>localStorage.clear());
+  const r=await p.evaluate(async()=>{
+    const out={}; const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+    // 1) Two connect() calls overlap (back from the background, then a tap on a source): one live stream only.
+    let open=0; const RealES=window.EventSource;
+    window.EventSource=class{constructor(){open++;this.readyState=1;} close(){if(this.readyState!==2){open--;this.readyState=2;}}};
+    const realFetch=window.fetch;
+    window.fetch=async(u,o)=>String(u).includes('poll=1')?(await wait(300),new Response('')):realFetch(u,o);
+    S.link={id:'qaconn',key:'k'}; S.key={};
+    connect(); connect(); await wait(800);
+    out.overlapStreams=open;
+    // 2) Unpair during the history poll: no stream afterwards.
+    connect(); unpair(); await wait(800);
+    out.afterUnpair=open;
+    window.EventSource=RealES; window.fetch=realFetch;
+    // 3) Real-Debrid sign-in cancelled while its poll is in flight: nothing saved, no second poll loop.
+    let saved=0, polls=0; const realRd=window.rdFetch, realSave=window.saveRdc;
+    window.saveRdc=()=>{saved++;};
+    window.rdFetch=async(m,path)=>{
+      if(path.startsWith('oauth/v2/device/code')) return {ok:true,o:{device_code:'QA1',user_code:'ABCD',expires_in:600,interval:2}};
+      if(path.startsWith('oauth/v2/device/credentials')){polls++; await wait(400); return {ok:true,o:{client_id:'id',client_secret:'sec'}};}
+      if(path.startsWith('oauth/v2/token')) return {ok:true,o:{access_token:'t',refresh_token:'r',expires_in:3600}};
+      return {ok:false,o:null};
+    };
+    await rdLoginStart(); await wait(2150); // the first poll is in flight now
+    RDL.code=null; clearTimeout(RDL.timer); // Cancel
+    await wait(2800);
+    out.rdSavedAfterCancel=saved; out.rdPolls=polls;
+    window.rdFetch=realRd; window.saveRdc=realSave;
+    // 4) A watchlist edit made while the queue is flushing wins: the TV never gets the older on/off last.
+    const sent=[]; const realSend=window.relaySend;
+    window.relaySend=async(c)=>{sent.push({id:c.id,on:c.on}); await wait(200);};
+    S.link={id:'qawlq',key:'k'}; S.key={}; S.status='online';
+    const now=Date.now();
+    localStorage.setItem('mcdtv_web_wlq',JSON.stringify([
+      {pid:'p1',cmd:{cmd:'watchlist',type:'movie',id:1,on:true},at:now-5000,reqs:[]},
+      {pid:'p1',cmd:{cmd:'watchlist',type:'movie',id:2,on:true},at:now-5000,reqs:[]}]));
+    const f=WLQ.flush(); await wait(50);
+    await WLQ.send({cmd:'watchlist',type:'movie',id:2,on:false},'p1');
+    await f; await wait(100);
+    const last2=sent.filter(x=>+x.id===2).pop();
+    out.wlqLastForTwo=last2&&last2.on;
+    window.relaySend=realSend; S.link=null; S.key=null; localStorage.clear();
+    return out;
+  });
+  const want={overlapStreams:1,afterUnpair:0,rdSavedAfterCancel:0,rdPolls:1,wlqLastForTwo:false};
+  for (const k of Object.keys(want)) if (JSON.stringify(r[k])!==JSON.stringify(want[k])) fails.push(`state machines ${k}: got ${JSON.stringify(r[k])} want ${JSON.stringify(want[k])}`);
+  log('state machines', JSON.stringify(r), fails.filter(f=>f.startsWith('state machines')).length ? 'FAIL' : 'ok');
+  if(errs.length) fails.push(...errs.map(e=>`state machines pageerror ${e}`));
+  await ctx.close();
+}
 // Profile photos: Settings > Profile > Profile photos turns a picked file into a 192 px JPEG kept on this device,
 // sends it to the linked TV in pieces (decrypted here and checked) and shows it in every profile circle. Then the
 // TV's "photos" in web_init: the same version confirms it, an old TV changes nothing, a removal elsewhere applies,

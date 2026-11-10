@@ -38,6 +38,15 @@ Ranked upgrades from the October 2026 review by the four focus agents (.claude/a
 - Web QA in CI (`.github/workflows/web-qa.yml`, tests in `tools/webtest/`).
 - CLAUDE.md with the Netlify budget rule, and four focus agents.
 
+## State machines (open items from the November 9 audit; details in STATE-MACHINES.md)
+
+1. Web VOD player (`renderPlayer`) as a pure reducer with shared vectors, like QF: `brokenDone` means two things, and `started` and `goodT` are not reset per candidate. L
+2. House membership: Joining (stamp 0) needs a timeout and a note in Settings. M
+3. Profile photos (web): a failed send must not be undone by the TV's older copy. M
+4. Real-Debrid client and token written as one unit (house-synced keys; high risk). M
+5. Resume push: retry a failed "stopped" push. S
+6. qf-net.mjs case C sometimes counts one freeze at 3 Mbps on the old page and the new one alike (flaky test). S
+
 ## Live TV (agent: live-tv)
 
 1. Games matching parity with the TV: abbreviation pairs, one team plus "vs", guide titles near kickoff. M
@@ -53,6 +62,8 @@ Ranked upgrades from the October 2026 review by the four focus agents (.claude/a
 2. Recent errors: skip known harmless rejections (a TMDB 404 nobody waits for) so the list stays useful. S
 
 ## TV app (agent: tv-app)
+
+- Play Next at credits (Nov 1): read the house "tv_guide" report's `playnext` block after the TVs update, to see which of J's real files carry a credits chapter (MKV from Real-Debrid, MP4 and MKV from the IPTV provider). If most carry only generic chapter names, the learned offset and the setting do the work. MP4 files with moov at the end are not read (no extra request on purpose). S
 
 1. Move watch history out of SharedPreferences into files (it is rewritten every 15 s on the main thread). M
 2. Buffer settings for 1 GB sticks (Media3 LoadControl). S

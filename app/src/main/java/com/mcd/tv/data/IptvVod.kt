@@ -43,6 +43,8 @@ object IptvVod {
     @Volatile private var failedAt = 0L
     @Volatile private var failedKey = ""
     private var loading: Deferred<XtreamVod.Index?>? = null
+    /** The account [loading] belongs to: a caller for another account never waits on it (wrong account's links). */
+    private var loadingKey = ""
 
     /** The user agent the provider accepted; IPTV sources play with it. */
     @Volatile private var userAgent: String? = null
@@ -109,7 +111,7 @@ object IptvVod {
         val now = System.currentTimeMillis()
         index?.let { if (indexKey == key && now - indexAt < INDEX_MAX_AGE) return it }
         val job = synchronized(this) {
-            loading?.takeIf { it.isActive } ?: scope.async { load(acct) }.also { loading = it }
+            loading?.takeIf { it.isActive && loadingKey == key } ?: scope.async { load(acct) }.also { loading = it; loadingKey = key }
         }
         return job.await()
     }

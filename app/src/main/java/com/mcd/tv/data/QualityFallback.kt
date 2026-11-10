@@ -39,6 +39,8 @@ class StallWatch(startMs: Long) {
         const val MAX_STALLED_MS = 12_000L
         const val LONG_STALL_MS = 8_000L
         const val STARTUP_MS = 10_000L
+        /** Buffering this soon after a seek belongs to the seek. */
+        const val SEEK_GRACE_MS = 2_000L
         const val SAMPLE_GAP_MS = 3_000L
         const val LOW_SAMPLES = 4
         const val SEVERE_SAMPLES = 2
@@ -55,6 +57,8 @@ class StallWatch(startMs: Long) {
     // Player glue: buffering before the first picture or right after a seek is not a stall.
     private var started = false
     private var seekPending = false
+    /** When the last seek was (onSeek(now)); MIN_VALUE when not known. */
+    private var seekAt = Long.MIN_VALUE
 
     var fired = false
         private set
@@ -75,6 +79,7 @@ class StallWatch(startMs: Long) {
         fired = false
         started = false
         seekPending = false
+        seekAt = Long.MIN_VALUE
     }
 
     /** The picture froze to buffer. */
@@ -119,13 +124,23 @@ class StallWatch(startMs: Long) {
 
     /** Buffering (STATE_BUFFERING) while the player wants to play. */
     fun onBuffering(now: Long) {
+        // A seek that never left READY (a seek inside the buffer) must not hide a real stall later on:
+        // the seek's own buffering starts at once, so one more than SEEK_GRACE_MS after it is a stall.
+        if (seekPending && seekAt != Long.MIN_VALUE && now - seekAt > SEEK_GRACE_MS) seekPending = false
         if (started && !seekPending) stall(now)
     }
 
     /** The viewer seeked: the buffering that follows is not a stall. */
     fun onSeek() {
         seekPending = true
+        seekAt = Long.MIN_VALUE
         cancel()
+    }
+
+    /** The viewer seeked at [now]: the buffering that follows at once is not a stall. */
+    fun onSeek(now: Long) {
+        onSeek()
+        seekAt = now
     }
 
     /** Stopped, ended or failed: a stall in progress ends here. */

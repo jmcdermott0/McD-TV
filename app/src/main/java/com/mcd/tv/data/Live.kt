@@ -89,6 +89,14 @@ object M3u {
 
     private val lock = kotlinx.coroutines.sync.Mutex()
 
+    // Failed phase (STATE-MACHINES.md, "Playlist load"): a link that just failed is not downloaded again for
+    // FAIL_WAIT_MS. Live TV, the live player and Games each called load() after a failure, one after another behind
+    // the lock, so one dead link meant several 90 s downloads in a row. force (Retry) always tries again.
+    private var failUrl = ""
+    private var failAt = 0L
+    private var failError: Exception? = null
+    private const val FAIL_WAIT_MS = 30_000L
+
     /** User agents tried for playlist servers, most widely accepted first. */
     private val USER_AGENTS = listOf(
         "IPTVSmartersPro",
@@ -189,6 +197,11 @@ object M3u {
         return lock.withLock {
             val fresh = url == cacheUrl && System.currentTimeMillis() - cacheAt < 6 * 3600_000L
             if (fresh && !force && cache.isNotEmpty()) return@withLock cache
+            val err = failError
+            if (!force && err != null && url == failUrl && System.currentTimeMillis() - failAt < FAIL_WAIT_MS) throw err
+            // Another link (another account): its connection limit is learned again, never carried over.
+            if (url != cacheUrl) maxConnections = 0
+            try {
             var guide = ""
             val list = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 var lastCode = 0
@@ -224,7 +237,14 @@ object M3u {
             }
             if (list.isEmpty()) throw Exception("The playlist loaded but had no live channels in it.")
             cache = list; cacheUrl = url; cacheAt = System.currentTimeMillis(); guideUrl = guide
+            failError = null
             list
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failUrl = url; failAt = System.currentTimeMillis(); failError = e
+                throw e
+            }
         }
     }
 }

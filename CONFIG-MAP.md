@@ -28,6 +28,10 @@ How every setting is entered, stored, synced and read across the TV app, the Con
 | Websites | TV home Wi-Fi page | `websites` | HouseSync | no |
 | Titles, US release dates, slow connection, size limits, intro | TV Settings; Control page (not the size limits) | `origin_filter`, `us_only`, `slow_connection`, `max_movie_gb`, `max_episode_gb`, `play_intro` | HouseSync. The phone can override titles with `mcdtv_web_origin`. | no |
 | Quality (Auto, Prefer 4K, Max 1080p) | TV Settings > Playback > Quality | `quality_mode` = `auto` (default: steps down from 4K to 1080p when playback struggles), `4k` (never steps down) or `1080` (never above 1080p; Live TV opens a 4K channel's 1080p version) | this TV only, never synced, not per profile | no |
+| Play Next at the credits | TV Settings > Playback > Play Next | `playnext_credits` (default on): credits chapter and learned offsets | this TV only, never synced, not per profile | no |
+| Play Next before the end | TV Settings > Playback > Play Next | `playnext_end_secs` = 0 (Off, default), 15, 30, 45, 60 or 90 | this TV only, never synced | no |
+| Credits card for movies | TV Settings > Playback > Play Next | `playnext_movies` (default off) | this TV only, never synced | no |
+| Learned credits and the signal log | Set by playback | `playnext_learned` ({"tv:<tmdb id>": [ms before the end]}), `playnext_log` (last 12 files) | this TV only, never synced | no |
 | Quality on the phone (Auto, Prefer 4K, Max 1080p) | Web app Settings > Playback > Quality | `mcdtv_web_quality` = `auto` (default), `4k` or `1080` | this browser only; not in the setup link or invites | no |
 | My Stream link | Control page | `custom_stream_url` | HouseSync | maybe |
 | Real-Debrid, TVs | TV Settings > Playback > Connect (device code) | `rd_client_id`, `rd_client_secret`, `rd_access`, `rd_refresh`, `rd_expires`; `rd_last_add` is per TV | HouseSync: one sign-in for the whole house. Phones only see `rd_connected`. | yes |

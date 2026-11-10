@@ -516,4 +516,10 @@ object Prefs {
     fun putJson(key: String, value: String) = sp.edit().putString(key, value).apply()
     /** Like [putJson], but written before it returns (for a process that is about to end). */
     fun putJsonNow(key: String, value: String) = sp.edit().putString(key, value).commit()
+
+    // ---- Plain values for this-TV-only settings kept outside this file (PlayNextStore) ----
+    fun bool(key: String, default: Boolean): Boolean = sp.getBoolean(key, default)
+    fun putBool(key: String, value: Boolean) = sp.edit().putBoolean(key, value).apply()
+    fun int(key: String, default: Int): Int = sp.getInt(key, default)
+    fun putInt(key: String, value: Int) = sp.edit().putInt(key, value).apply()
 }

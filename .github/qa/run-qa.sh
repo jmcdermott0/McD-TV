@@ -563,6 +563,42 @@ rows_seen live-fresh-rows
 F=qa-out/ui-live-fresh-rows-all.xml; MISSING=$(rows_missing)
 [ -z "$MISSING" ] && pass "Fresh install: What's On shows the same six rows" || fail "Fresh install: What's On rows missing:$MISSING"
 
+# 4n) Play Next at credits. A real MKV (ffmpeg, app/src/test/resources/playnext/qa-credits.mkv): 2:30 long, a clock
+# burned into the picture, chapters Intro 0:00, Episode 0:08, End Credits 1:40. Played as S1E1 of a test show whose
+# next episode is known. The Play next card must show at the chapter (50 s before the file ends), not at the end.
+cp app/src/test/resources/playnext/qa-credits.mkv qa-m3u/
+adb logcat -c
+adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --es screen "playnext:http://10.0.2.2:8765/qa-credits.mkv" >/dev/null
+PN_START=$(date +%s); PN_SEEN=""; PN_EARLY=""
+for i in $(seq 1 40); do
+  sleep 5
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-playnext-poll.xml >/dev/null 2>&1
+  if grep -q "Plays in" qa-out/ui-playnext-poll.xml; then
+    PN_SEEN=$(( $(date +%s) - PN_START )); shot playnext-card; cp qa-out/ui-playnext-poll.xml qa-out/ui-playnext-card.xml; break
+  fi
+  # The end card ("Up next: S1E2 in") would mean the early card never came.
+  grep -q "Up next: S1E2 in" qa-out/ui-playnext-poll.xml && { PN_EARLY="end"; shot playnext-endcard; break; }
+done
+adb logcat -d -s PlayNext:I > qa-out/playnext-log.txt
+cat qa-out/playnext-log.txt | tail -3 | tee -a "$R"
+grep -q "chapters=3" qa-out/playnext-log.txt && grep -q "End Credits" qa-out/playnext-log.txt \
+  && pass "Play Next: the TV read the file's 3 chapters (End Credits at 1:40)" || fail "Play Next: the TV read the file's 3 chapters (End Credits at 1:40)"
+grep -q "card=100000 source=chapter" qa-out/playnext-log.txt \
+  && pass "Play Next: card set at 1:40 of 2:30 from the credits chapter" || fail "Play Next: card set at 1:40 of 2:30 from the credits chapter"
+if [ -n "$PN_SEEN" ] && grep -q "Play next" qa-out/ui-playnext-card.xml && grep -q "Watch credits" qa-out/ui-playnext-card.xml; then
+  pass "Play Next: the card showed during playback (${PN_SEEN}s after launch, before the file ended)"
+else
+  fail "Play Next: the card showed during playback (${PN_EARLY:-not seen})"
+fi
+# BACK is Watch credits: the card goes, the episode keeps playing (the player stays).
+adb shell input keyevent KEYCODE_BACK; sleep 3
+describe playnext-dismissed; shot playnext-dismissed
+if ! grep -q "Plays in" qa-out/ui-playnext-dismissed.xml && adb shell dumpsys activity activities | grep -q "com.mcd.tv"; then
+  pass "Play Next: BACK hides the card and the credits keep playing"
+else
+  fail "Play Next: BACK hides the card and the credits keep playing"
+fi
+
 # 5) Crash check.
 adb logcat -d > qa-out/logcat.txt
 if grep -q "ANR in com.mcd.tv" qa-out/logcat.txt; then fail "No freezes (ANR)"; grep -A 15 "ANR in com.mcd.tv" qa-out/logcat.txt > qa-out/anr.txt; else pass "No freezes (ANR)"; fi

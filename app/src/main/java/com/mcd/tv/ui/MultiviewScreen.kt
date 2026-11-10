@@ -719,7 +719,12 @@ private fun MultiTile(
         var retryJob: Job? = null
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY) failed = false
+                // Tile phase (STATE-MACHINES.md): Playing -> Retrying (one, 2.5 s) -> Playing | Failed. Playing again
+                // earns a fresh retry, so a hiccup an hour later is retried too instead of failing at once.
+                if (state == Player.STATE_READY) {
+                    failed = false
+                    retried = false
+                }
             }
 
             override fun onPlayerError(e: PlaybackException) {
@@ -761,6 +766,8 @@ private fun MultiTile(
             } else if (event == Lifecycle.Event.ON_START && pausedByStop) {
                 pausedByStop = false
                 player.seekToDefaultPosition()
+                // A tile that failed while away (or before) is reopened: play() alone does nothing on an errored player.
+                if (player.playerError != null || player.playbackState == Player.STATE_IDLE) player.prepare()
                 player.play()
             }
         }

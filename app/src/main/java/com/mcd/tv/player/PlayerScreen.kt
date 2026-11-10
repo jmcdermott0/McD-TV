@@ -144,6 +144,10 @@ fun PlayerScreen(
     qualityKey: String = "",
     /** SourceHealth.key of the playing file: a file that stops far short of the title is flagged for the house. */
     sourceKey: String? = null,
+    /** Non-live: position, seeks and the file's first bytes for Play Next at credits (ui/UpNext.kt). */
+    hook: PlayerHook? = null,
+    /** Drawn over the video (the Play next card). */
+    overlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
@@ -176,8 +180,14 @@ fun PlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnSleep by rememberUpdatedState(onSleep)
     val currentOnEnded by rememberUpdatedState(onEnded)
-    // Sleep timer: index into SLEEP_STEPS (0 = off). Each MENU press moves to the next step.
-    var sleepStep by remember { mutableIntStateOf(0) }
+    // Sleep timer: one for the app (AppSleep.timer), so it carries over to the next episode or source.
+    // sleepRev redraws and restarts the countdown when it changes. Each MENU press moves to the next step.
+    val sleep = AppSleep.timer
+    var sleepRev by remember { mutableIntStateOf(0) }
+    DisposableEffect(Unit) {
+        sleep.onPlayerStart()
+        onDispose { sleep.onPlayerLeave() }
+    }
     var sleepToast by remember { mutableStateOf<String?>(null) }
     var sleepToastTick by remember { mutableIntStateOf(0) }
     // Target time while LEFT / RIGHT presses add up (TvPlayerView seeks once they stop).
@@ -202,6 +212,8 @@ fun PlayerScreen(
     var rescueNote by remember { mutableStateOf<String?>(null) }
     var rescueNoteTick by remember { mutableIntStateOf(0) }
     var rescueJob by remember { mutableStateOf<Job?>(null) }
+    // A scheduled reconnect after a player error (live retries, the MPEG-TS reopen, 409 waits).
+    var retryJob by remember { mutableStateOf<Job?>(null) }
 
     // Live TV: the data source the player was built with, so a channel can be reopened in its other format.
     val liveSource = remember { arrayOfNulls<androidx.media3.datasource.DataSource.Factory>(1) }
@@ -226,7 +238,8 @@ fun PlayerScreen(
 
         ExoPlayer.Builder(context, renderers)
             .setTrackSelector(selector)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource))
+            // Play Next at credits: keep the file's first bytes as the player reads them (chapters), no extra request.
+            .setMediaSourceFactory(DefaultMediaSourceFactory(if (hook != null && !live) HeaderTap.factory(dataSource, hook.header) else dataSource))
             .apply { if (live) setLoadControl(LiveTuning.loadControl()) }
             .setSeekBackIncrementMs(SEEK_MS)
             .setSeekForwardIncrementMs(SEEK_MS)
@@ -250,6 +263,18 @@ fun PlayerScreen(
             }
     }
 
+    // Failed is the one terminal phase (see STATE-MACHINES.md, "Player phase"). Every "can't play" goes through
+    // here: it stops the player and every pending reconnect, so nothing reloads or plays sound behind the panel.
+    // A later error, stall or rescue step sees error != null and does nothing.
+    fun fail(message: String) {
+        if (error != null) return
+        rescueJob?.cancel()
+        retryJob?.cancel()
+        runCatching { player.stop() }
+        hook?.failed = true
+        error = message
+    }
+
     fun logQuality(from: String, to: String, code: String) {
         QualityLog.add(QualityLog.Entry(System.currentTimeMillis(), title.ifBlank { "Video" }, from, to, code, tele.estimator.estimate()))
     }
@@ -259,7 +284,9 @@ fun PlayerScreen(
      * selector at 1080p when the stream has a lower track, else ask the screen to switch to a 1080p stream.
      */
     fun onStruggle(why: String) {
-        if (qualityMode != QualityMode.AUTO || tele.stepped) return
+        // Quality phase (STATE-MACHINES.md): only NATIVE may step down. CAPPED, SWITCH_ASKED and LOCKED (ExoPlayer
+        // already left 4K by itself) never step again, so a 1080p stall never reads as a 4K one.
+        if (qualityMode != QualityMode.AUTO || tele.stepped || tele.locked) return
         val height = maxOf(videoNow.height, player.videoSize.height)
         if (!QualityFallback.is4k(height, qualityLabel)) return
         val heights = ArrayList<Int>()
@@ -321,15 +348,16 @@ fun PlayerScreen(
             showRescueNote("$msg Trying the next one at $at.")
             rescueJob = scope.launch {
                 val m2 = next.tryNext() ?: return@launch // null: switching to the next source
-                error = "$msg $m2"
+                fail("$msg $m2")
             }
         } else {
-            error = "$msg Pick another source. Jarvis resumes at $at."
+            fail("$msg Pick another source. Jarvis resumes at $at.")
         }
     }
 
     // Non-live video failed or stalled at the current position: ask PlaybackRescue what to do, and do it.
     fun recover(retryable: Boolean, why: String) {
+        if (error != null) return
         val pos = player.currentPosition.coerceAtLeast(0L)
         val step = rescue.onFailure(pos, retryable)
         // It played up to here and won't go on, far short of the title: the file is cut off or broken there.
@@ -361,7 +389,7 @@ fun PlayerScreen(
             PlaybackRescue.Action.NEXT_SOURCE -> {
                 val next = nextSource
                 if (next == null) {
-                    error = step.note
+                    fail(step.note ?: "This source stopped.")
                     return
                 }
                 step.note?.let { showRescueNote(it) }
@@ -370,13 +398,10 @@ fun PlayerScreen(
                 progress.save(player, force = true)
                 rescueJob = scope.launch {
                     val msg = next.tryNext() ?: return@launch // null: switching to the next source
-                    error = "This source stopped at $at. $msg"
+                    fail("This source stopped at $at. $msg")
                 }
             }
-            PlaybackRescue.Action.GIVE_UP -> {
-                player.stop()
-                error = step.note
-            }
+            PlaybackRescue.Action.GIVE_UP -> fail(step.note ?: "This source stopped.")
         }
     }
 
@@ -430,9 +455,9 @@ fun PlayerScreen(
 
     DisposableEffect(player) {
         var networkRetries = 0
-        var retryJob: Job? = null
         var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
         var busyTries = 0
+        var hookReady = false
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 paused = !playWhenReady
@@ -458,6 +483,10 @@ fun PlayerScreen(
                     if (rescueNote == "Reconnecting…") rescueNote = null
                     report.update(player)
                     checkSource()
+                    if (!hookReady && !live && player.duration > 0) {
+                        hookReady = true
+                        hook?.onReady?.invoke(player.duration)
+                    }
                 }
                 if (state == Player.STATE_ENDED && !live) {
                     if (checkSource()) return
@@ -470,9 +499,10 @@ fun PlayerScreen(
                 }
                 if (state == Player.STATE_ENDED) {
                     progress.save(player, force = true)
-                    if (SLEEP_STEPS[sleepStep] == SLEEP_END_OF_VIDEO) {
+                    if (sleep.mode == com.mcd.tv.data.SleepTimer.Mode.EndOfVideo) {
                         // "End of this video": stop here instead of rolling into the next episode.
-                        sleepStep = 0
+                        sleep.fired()
+                        sleepRev++
                         player.pause()
                         currentOnSleep?.invoke()
                     } else {
@@ -483,7 +513,10 @@ fun PlayerScreen(
 
             override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
                 // A seek buffers by design: not a stall.
-                if (reason == Player.DISCONTINUITY_REASON_SEEK) stallWatch.onSeek()
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    stallWatch.onSeek(SystemClock.elapsedRealtime())
+                    if (!live) hook?.onSeek?.invoke(oldPosition.positionMs, newPosition.positionMs, player.duration)
+                }
             }
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -501,6 +534,7 @@ fun PlayerScreen(
             }
 
             override fun onPlayerError(e: PlaybackException) {
+                if (error != null) return // Failed is terminal: no retries behind the panel
                 // Live stream fell behind the window: jump back to the live edge.
                 if (e.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                     player.seekToDefaultPosition()
@@ -548,7 +582,7 @@ fun PlayerScreen(
                         }
                         return
                     }
-                    error = StreamDiag.busyMessage(com.mcd.tv.data.M3u.maxConnections)
+                    fail(StreamDiag.busyMessage(com.mcd.tv.data.M3u.maxConnections))
                     com.mcd.tv.data.RecentErrors.note("Live: ${title.ifBlank { "channel" }}: HTTP 409, connection in use, ${busyTries + 1} tries over ~46 s")
                     return
                 }
@@ -581,7 +615,7 @@ fun PlayerScreen(
                 }
                 // The other format failed too: note what the provider sent for it as well.
                 if (live && tsTried) StreamDiag.tsUrl(url)?.let { probeStream(it, "ts") }
-                error = RdErrors.stream(http) ?: "${e.errorCodeName}\n${e.cause?.message ?: e.message ?: ""}"
+                fail(RdErrors.stream(http) ?: "${e.errorCodeName}\n${e.cause?.message ?: e.message ?: ""}")
                 com.mcd.tv.data.RecentErrors.note("Playback: ${title.ifBlank { "video" }}: ${RdErrors.stream(http) ?: e.errorCodeName}")
             }
         }
@@ -692,6 +726,7 @@ fun PlayerScreen(
             rescueJob?.cancel()
             progress.save(player, force = true)
             report.clear()
+            if (!live) runCatching { hook?.onLeave?.invoke(player.currentPosition, player.duration, player.playbackState == Player.STATE_ENDED) }
             player.removeListener(listener)
             if (live) LiveTuning.left(player)
             player.release() // frees the hardware decoder; important on low-RAM Fire Sticks
@@ -722,7 +757,7 @@ fun PlayerScreen(
         delay(LiveTuning.STALL_MS)
         if (!player.playWhenReady || player.playbackState != Player.STATE_BUFFERING || error != null) return@LaunchedEffect
         if (recoveries >= LiveTuning.MAX_RECOVERIES) {
-            error = "This channel keeps freezing. The provider may be busy. Try another channel or come back in a minute."
+            fail("This channel keeps freezing. The provider may be busy. Try another channel or come back in a minute.")
             return@LaunchedEffect
         }
         recoveries++
@@ -802,12 +837,29 @@ fun PlayerScreen(
         }
     }
 
+    // Play Next at credits: position twice a second (UpNext decides; nothing is sent anywhere).
+    LaunchedEffect(player, hook) {
+        if (hook == null || live) return@LaunchedEffect
+        while (true) {
+            delay(500)
+            hook.onTick?.invoke(player.currentPosition, player.duration, player.isPlaying)
+        }
+    }
+
     // Sleep timer countdown (restarts whenever the setting changes).
-    LaunchedEffect(sleepStep) {
-        val minutes = SLEEP_STEPS[sleepStep]
-        if (minutes > 0) {
-            delay(minutes * 60_000L)
-            sleepStep = 0
+    LaunchedEffect(sleepRev) {
+        if (live) return@LaunchedEffect // the timer is for videos, as before; Live TV leaves it as it is
+        hook?.stopAtEnd = sleep.mode == com.mcd.tv.data.SleepTimer.Mode.EndOfVideo
+        // Carried over from the last episode or source: say so once, so it is never a surprise.
+        if (sleepRev == 0 && sleep.mode != com.mcd.tv.data.SleepTimer.Mode.Off) {
+            sleepToast = sleep.label()
+            sleepToastTick++
+        }
+        val left = sleep.remainingMs()
+        if (left >= 0) {
+            delay(left)
+            sleep.fired()
+            sleepRev++
             player.pause()
             progress.save(player, force = true)
             currentOnSleep?.invoke()
@@ -828,13 +880,9 @@ fun PlayerScreen(
             false
         } else {
             if (e.action == KeyEvent.ACTION_UP) {
-                sleepStep = (sleepStep + 1) % SLEEP_STEPS.size
-                val step = SLEEP_STEPS[sleepStep]
-                sleepToast = when {
-                    step == 0 -> "Sleep timer: Off"
-                    step == SLEEP_END_OF_VIDEO -> "Sleep timer: End of this video"
-                    else -> "Sleep timer: $step min"
-                }
+                sleep.next()
+                sleepRev++
+                sleepToast = sleep.label()
                 sleepToastTick++
             }
             true
@@ -972,6 +1020,8 @@ fun PlayerScreen(
             )
         }
 
+        if (error == null) overlay?.invoke(this)
+
         val failed = error
         if (failed != null && nextSource != null) {
             NextSourcePanel(failed, nextSource, onBack, Modifier.align(Alignment.Center))
@@ -997,9 +1047,10 @@ fun PlayerScreen(
     }
 }
 
-/** Sleep timer steps in minutes; 0 = off, [SLEEP_END_OF_VIDEO] = stop when this video ends. */
-private const val SLEEP_END_OF_VIDEO = -1
-private val SLEEP_STEPS = intArrayOf(0, 30, 60, 90, SLEEP_END_OF_VIDEO)
+/** The app's one sleep timer (main thread), shared by every player screen. */
+object AppSleep {
+    val timer = com.mcd.tv.data.SleepTimer { SystemClock.elapsedRealtime() }
+}
 
 /** How long the screen stays on while the player is paused. */
 private const val SCREEN_ON_WHILE_PAUSED_MS = 10 * 60_000L

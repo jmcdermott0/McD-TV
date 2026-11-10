@@ -55,6 +55,8 @@ object GuideExtra {
     private const val WINDOW_MS = 8 * 3600_000L
     private const val CACHE_MS = 6 * 3600_000L
     private const val RETRY_MS = 10 * 60_000L
+    /** A partial load (one source failed, e.g. McD-Server asleep) is fetched again after an hour, not 6. */
+    private const val PARTIAL_MS = 3600_000L
     private const val MAX_KEPT = 40_000
     private const val MAX_DESC = 160
 
@@ -263,6 +265,8 @@ object GuideExtra {
     private val lock = Mutex()
     @Volatile private var cacheSig = ""
     @Volatile private var cacheAt = 0L
+    /** How long [cache] counts as fresh: CACHE_MS, or PARTIAL_MS when a source failed and the rows are partial. */
+    @Volatile private var cacheTtl = CACHE_MS
     private var failAt = 0L
     @Volatile private var cache: Map<String, List<Programme>> = emptyMap()
 
@@ -278,7 +282,7 @@ object GuideExtra {
         return try {
             lock.withLock {
                 val t = System.currentTimeMillis()
-                if (sig == cacheSig && t - cacheAt < CACHE_MS) return@withLock cache
+                if (sig == cacheSig && t - cacheAt < cacheTtl) return@withLock cache
                 if (sig == cacheSig && t - failAt < RETRY_MS) return@withLock cache
                 val want = wanted(channels)
                 val out = HashMap<String, List<Programme>>()
@@ -305,10 +309,18 @@ object GuideExtra {
                         "", st[0], bytes[0], part.values.sumOf { it.size }, part.size, err)
                 }
                 GuideDiag.extra(tries)
+                // Cache phases (STATE-MACHINES.md, "Extra guide cache"): Fresh (6 h), Partial (a source failed:
+                // fresh for PARTIAL_MS only, so a McD-Server that was briefly away is asked again soon), Failed (keep
+                // what this playlist had, retry after RETRY_MS). Another playlist's rows are never served as this one's.
+                if (sig != cacheSig) {
+                    cache = emptyMap()
+                    cacheAt = 0L
+                }
                 cacheSig = sig
                 if (out.isEmpty()) { failAt = t; return@withLock cache }
                 cache = out
                 cacheAt = t
+                cacheTtl = if (tries.any { it.error.isNotBlank() }) PARTIAL_MS else CACHE_MS
                 out
             }
         } catch (e: CancellationException) {
@@ -356,6 +368,7 @@ object GuideExtra {
         cache = emptyMap()
         cacheSig = ""
         cacheAt = 0L
+        cacheTtl = CACHE_MS
         failAt = 0L
     }
 

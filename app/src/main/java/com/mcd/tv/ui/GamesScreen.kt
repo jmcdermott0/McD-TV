@@ -109,19 +109,30 @@ object GameBoard {
     /** The big leagues: shown in the rail during their season even before the schedule loads. */
     private val MAIN = setOf(League.NFL, League.NCAAF, League.NBA, League.MLB, League.NHL)
 
+    /** The newest refresh per league: an older one that finishes later never overwrites it (STATE-MACHINES.md). */
+    private val latest = HashMap<League, Int>()
+
     suspend fun refresh(league: League, force: Boolean = false) {
+        val mine = (latest[league] ?: 0) + 1
+        latest[league] = mine
         val cur = state[league]
         if (cur !is LeagueLoad.Ok) state[league] = LeagueLoad.Loading
         try {
             val s = Games.schedule(league, force)
-            if (cur !is LeagueLoad.Ok || cur.schedule !== s) {
+            if (latest[league] != mine) return // a newer refresh (Retry, the pane loop, a forced one) owns the result
+            val now = state[league]
+            if (now !is LeagueLoad.Ok || now.schedule !== s) {
                 state[league] = LeagueLoad.Ok(s)
                 version++
             }
         } catch (e: CancellationException) {
+            // Left while loading: never leave the league spinning on a request nobody waits for.
+            if (latest[league] == mine && state[league] is LeagueLoad.Loading) {
+                if (cur != null && cur !is LeagueLoad.Loading) state[league] = cur else state.remove(league)
+            }
             throw e
         } catch (e: Exception) {
-            if (state[league] !is LeagueLoad.Ok) state[league] = LeagueLoad.Failed
+            if (latest[league] == mine && state[league] !is LeagueLoad.Ok) state[league] = LeagueLoad.Failed
         }
     }
 

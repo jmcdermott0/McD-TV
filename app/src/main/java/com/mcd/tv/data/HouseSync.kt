@@ -308,6 +308,8 @@ object HouseSync {
             .put("current", Epg.current.size)
             .put("extra_on", GuideExtra.enabled())
             .put("extra", GuideExtra.loadedCount())
+            // Play Next at credits: which signals this TV's recent files carried (container, chapters). No links.
+            .put("playnext", runCatching { PlayNextStore.report() }.getOrNull() ?: JSONObject())
     }
 
     /** Sends "tv_link" (this TV's setup link and who it is) to the house. Never logged: it holds the relay key. */
@@ -336,11 +338,15 @@ object HouseSync {
      */
     @Synchronized
     fun join(id: String, key: String, once: Boolean = false) {
-        Prefs.putJson("house_once", if (once) "1" else "")
+        // Membership phases (STATE-MACHINES.md, "House membership"): Member, Joining (stamp 0), CopyOnceWaiting
+        // (house_once = 1). Already in this house: stay a Member and just ask for the latest. A copy-once here would
+        // wait for a newer copy the house never sends (its stamp equals ours) and stay in CopyOnceWaiting for good.
         if (id == Prefs.houseId && key == Prefs.houseKey) {
+            Prefs.putJson("house_once", "")
             scope.launch { runCatching { publishRequest() } }
             return
         }
+        Prefs.putJson("house_once", if (once) "1" else "")
         synchronized(lock) {
             Prefs.houseId = id
             Prefs.houseKey = key
@@ -360,6 +366,8 @@ object HouseSync {
     /** Stops sharing: this TV keeps its current settings in a house of its own. */
     @Synchronized
     fun leave() {
+        // Leaving also ends a copy-once that never arrived: left set, profile sync and the tv_link announce stay off.
+        Prefs.putJson("house_once", "")
         synchronized(lock) {
             newHouse()
             lastText = snapshot()
