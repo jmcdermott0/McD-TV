@@ -173,7 +173,8 @@ fun SearchScreen(nav: Nav) {
                 }
             } else {
             val describe = looksLikeDescription(submitted)
-            val hits by rememberLoad(submitted) { Tmdb.searchAll(submitted) }
+            // Keyed on attempt too: submitting the same words again retries a search that failed.
+            val hits by rememberLoad(submitted, attempt) { Tmdb.searchAll(submitted) }
             val titles = when (val h = hits) {
                 is Load.Ok -> Load.Ok(h.value.titles)
                 is Load.Err -> h
@@ -181,7 +182,7 @@ fun SearchScreen(nav: Nav) {
             }
             // A name ("Daniel day Lewis"): that person's best-known titles straight from TMDB, no Jarvis needed.
             // The search reply is cached, so this adds only the person's own page.
-            val known by rememberLoad(submitted) {
+            val known by rememberLoad(submitted, attempt) {
                 if (!JarvisReplyParser.looksLikeName(submitted)) null
                 else Tmdb.personByName(submitted, Tmdb.searchAll(submitted).people)?.let { hit ->
                     val p = Tmdb.person(hit.id)
@@ -351,9 +352,12 @@ fun ServiceGridScreen(nav: Nav, service: Service) {
     val all = remember(type) { mutableStateListOf<Title>() }
     var loaded by remember(type) { mutableIntStateOf(0) }
     var allErr by remember(type) { mutableStateOf<String?>(null) }
+    // Paged-list phases (STATE-MACHINES.md, "Paged grid"): Loading, Shown, Failed (allErr), Ended. Ended (a page
+    // with nothing new) stops Load more; before it, an empty catalog showed "Loading…" forever.
+    var ended by remember(type) { mutableStateOf(false) }
     LaunchedEffect(service.id, type, pages, retry) {
         allErr = null
-        while (loaded < pages) {
+        while (loaded < pages && !ended) {
             val next = loaded + 1
             val got = try {
                 Tmdb.byService(type, service.id, next)
@@ -364,8 +368,10 @@ fun ServiceGridScreen(nav: Nav, service: Service) {
                 return@LaunchedEffect
             }
             val seen = all.map { it.id }.toHashSet()
-            all.addAll(got.distinctBy { it.id }.filter { it.id !in seen })
+            val fresh = got.distinctBy { it.id }.filter { it.id !in seen }
+            all.addAll(fresh)
             loaded = next
+            if (fresh.isEmpty()) ended = true
         }
     }
     val listState = rememberLazyListState()
@@ -391,7 +397,7 @@ fun ServiceGridScreen(nav: Nav, service: Service) {
             if (all.isEmpty()) {
                 item {
                     Column(Modifier.padding(horizontal = 48.dp)) {
-                        StatusText(err ?: "Loading…")
+                        StatusText(err ?: if (ended) "Nothing on ${service.name} in this list right now." else "Loading…")
                         if (err != null) ActionButton("Retry", { retry++ }, primary = true)
                     }
                 }
@@ -402,7 +408,7 @@ fun ServiceGridScreen(nav: Nav, service: Service) {
                         rowItems.forEach { t -> PosterCard(t, onClick = { pick(t) }) }
                     }
                 }
-                item(key = "loadMore") {
+                if (!ended || err != null) item(key = "loadMore") {
                     Row(Modifier.padding(horizontal = 48.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         ActionButton(
                             if (err != null) "Retry (${all.size} shown)" else "Load more (${all.size} shown)",

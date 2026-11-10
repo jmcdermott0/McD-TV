@@ -1,8 +1,8 @@
 # Jarvis: handoff notes
 
-Read this first when you pick the project up in a new session. It records the current state, how the pieces fit and what comes next. `CONFIG-MAP.md` lists every setting: where it is entered, stored and synced.
+Read this first when you pick the project up in a new session. It records the current state, how the pieces fit and what comes next. `CONFIG-MAP.md` lists every setting: where it is entered, stored and synced. `STATE-MACHINES.md` lists every flow with phases (player, update, house sync, sign-ins, web relay...), its states, owner, tests and what is still open.
 
-Last updated: 2026-11-01.
+Last updated: 2026-11-09.
 
 ## Names that must not change
 

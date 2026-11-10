@@ -25,6 +25,10 @@ The relay (rd-proxy/, Netlify site jarvis-rd) is on the free plan: 300 credits a
 4. User-facing text: short plain sentences, no em dashes. Never name the model provider in the app.
 5. Do not label content politically. J controls "Topics to skip".
 
+## State machines
+
+Any flow with phases (loading, retrying, waiting, failed) follows STATE-MACHINES.md: one state value (enum, sealed type, or a web `{status}` object replaced whole), transitions in one pure place, one way into a terminal state that also cancels timers, async answers checked against the current request (generation, key or token), and a test. Add or update its row in STATE-MACHINES.md in the same change.
+
 ## How to check work
 
 - Kotlin unit tests: `bash tools/run-unit-tests.sh`

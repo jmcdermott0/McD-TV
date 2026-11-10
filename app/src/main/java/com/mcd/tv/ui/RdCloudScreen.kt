@@ -60,6 +60,8 @@ fun RdCloudScreen(nav: Nav) {
     var refresh by remember { mutableIntStateOf(0) }
     var opened by remember { mutableStateOf<RdItem?>(null) }
     var status by remember { mutableStateOf("") }
+    // One file opening at a time: a second OK while it opens would push two players.
+    var opening by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val items by rememberLoad(refresh) { RdCloud.list() }
     // Back inside a folder returns to the list instead of leaving the screen.
@@ -69,6 +71,7 @@ fun RdCloudScreen(nav: Nav) {
     val refreshFocus = remember { FocusRequester() }
     var switched by remember { mutableIntStateOf(0) }
     LaunchedEffect(opened) {
+        status = "" // a note about the list or another folder does not belong here
         if (switched++ == 0) return@LaunchedEffect // first composition: the tab bar has focus
         withFrameNanos { }
         // Refresh first as a fallback; the first row takes over if it is already on screen.
@@ -80,7 +83,7 @@ fun RdCloudScreen(nav: Nav) {
         Column(Modifier.padding(horizontal = 48.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("REAL-DEBRID CLOUD", style = broadcastStyle(30.sp))
-                ActionButton("Refresh", { refresh++ }, Modifier.focusRequester(refreshFocus))
+                ActionButton("Refresh", { status = ""; refresh++ }, Modifier.focusRequester(refreshFocus))
                 if (opened != null) ActionButton("Back to list", { opened = null })
             }
             if (!RealDebrid.connected) StatusText("Connect Real-Debrid in Settings first.")
@@ -88,18 +91,26 @@ fun RdCloudScreen(nav: Nav) {
         }
         val item = opened
         if (item != null) {
-            val files by rememberLoad(item.id) { RdCloud.files(item.id) }
+            // Keyed on refresh too, so Refresh inside a folder reloads its files.
+            val files by rememberLoad(item.id, refresh) { RdCloud.files(item.id) }
             when (val f = files) {
                 is Load.Loading -> StatusText("Loading files…", Modifier.padding(start = 48.dp))
                 is Load.Err -> StatusText(f.message, Modifier.padding(start = 48.dp))
                 is Load.Ok -> LazyColumn(contentPadding = PaddingValues(48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     itemsIndexed(f.value) { i, file ->
                         RowCard(file.name, "%.2f GB".format(file.sizeGb), if (i == 0) Modifier.focusRequester(firstRow) else Modifier) {
-                            status = "Opening…"
-                            scope.launch {
-                                runCatching { RealDebrid.unrestrict(file.link) }
-                                    .onSuccess { status = ""; nav.push(Screen.Player(it, file.name)) }
-                                    .onFailure { status = it.message ?: "Could not open" }
+                            if (!opening) {
+                                opening = true
+                                status = "Opening…"
+                                scope.launch {
+                                    try {
+                                        runCatching { RealDebrid.unrestrict(file.link) }
+                                            .onSuccess { status = ""; nav.push(Screen.Player(it, file.name)) }
+                                            .onFailure { if (it !is kotlinx.coroutines.CancellationException) status = it.message ?: "Could not open" }
+                                    } finally {
+                                        opening = false
+                                    }
+                                }
                             }
                         }
                     }

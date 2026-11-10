@@ -173,11 +173,17 @@ class PlayNextTrigger(private val atMs: Long, private val durationMs: Long) {
     var dismissed = false
         private set
     private var last = -1L
+    /** A SHOW the screen could not use yet ([hold]): show on the next tick still inside the credits. */
+    private var waiting = false
 
     fun tick(posMs: Long): Event? {
         if (atMs < 0 || dismissed) { last = posMs; return null }
         val prev = last
         last = posMs
+        if (waiting) {
+            if (posMs < atMs - BACK_SLACK_MS) waiting = false // went back: the next crossing shows it again
+            else if (durationMs - posMs > END_SLACK_MS) { waiting = false; showing = true; return Event.SHOW }
+        }
         if (prev < 0) return null // first look: a resume past the point is the viewer's choice
         if (!showing && prev < atMs && posMs >= atMs && posMs - prev <= NATURAL_STEP_MS) { showing = true; return Event.SHOW }
         if (showing && posMs < atMs - BACK_SLACK_MS) { showing = false; return Event.HIDE }
@@ -192,7 +198,17 @@ class PlayNextTrigger(private val atMs: Long, private val durationMs: Long) {
         return null
     }
 
-    fun dismiss() { dismissed = true; showing = false }
+    fun dismiss() { dismissed = true; showing = false; waiting = false }
+
+    /**
+     * The screen did not show the card after SHOW (next episode not known yet, a failure, "Still watching?" due,
+     * sleep timer at "end of this video"). Without this the trigger would think the card is up and never show it.
+     */
+    fun hold() {
+        if (!showing) return
+        showing = false
+        waiting = true
+    }
 
     companion object {
         const val NATURAL_STEP_MS = 5_000L

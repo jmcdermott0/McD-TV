@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -54,6 +55,10 @@ object Updater {
     var promptedFor = 0L
 
     private var lastCheck = 0L
+    /** Checks running now (an automatic one and a forced one can overlap); [checking] is true while any runs. */
+    private var checksRunning = 0
+    /** When the APK went to the system installer (0 = not handed over). [busy] stays on until it answers. */
+    private var handedOverAt = 0L
 
     /** True while a check runs (Settings > App updates shows "Checking…"). */
     var checking by mutableStateOf(false)
@@ -85,8 +90,9 @@ object Updater {
     /** Looks for a newer release (at most every 6 hours unless [force]). Errors leave [available] as it was. */
     suspend fun check(ctx: Context, force: Boolean = false): Release? {
         val now = System.currentTimeMillis()
-        if (!force && now - lastCheck < CHECK_EVERY_MS) return available
+        if (!force && (checksRunning > 0 || now - lastCheck < CHECK_EVERY_MS)) return available
         lastCheck = now
+        checksRunning++
         checking = true
         return try {
             val o = JSONObject(Http.get(LATEST, mapOf("Accept" to "application/vnd.github+json"), timeoutMs = 15_000))
@@ -116,7 +122,8 @@ object Updater {
             }
             available
         } finally {
-            checking = false
+            checksRunning = (checksRunning - 1).coerceAtLeast(0)
+            checking = checksRunning > 0
         }
     }
 
@@ -140,7 +147,10 @@ object Updater {
     /** Called by [UpdateReceiver] with what the system installer said. */
     fun installResult(ok: Boolean, text: String) {
         status = text
-        if (!ok) busy = false
+        if (!ok) {
+            handedOverAt = 0L
+            busy = false
+        }
     }
 
     /**
@@ -221,7 +231,19 @@ object Updater {
                     false // fall back to the installer screen below
                 }
                 if (handedOver) {
+                    // Install phase: stay busy until the installer answers (installResult), so a second press can't
+                    // delete the APK the installer is reading. If no answer comes (the TV's prompt was dismissed),
+                    // Update now comes back after INSTALL_WAIT_MS.
                     status = "Installing. Jarvis closes and opens again by itself."
+                    val at = System.currentTimeMillis()
+                    handedOverAt = at
+                    kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+                        kotlinx.coroutines.delay(INSTALL_WAIT_MS)
+                        if (handedOverAt == at) {
+                            handedOverAt = 0L
+                            busy = false
+                        }
+                    }
                     return
                 }
             }
@@ -241,7 +263,10 @@ object Updater {
             status = "Update failed: ${e.message ?: "unknown error"}. Try again, or install with Downloader."
             RecentErrors.note(status)
         } finally {
-            busy = false
+            if (handedOverAt == 0L) busy = false
         }
     }
+
+    /** How long Update now stays off after the APK went to the system installer with no answer. */
+    private const val INSTALL_WAIT_MS = 3 * 60_000L
 }

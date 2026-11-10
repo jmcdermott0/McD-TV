@@ -133,14 +133,18 @@ fun UpNextPlayer(
         hook.onTick = { pos, d, isPlaying ->
             playing = isPlaying
             when (session.tick(pos, d)) {
-                PlayNextTrigger.Event.SHOW -> { if (session.mayShow(currentNext)) { choice = 0; remaining = UP_NEXT_SECONDS; card = true } }
+                PlayNextTrigger.Event.SHOW -> {
+                    if (session.mayShow(currentNext, hook)) { choice = 0; remaining = UP_NEXT_SECONDS; card = true } else session.hold()
+                }
                 PlayNextTrigger.Event.HIDE -> { card = false }
                 null -> {}
             }
         }
         hook.onSeek = { from, to, d ->
             when (session.seek(from, to, d)) {
-                PlayNextTrigger.Event.SHOW -> { if (session.mayShow(currentNext)) { choice = 0; remaining = UP_NEXT_SECONDS; card = true } }
+                PlayNextTrigger.Event.SHOW -> {
+                    if (session.mayShow(currentNext, hook)) { choice = 0; remaining = UP_NEXT_SECONDS; card = true } else session.hold()
+                }
                 PlayNextTrigger.Event.HIDE -> { card = false }
                 null -> {}
             }
@@ -156,11 +160,14 @@ fun UpNextPlayer(
             delay(1_000)
             if (playing && card) remaining--
         }
-        if (card && remaining == 0) playNext(auto = true)
+        // Re-checked at zero: the sleep timer may have moved to "End of this video", or the player failed.
+        if (card && remaining == 0) {
+            if (hook.stopAtEnd || hook.failed) { card = false; session.hold() } else playNext(auto = true)
+        }
     }
 
     val keys: (android.view.KeyEvent, Boolean) -> Boolean = keys@{ e, _ ->
-        if (!card) return@keys false
+        if (!card || hook.failed) return@keys false // no keys for a card that is not on screen
         val up = e.action == android.view.KeyEvent.ACTION_UP
         when (e.keyCode) {
             android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -383,10 +390,14 @@ private class CreditsSession(private val meta: PlayMeta, private val title: Stri
     }
 
     /** No card for a next episode that does not exist, or that TMDB has not confirmed yet; none before "Still watching?". */
-    fun mayShow(next: NextEpisode.Result): Boolean {
+    fun mayShow(next: NextEpisode.Result, hook: PlayerHook): Boolean {
+        if (hook.failed) return false
         if (!episode) return true
+        if (hook.stopAtEnd) return false // sleep timer "End of this video": stop at the end, never roll on early
         return next is NextEpisode.Known && !StillWatching.counter.shouldAsk()
     }
+
+    fun hold() = trigger?.hold()
 
     fun dismissed() {
         trigger?.dismiss()

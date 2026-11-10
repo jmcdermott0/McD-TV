@@ -206,6 +206,8 @@ fun PlayerScreen(
     var rescueNote by remember { mutableStateOf<String?>(null) }
     var rescueNoteTick by remember { mutableIntStateOf(0) }
     var rescueJob by remember { mutableStateOf<Job?>(null) }
+    // A scheduled reconnect after a player error (live retries, the MPEG-TS reopen, 409 waits).
+    var retryJob by remember { mutableStateOf<Job?>(null) }
 
     // Live TV: the data source the player was built with, so a channel can be reopened in its other format.
     val liveSource = remember { arrayOfNulls<androidx.media3.datasource.DataSource.Factory>(1) }
@@ -255,6 +257,18 @@ fun PlayerScreen(
             }
     }
 
+    // Failed is the one terminal phase (see STATE-MACHINES.md, "Player phase"). Every "can't play" goes through
+    // here: it stops the player and every pending reconnect, so nothing reloads or plays sound behind the panel.
+    // A later error, stall or rescue step sees error != null and does nothing.
+    fun fail(message: String) {
+        if (error != null) return
+        rescueJob?.cancel()
+        retryJob?.cancel()
+        runCatching { player.stop() }
+        hook?.failed = true
+        error = message
+    }
+
     fun logQuality(from: String, to: String, code: String) {
         QualityLog.add(QualityLog.Entry(System.currentTimeMillis(), title.ifBlank { "Video" }, from, to, code, tele.estimator.estimate()))
     }
@@ -264,7 +278,9 @@ fun PlayerScreen(
      * selector at 1080p when the stream has a lower track, else ask the screen to switch to a 1080p stream.
      */
     fun onStruggle(why: String) {
-        if (qualityMode != QualityMode.AUTO || tele.stepped) return
+        // Quality phase (STATE-MACHINES.md): only NATIVE may step down. CAPPED, SWITCH_ASKED and LOCKED (ExoPlayer
+        // already left 4K by itself) never step again, so a 1080p stall never reads as a 4K one.
+        if (qualityMode != QualityMode.AUTO || tele.stepped || tele.locked) return
         val height = maxOf(videoNow.height, player.videoSize.height)
         if (!QualityFallback.is4k(height, qualityLabel)) return
         val heights = ArrayList<Int>()
@@ -326,15 +342,16 @@ fun PlayerScreen(
             showRescueNote("$msg Trying the next one at $at.")
             rescueJob = scope.launch {
                 val m2 = next.tryNext() ?: return@launch // null: switching to the next source
-                error = "$msg $m2"
+                fail("$msg $m2")
             }
         } else {
-            error = "$msg Pick another source. Jarvis resumes at $at."
+            fail("$msg Pick another source. Jarvis resumes at $at.")
         }
     }
 
     // Non-live video failed or stalled at the current position: ask PlaybackRescue what to do, and do it.
     fun recover(retryable: Boolean, why: String) {
+        if (error != null) return
         val pos = player.currentPosition.coerceAtLeast(0L)
         val step = rescue.onFailure(pos, retryable)
         // It played up to here and won't go on, far short of the title: the file is cut off or broken there.
@@ -366,7 +383,7 @@ fun PlayerScreen(
             PlaybackRescue.Action.NEXT_SOURCE -> {
                 val next = nextSource
                 if (next == null) {
-                    error = step.note
+                    fail(step.note ?: "This source stopped.")
                     return
                 }
                 step.note?.let { showRescueNote(it) }
@@ -375,13 +392,10 @@ fun PlayerScreen(
                 progress.save(player, force = true)
                 rescueJob = scope.launch {
                     val msg = next.tryNext() ?: return@launch // null: switching to the next source
-                    error = "This source stopped at $at. $msg"
+                    fail("This source stopped at $at. $msg")
                 }
             }
-            PlaybackRescue.Action.GIVE_UP -> {
-                player.stop()
-                error = step.note
-            }
+            PlaybackRescue.Action.GIVE_UP -> fail(step.note ?: "This source stopped.")
         }
     }
 
@@ -435,7 +449,6 @@ fun PlayerScreen(
 
     DisposableEffect(player) {
         var networkRetries = 0
-        var retryJob: Job? = null
         var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
         var busyTries = 0
         var hookReady = false
@@ -514,6 +527,7 @@ fun PlayerScreen(
             }
 
             override fun onPlayerError(e: PlaybackException) {
+                if (error != null) return // Failed is terminal: no retries behind the panel
                 // Live stream fell behind the window: jump back to the live edge.
                 if (e.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                     player.seekToDefaultPosition()
@@ -561,7 +575,7 @@ fun PlayerScreen(
                         }
                         return
                     }
-                    error = StreamDiag.busyMessage(com.mcd.tv.data.M3u.maxConnections)
+                    fail(StreamDiag.busyMessage(com.mcd.tv.data.M3u.maxConnections))
                     com.mcd.tv.data.RecentErrors.note("Live: ${title.ifBlank { "channel" }}: HTTP 409, connection in use, ${busyTries + 1} tries over ~46 s")
                     return
                 }
@@ -594,7 +608,7 @@ fun PlayerScreen(
                 }
                 // The other format failed too: note what the provider sent for it as well.
                 if (live && tsTried) StreamDiag.tsUrl(url)?.let { probeStream(it, "ts") }
-                error = RdErrors.stream(http) ?: "${e.errorCodeName}\n${e.cause?.message ?: e.message ?: ""}"
+                fail(RdErrors.stream(http) ?: "${e.errorCodeName}\n${e.cause?.message ?: e.message ?: ""}")
                 com.mcd.tv.data.RecentErrors.note("Playback: ${title.ifBlank { "video" }}: ${RdErrors.stream(http) ?: e.errorCodeName}")
             }
         }
@@ -736,7 +750,7 @@ fun PlayerScreen(
         delay(LiveTuning.STALL_MS)
         if (!player.playWhenReady || player.playbackState != Player.STATE_BUFFERING || error != null) return@LaunchedEffect
         if (recoveries >= LiveTuning.MAX_RECOVERIES) {
-            error = "This channel keeps freezing. The provider may be busy. Try another channel or come back in a minute."
+            fail("This channel keeps freezing. The provider may be busy. Try another channel or come back in a minute.")
             return@LaunchedEffect
         }
         recoveries++
@@ -828,6 +842,7 @@ fun PlayerScreen(
     // Sleep timer countdown (restarts whenever the setting changes).
     LaunchedEffect(sleepStep) {
         val minutes = SLEEP_STEPS[sleepStep]
+        hook?.stopAtEnd = minutes == SLEEP_END_OF_VIDEO
         if (minutes > 0) {
             delay(minutes * 60_000L)
             sleepStep = 0

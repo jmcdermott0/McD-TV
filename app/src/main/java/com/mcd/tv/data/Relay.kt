@@ -168,6 +168,9 @@ object Relay {
                     backoff = 2000L
                     while (gen == generation) {
                         val line = reader.readLine() ?: break
+                        // "New link" may have started another listener while this one waited (up to 120 s): an old
+                        // listener must not write its topic's message id over the new topic's (relay_since).
+                        if (gen != generation) break
                         val ev = runCatching { JSONObject(line) }.getOrNull() ?: continue
                         if (ev.optString("event") != "message") continue
                         Prefs.relaySince = ev.optString("id")

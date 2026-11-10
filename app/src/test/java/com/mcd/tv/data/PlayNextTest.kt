@@ -204,6 +204,30 @@ class PlayNextTest {
         assertNull(u.seek(50_000L, dur - 1_000L))
     }
 
+    /** A SHOW the screen could not use (next episode not known yet) comes again while still in the credits. */
+    @Test fun heldShowComesBackLaterInTheCredits() {
+        val t = PlayNextTrigger(100_000L, dur)
+        t.tick(99_500L)
+        assertEquals(PlayNextTrigger.Event.SHOW, t.tick(100_000L))
+        t.hold()
+        assertFalse(t.showing)
+        assertEquals(PlayNextTrigger.Event.SHOW, t.tick(100_500L))
+        // Held again, then the viewer seeks back before the credits: no card until playback reaches them again.
+        t.hold()
+        assertNull(t.tick(50_000L))
+        assertNull(t.tick(50_500L))
+        val first = (101..200).map { it * 1000L }.firstOrNull { t.tick(it) == PlayNextTrigger.Event.SHOW }
+        assertEquals(null, first) // jumped from 50.5 s to 101 s: a seek, not natural playback
+        val u = PlayNextTrigger(100_000L, dur)
+        u.tick(99_500L); u.tick(100_000L); u.hold()
+        // Held, then the last 3 s: the end card's job.
+        assertNull(u.tick(dur - 1_000L))
+        // Dismissed clears a held SHOW.
+        val w = PlayNextTrigger(100_000L, dur)
+        w.tick(99_500L); w.tick(100_000L); w.hold(); w.dismiss()
+        assertNull(w.tick(100_500L))
+    }
+
     @Test fun noPointNoCard() {
         val t = PlayNextTrigger(-1L, dur)
         (0..300).forEach { assertNull(t.tick(it * 500L)) }

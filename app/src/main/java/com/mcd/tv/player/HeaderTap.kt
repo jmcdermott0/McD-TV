@@ -71,6 +71,10 @@ class HeaderTap(private val upstream: DataSource, private val sink: HeaderBytes)
  */
 class PlayerHook {
     val header = HeaderBytes()
+    /** The player reached Failed (its error panel is up): no card, no keys for the card. */
+    var failed = false
+    /** The sleep timer is set to "End of this video": the episode must stop at its end, never roll on early. */
+    var stopAtEnd = false
     /** First time the player is ready with a known length. */
     var onReady: ((durationMs: Long) -> Unit)? = null
     /** Twice a second while the player screen is up. */
