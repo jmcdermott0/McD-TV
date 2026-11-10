@@ -142,6 +142,8 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
     val trueCrimeRow by rememberLoad(Prefs.activeProfile) {
         if (kids || !com.mcd.tv.data.TrueCrimeHub.showFor()) null else com.mcd.tv.data.TrueCrimeHub.homeRow()
     }
+    // Holiday Movies (Holiday mode, Nov 1 to Jan 6): the first 20 titles of Browse > Holiday Movies. Every profile, Kids too.
+    val holidayRow by rememberLoad(Prefs.activeProfile) { com.mcd.tv.data.HolidayHub.homeRow() }
     LaunchedEffect(Unit) {
         if (continueWatching.isNotEmpty() && !restoring) { withFrameNanos { }; runCatching { firstFocus.requestFocus() } }
     }
@@ -168,8 +170,10 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
             else -> null
         }
     }
-    // Home stays at 8 rows or fewer: when Continue Watching and the live row both show, or Because You Watched or My List shows, Top Rated gives up its place.
-    val dropTopRated = (liveRow != null && continueWatching.isNotEmpty()) || (because as? Load.Ok)?.value != null || myList.isNotEmpty()
+    // Home stays at 8 rows or fewer: when Continue Watching and the live row both show, or Because You Watched, My List or
+    // Holiday Movies shows, Top Rated gives up its place.
+    val dropTopRated = (liveRow != null && continueWatching.isNotEmpty()) || (because as? Load.Ok)?.value != null || myList.isNotEmpty() ||
+        (holidayRow as? Load.Ok)?.value != null
     val openTitle: (Title) -> Unit = { nav.push(Screen.Detail(it.type, it.id)) }
     val heroes = (data as? Load.Ok<HomeData>)?.value?.trending?.visible()?.filter { it.backdrop != null }?.take(6) ?: emptyList()
     // Nothing to resume: the hero goes full-bleed at the very top of the page, behind the transparent
@@ -239,6 +243,14 @@ private fun HomeContent(nav: Nav, kids: Boolean) {
         }
         liveRow?.let { (label, channels) -> item(key = "live") { Box(rowFocus("live")) { LiveChannelsRow(label, channels, nav) } } }
         if (!heroOnTop && heroes.isNotEmpty()) item(key = "hero") { Box(rowFocus("hero")) { Hero(heroes, nav, heroFocus, takeFocus = false) } }
+        item(key = com.mcd.tv.data.Holiday.ID) {
+            val hd = (holidayRow as? Load.Ok)?.value
+            if (hd != null) TitleRail(
+                hd.first, hd.second.visible(),
+                { nav.push(Screen.BrowseGrid(com.mcd.tv.data.Holiday.ID, "", com.mcd.tv.data.Holiday.LABEL)) },
+                openTitle, focus, com.mcd.tv.data.Holiday.ID,
+            )
+        }
         item(key = "suggested") {
             val sg = suggestions
             if (sg is Load.Ok && sg.value.isNotEmpty()) TitleRail("Picked for ${Prefs.activeProfileName}", sg.value.visible().filterNot { "${it.type}-${it.id}" in listed }, null, openTitle, focus, "suggested")

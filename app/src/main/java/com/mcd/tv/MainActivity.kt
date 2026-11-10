@@ -262,6 +262,7 @@ class MainActivity : ComponentActivity() {
             "browse" -> Screen.Browse
             "history" -> Screen.History
             com.mcd.tv.data.TrueCrime.ID -> Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID, "", com.mcd.tv.data.TrueCrime.LABEL)
+            com.mcd.tv.data.Holiday.ID -> Screen.BrowseGrid(com.mcd.tv.data.Holiday.ID, "", com.mcd.tv.data.Holiday.LABEL)
             "live" -> Screen.Live
             "multiview" -> Screen.Multiview
             "games" -> Screen.Games(com.mcd.tv.data.League.NFL)
@@ -283,6 +284,8 @@ class MainActivity : ComponentActivity() {
         // "--es qa_list 'movie|603|The Matrix'" puts a title on the active profile's My List (Home's My List row).
         if (intent?.getBooleanExtra("qa_mode", false) == true) {
             intent?.getIntExtra("qa_day", 0)?.takeIf { it > 0 }?.let { com.mcd.tv.data.Recommender.qaDay = it }
+            // "--ei qa_holiday_day 20261201" sets the date Holiday mode uses (season and shelf order).
+            intent?.getIntExtra("qa_holiday_day", 0)?.takeIf { it > 0 }?.let { com.mcd.tv.data.HolidayHub.qaDay = it }
             intent?.getStringExtra("qa_list")?.split("|")?.takeIf { it.size >= 3 }?.let { p ->
                 p[1].toIntOrNull()?.let { id ->
                     com.mcd.tv.data.Library.setWatchlist(com.mcd.tv.data.Title(id, p[0], p[2], "", null, null, 0.0, ""), true)

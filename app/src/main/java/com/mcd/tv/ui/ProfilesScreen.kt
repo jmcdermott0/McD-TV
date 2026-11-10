@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,14 +24,17 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
+import com.mcd.tv.R
 import com.mcd.tv.data.Prefs
 import com.mcd.tv.data.ProfilePhotos
 import com.mcd.tv.data.sync.ProfileSync
@@ -50,6 +54,8 @@ fun ProfilePickerScreen(onPicked: () -> Unit) {
     val active = remember { Prefs.activeProfile }
     // Photos set from the phone; a copy that arrives from another TV while this screen is open shows at once.
     val photoRev by ProfilePhotos.revision.collectAsState()
+    // Holiday mode: a Santa hat over each circle. Off, the cards look exactly as before.
+    val hats = remember { com.mcd.tv.data.HolidayHub.active() }
     LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
     Column(
         Modifier.fillMaxSize().hudBackground(),
@@ -75,6 +81,7 @@ fun ProfilePickerScreen(onPicked: () -> Unit) {
                     photo = remember(photoRev, id) { ProfilePhotos.bitmap(id) },
                     kids = id == Prefs.KIDS_PROFILE,
                     current = id == active,
+                    hat = hats,
                     onClick = { Prefs.activeProfile = id; onPicked() },
                     modifier = if (i == 0) Modifier.focusRequester(first) else Modifier,
                 )
@@ -84,7 +91,7 @@ fun ProfilePickerScreen(onPicked: () -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, current: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, current: Boolean, hat: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     HudCard(onClick = onClick, modifier = modifier.width(220.dp).height(250.dp), focusedScale = 1.08f) { focused ->
         Column(
             Modifier.fillMaxSize().padding(16.dp),
@@ -92,18 +99,22 @@ private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, curren
             verticalArrangement = Arrangement.Center,
         ) {
             val ring = if (focused) McdColors.AccentBright else if (kids) McdColors.Amber else McdColors.Accent
-            Box(
-                Modifier.size(110.dp)
-                    .background(ring.copy(alpha = if (focused) 0.18f else 0.08f), CircleShape)
-                    .border(if (focused) 3.dp else 2.dp, ring, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                // The ring (border) draws over the photo, so the circle looks the same with or without one.
-                if (photo != null) {
-                    Image(photo, contentDescription = "${name.trim()} profile photo", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
-                } else {
-                    Text(name.trim().take(1).uppercase().ifBlank { "?" }, style = broadcastStyle(48.sp, ring))
+            Box(Modifier.size(110.dp)) {
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(ring.copy(alpha = if (focused) 0.18f else 0.08f), CircleShape)
+                        .border(if (focused) 3.dp else 2.dp, ring, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // The ring (border) draws over the photo, so the circle looks the same with or without one.
+                    if (photo != null) {
+                        Image(photo, contentDescription = "${name.trim()} profile photo", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+                    } else {
+                        Text(name.trim().take(1).uppercase().ifBlank { "?" }, style = broadcastStyle(48.sp, ring))
+                    }
                 }
+                // The hat is its own drawing (res/drawable/santa_hat.xml) laid over the circle. The photo is not touched.
+                if (hat) SantaHat(Modifier.align(Alignment.TopStart))
             }
             Spacer(Modifier.height(16.dp))
             Text(
@@ -121,4 +132,18 @@ private fun ProfileCard(name: String, photo: ImageBitmap?, kids: Boolean, curren
             )
         }
     }
+}
+
+/** Holiday mode: the Santa hat over a 110 dp profile circle, tilted to sit on its top right. */
+@Composable
+private fun SantaHat(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.santa_hat),
+        contentDescription = null,
+        modifier = modifier
+            .offset(x = 46.dp, y = (-32).dp)
+            .width(76.dp)
+            .height(56.dp)
+            .rotate(18f),
+    )
 }

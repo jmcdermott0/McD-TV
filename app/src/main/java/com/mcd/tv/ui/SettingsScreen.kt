@@ -343,6 +343,14 @@ private fun ThisTvCategory(ctx: SettingsCtx, changed: () -> Unit) {
     SettingsSection("Start-up")
     ToggleRow(ctx.row(), "Intro on launch", "Play the Jarvis intro when the app opens.", Prefs.playIntro) { Prefs.playIntro = it }
     SettingsRow("Replay intro", { ctx.nav.push(Screen.Intro) }, ctx.row().modifier, value = "Watch the intro now.")
+    // Holiday mode (Holiday.kt): this TV only. Outside November 1 to January 6 it changes nothing.
+    val inSeason = com.mcd.tv.data.Holiday.inSeason(com.mcd.tv.data.HolidayHub.today())
+    ToggleRow(
+        ctx.row(), "Holiday mode",
+        if (inSeason) "Holiday intro, Santa hats and Holiday Movies. Turns off by itself after January 6."
+        else "On from November 1 to January 6. Off the rest of the year.",
+        Prefs.holidayMode,
+    ) { Prefs.holidayMode = it }
 }
 
 @Composable
