@@ -1,0 +1,57 @@
+# Temporary: applies the Jarvis patch issues #41, #42 and #43 to main and pushes the result to the
+# branch state-machines-merge, for a pull request. Delete this branch after the merge.
+name: Apply Jarvis patches
+
+on:
+  push:
+    branches: [apply-patches]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply the patches in order
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git config user.name "JFortress0"
+          git config user.email "JFortress0@users.noreply.github.com"
+          echo "main is at $(git rev-parse --short HEAD)"
+          for n in 41 42 43; do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$REPO/issues/$n" > issue.json
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$REPO/issues/$n/comments?per_page=100" > comments.json
+            python3 - "$n" <<'PY'
+          import json, re, base64, gzip, hashlib, sys
+          n = sys.argv[1]
+          issue = json.load(open("issue.json"))
+          comments = json.load(open("comments.json"))
+          body = issue["body"]
+          parts = int(re.search(r"^Parts?:\s*(\d+)", body, re.M).group(1))
+          want = re.search(r"Patch SHA-256:\s*([0-9a-f]{64})", body).group(1)
+          fence = re.compile(r"```\s*\n([A-Za-z0-9+/=\s]+?)\n```")
+          blocks = fence.findall(body)
+          for c in comments:
+              if c["user"]["login"] == issue["user"]["login"]:
+                  blocks += fence.findall(c["body"])
+          b64 = "".join(re.sub(r"\s", "", b) for b in blocks[:parts])
+          patch = gzip.decompress(base64.b64decode(b64))
+          got = hashlib.sha256(patch).hexdigest()
+          assert got == want, f"#{n}: patch hash {got} does not match {want}"
+          open("p.patch", "wb").write(patch)
+          print(f"#{n}: {parts} part(s), patch hash OK")
+          PY
+            git am -3 p.patch
+          done
+          rm -f issue.json comments.json p.patch
+          git log --oneline -5
+          git push origin HEAD:refs/heads/state-machines-merge
