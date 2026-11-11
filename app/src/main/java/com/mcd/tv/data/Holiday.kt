@@ -4,7 +4,8 @@ package com.mcd.tv.data
 //  - The season: November 1, 2026 to January 6, 2027. Outside it, Holiday mode is off whatever the switch says,
 //    so January needs no code change.
 //  - The switch: Settings > This TV > Start-up > "Holiday mode" (pref "holiday_mode", default on, this TV only).
-//  - What it adds: a jingle and snow over the normal intro video, a Santa hat over each profile circle in
+//  - What it adds: the normal intro video with its own holiday track in place of its sound, and two layers of snow
+//    (HolidayIntro.kt), a Santa hat over each profile circle in
 //    Who's watching, and the Holiday Movies shelf (Home row and Browse entry) on every profile, Kids included.
 //    Off: the intro, the profile circles and Home look exactly as before. Nothing else is touched.
 // The shelf rules below are pure Kotlin (no Android, no Prefs, no network), unit tested in HolidayTest.
