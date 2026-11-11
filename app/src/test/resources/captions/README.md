@@ -1,4 +1,4 @@
-Captions default test files (emulator QA step 4c). Made with ffmpeg on 2026-11-11. Each subtitle cue runs the
+Captions default test files (emulator QA step 4cap). Made with ffmpeg on 2026-11-11. Each subtitle cue runs the
 whole file and names its own track, so a screenshot shows which track is on.
 
 - `qa-multi.mkv`: 120 s, four text tracks. Spanish (marked default in the file), English Forced (forced flag),

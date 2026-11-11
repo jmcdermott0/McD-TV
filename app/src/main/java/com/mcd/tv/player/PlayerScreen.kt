@@ -554,7 +554,7 @@ fun PlayerScreen(
             val line = "${captions.state} tracks=${text.joinToString(",") { r -> val t = r.track; "${t.language ?: "?"}/${t.label ?: ""}${if (t.forced) "/forced" else ""}${if (t.sdh) "/sdh" else ""}${if (t.selected) "*" else ""}" }}"
             if (line != captionLog) {
                 captionLog = line
-                android.util.Log.i("Captions", "mode=$captionMode ${if (action is CaptionAction.Select) "select=${action.track.order} " else ""}$line")
+                android.util.Log.i("Captions", "mode=$captionMode ${if (action is CaptionAction.Select) "select=${action.track.order} " else ""}$line note=${Captions.note(captions.state, captionMode) ?: ""}")
             }
         }
         val listener = object : Player.Listener {
