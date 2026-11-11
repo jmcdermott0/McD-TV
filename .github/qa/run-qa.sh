@@ -53,12 +53,17 @@ for k in a b; do
   echo "BEGIN-HOLIDAY-FRAME-$k"; base64 -w 4000 "qa-out/30-holiday-intro-$k-small.jpg"; echo; echo "END-HOLIDAY-FRAME-$k"
   echo "::endgroup::"
 done
+# Read only this launch's process (--pid): `logcat -c` does not always clear the emulator's buffer, and a line
+# left over from the holiday passes above made run 283 report snow with Holiday mode off.
 adb logcat -c
 adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20270201 >/dev/null
+OFF_PID=$(adb shell pidof com.mcd.tv | tr -d '\r')
 sleep 2; shot 31-intro-holiday-off
 sleep 7
-adb logcat -d -s HolidayIntro:I | grep -q "holiday=false sound=ORIGINAL" && pass "Holiday mode off: original intro sound" || fail "Holiday mode off: original intro sound"
-adb logcat -d -s HolidaySnow:I | grep -q "frames=" && fail "Holiday mode off: no snow" || pass "Holiday mode off: no snow"
+echo "      holiday off: pid $OFF_PID" | tee -a "$R"
+adb logcat -d --pid="$OFF_PID" -s HolidayIntro:I HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday off: /' | tee -a "$R"
+[ -n "$OFF_PID" ] && adb logcat -d --pid="$OFF_PID" -s HolidayIntro:I | grep -q "holiday=false sound=ORIGINAL" && pass "Holiday mode off: original intro sound" || fail "Holiday mode off: original intro sound"
+[ -n "$OFF_PID" ] && ! adb logcat -d --pid="$OFF_PID" -s HolidaySnow:I | grep -q "frames=" && pass "Holiday mode off: no snow" || fail "Holiday mode off: no snow"
 
 # 2) Setup web page: reachable, and saves what a browser sends.
 adb forward tcp:8642 tcp:8642
