@@ -25,6 +25,9 @@ object HolidayIntro {
     const val FADE_TO_MS = 5_500L
     const val SNOW_FADE_IN_MS = 500L
 
+    /** The intro's greeting, at the second flash. John's rule: every holiday greeting reads "Merry Christmas" (HolidayIntroTest checks the app). */
+    const val GREETING = "MERRY CHRISTMAS"
+
     /** Where the intro starts: Holiday mode off is always the original. On, the holiday track if it was built. */
     fun start(holiday: Boolean, trackBuilt: Boolean): IntroSound =
         if (holiday && trackBuilt) IntroSound.HOLIDAY_TRACK else IntroSound.ORIGINAL

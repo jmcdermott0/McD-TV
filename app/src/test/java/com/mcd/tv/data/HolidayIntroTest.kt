@@ -50,6 +50,19 @@ class HolidayIntroTest {
         assertTrue("the old layered jingle is gone", !File(root, "app/src/main/res/raw/holiday_jingle.ogg").exists())
     }
 
+    @Test fun theGreetingIsMerryChristmasNeverHappyHolidays() {
+        assertEquals("MERRY CHRISTMAS", HolidayIntro.GREETING)
+        val root = listOf(".", "..").map(::File).first { File(it, "tools/holiday").isDirectory }
+        val main = File(root, "app/src/main")
+        val intro = File(main, "java/com/mcd/tv/ui/IntroScreen.kt").readText()
+        assertTrue("the intro shows the greeting", intro.contains("HolidayIntro.GREETING,"))
+        val offenders = main.walkTopDown()
+            .filter { it.isFile && (it.extension == "kt" || it.extension == "xml") }
+            .filter { Regex("happy\\s+holidays", RegexOption.IGNORE_CASE).containsMatchIn(it.readText()) }
+            .map { it.name }.toList()
+        assertTrue("no \"Happy Holidays\" anywhere in the app: $offenders", offenders.isEmpty())
+    }
+
     // ---------------------------------------------------------------- the snow
 
     private val snow = SnowField()

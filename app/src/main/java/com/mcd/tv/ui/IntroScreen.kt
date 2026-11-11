@@ -61,7 +61,7 @@ import kotlinx.coroutines.delay
  *
  * Holiday mode (Holiday.kt, Nov 1 to Jan 6) keeps the same video and flow, and REPLACES its sound: the video
  * plays muted and the holiday track (res/raw/holiday_intro.ogg, built by tools/holiday/make_holiday_intro.py to the
- * video's beats) is the only sound. Over the picture: two layers of soft snow and "Happy Holidays" at the second
+ * video's beats) is the only sound. Over the picture: two layers of soft snow and "Merry Christmas" at the second
  * flash. If the track cannot play, the video's own sound comes back, so the intro is never silent.
  * Holiday mode off: nothing here changes, the intro is exactly the original (its sound, no snow).
  */
@@ -180,7 +180,7 @@ private const val SNOW_LOG_TAG = "HolidaySnow"
 private const val INTRO_LOG_TAG = "HolidayIntro"
 
 /**
- * Holiday mode's skin over the intro video: two layers of soft snow (SnowField) and "HAPPY HOLIDAYS" fading in
+ * Holiday mode's skin over the intro video: two layers of soft snow (SnowField) and "MERRY CHRISTMAS" fading in
  * under the logo at the video's second flash. Draws only; takes no keys.
  *
  * The draw is cheap enough for a Fire TV Stick: about a hundred flakes, each one small pre-drawn sprite
@@ -238,7 +238,7 @@ private fun HolidaySkin(videoMs: () -> Long) {
             }
         }
         Text(
-            "HAPPY HOLIDAYS",
+            HolidayIntro.GREETING,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp).graphicsLayer { alpha = greetAlpha },
             style = broadcastStyle(26.sp, HolidayRed),
         )
