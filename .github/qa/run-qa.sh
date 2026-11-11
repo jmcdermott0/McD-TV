@@ -18,6 +18,53 @@ sleep 12; shot 02-home
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home.xml >/dev/null 2>&1
 if grep -qiE "TRENDING THIS WEEK|PICKED FOR|BECAUSE YOU WATCHED" qa-out/ui-home.xml; then pass "Home loads TMDB rows"; else fail "Home loads TMDB rows"; fi
 
+# 1b) Holiday intro (issue #47). Holiday mode on (the date forced into the season): the holiday track is the only
+# sound (the video plays muted) and two layers of snow fall. First a clean pass for the snow's frame times (nothing
+# else running), then a recorded pass for frames 1.0 s apart mid-intro, so the drift shows. Then Holiday mode off
+# (a date out of season): the original sound, no snow.
+HOLIDAY_ON="--ez qa true --ez qa_mode true --ei qa_holiday_day 20261201"
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity $HOLIDAY_ON >/dev/null
+sleep 9
+adb logcat -d -s HolidayIntro:I HolidayIntro:W HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday (clean pass): /' | tee -a "$R"
+adb logcat -d -s HolidayIntro:I | grep -q "holiday=true sound=HOLIDAY_TRACK" && pass "Holiday intro: holiday track only (video muted)" || fail "Holiday intro: holiday track only (video muted)"
+adb logcat -d -s HolidayIntro:W | grep -q "holiday track failed" && fail "Holiday intro: track plays" || pass "Holiday intro: track plays"
+adb logcat -d -s HolidaySnow:I | grep -q "frames=" && pass "Holiday intro: snow drawn (frame times logged)" || fail "Holiday intro: snow drawn (frame times logged)"
+# Mid-intro frames exactly 1.0 s apart: record the intro (screenrecord), then cut frames here with ffmpeg.
+# A screen grab takes over a second on the emulator (run 279: grabs 2.2 s and 1.6 s apart), a recording does not.
+command -v ffmpeg >/dev/null || sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity $HOLIDAY_ON >/dev/null
+adb shell screenrecord --time-limit 6 --size 1280x720 --bit-rate 8000000 /sdcard/hi.mp4
+adb pull /sdcard/hi.mp4 qa-out/30-holiday-intro.mp4 >/dev/null 2>&1
+for pair in a:2.0 b:3.0 c:4.0; do
+  k=${pair%%:*}; t=${pair#*:}
+  ffmpeg -v error -y -ss "$t" -i qa-out/30-holiday-intro.mp4 -frames:v 1 "qa-out/30-holiday-intro-$k.png" 2>/dev/null
+  ffmpeg -v error -y -ss "$t" -i qa-out/30-holiday-intro.mp4 -frames:v 1 -vf scale=960:-2 -q:v 3 "qa-out/30-holiday-intro-$k-small.jpg" 2>/dev/null
+  echo "      holiday intro frame $k at ${t} s of the recording" | tee -a "$R"
+done
+sleep 2
+adb logcat -d -s HolidaySnow:I | grep "frames=" | sed 's/^/      holiday (while recording): /' | tee -a "$R"
+ls qa-out/30-holiday-intro-a.png qa-out/30-holiday-intro-b.png >/dev/null 2>&1 && pass "Holiday intro: mid-intro frames 1.0 s apart" || fail "Holiday intro: mid-intro frames 1.0 s apart"
+# Two small frames, printed so they can be read from the job log too (the artifact is not reachable everywhere).
+for k in a b; do
+  [ -f "qa-out/30-holiday-intro-$k-small.jpg" ] || continue
+  echo "::group::holiday intro frame $k (small JPEG, base64)"
+  echo "BEGIN-HOLIDAY-FRAME-$k"; base64 -w 4000 "qa-out/30-holiday-intro-$k-small.jpg"; echo; echo "END-HOLIDAY-FRAME-$k"
+  echo "::endgroup::"
+done
+# Read only this launch's process (--pid): `logcat -c` does not always clear the emulator's buffer, and a line
+# left over from the holiday passes above made run 283 report snow with Holiday mode off.
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20270201 >/dev/null
+OFF_PID=$(adb shell pidof com.mcd.tv | tr -d '\r')
+sleep 2; shot 31-intro-holiday-off
+sleep 7
+echo "      holiday off: pid $OFF_PID" | tee -a "$R"
+adb logcat -d --pid="$OFF_PID" -s HolidayIntro:I HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday off: /' | tee -a "$R"
+[ -n "$OFF_PID" ] && adb logcat -d --pid="$OFF_PID" -s HolidayIntro:I | grep -q "holiday=false sound=ORIGINAL" && pass "Holiday mode off: original intro sound" || fail "Holiday mode off: original intro sound"
+[ -n "$OFF_PID" ] && ! adb logcat -d --pid="$OFF_PID" -s HolidaySnow:I | grep -q "frames=" && pass "Holiday mode off: no snow" || fail "Holiday mode off: no snow"
+
 # 2) Setup web page: reachable, and saves what a browser sends.
 adb forward tcp:8642 tcp:8642
 if curl -sf -m 10 http://127.0.0.1:8642/ -o qa-out/setup-page.html && grep -q "Jarvis" qa-out/setup-page.html; then

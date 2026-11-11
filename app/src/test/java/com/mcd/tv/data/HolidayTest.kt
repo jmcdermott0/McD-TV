@@ -125,7 +125,10 @@ class HolidayTest {
     @Test fun holidayModeOffLeavesIntroAndPickerAsBefore() {
         val intro = src("com/mcd/tv/ui/IntroScreen.kt")
         assertTrue("the original video still plays", intro.contains("R.raw.intro_video"))
-        assertTrue("jingle only in Holiday mode", intro.contains("if (!holiday) null else"))
+        assertTrue("holiday track only in Holiday mode", intro.contains("if (!holiday) null else"))
+        assertTrue("the video's volume comes from the one sound state", intro.contains("volume = HolidayIntro.videoVolume(sound)"))
+        assertTrue("the sound starts from HolidayIntro.start", intro.contains("HolidayIntro.start(holiday, track != null)"))
+        assertTrue("the holiday track replaces the old layered jingle", intro.contains("R.raw.holiday_intro") && !intro.contains("holiday_jingle"))
         assertTrue("skin only in Holiday mode", intro.contains("if (holiday) HolidaySkin("))
         val picker = src("com/mcd/tv/ui/ProfilesScreen.kt")
         assertTrue("hat only in Holiday mode", picker.contains("if (hat) SantaHat("))
