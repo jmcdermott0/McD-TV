@@ -45,6 +45,8 @@ MAIN_FILES+=(LiveLineup.kt)
 MAIN_FILES+=(Chapters.kt PlayNext.kt)
 # State machines (STATE-MACHINES.md): pure phase types (tests in SourcePickTest).
 MAIN_FILES+=(SourcePick.kt SleepTimer.kt)
+# Captions default to English: the pure decider (tests in CaptionsTest).
+MAIN_FILES+=(Captions.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

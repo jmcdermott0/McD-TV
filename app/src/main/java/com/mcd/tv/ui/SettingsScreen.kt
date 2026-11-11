@@ -411,6 +411,21 @@ private fun PlaybackCategory(ctx: SettingsCtx, changed: () -> Unit) {
         },
     )
 
+    // Pref captions_lang, this TV only (see data/Captions.kt). A new key: nothing else changes.
+    val captionModes = listOf(com.mcd.tv.data.Captions.ENGLISH, com.mcd.tv.data.Captions.OFF)
+    DialogRow(ctx, ctx.row(), "Captions", com.mcd.tv.data.Captions.modeLabel(Prefs.captionsMode), RowEnd.Change) {
+        SettingsDialog.Choice("Captions", captionModes.map(com.mcd.tv.data.Captions::modeLabel), captionModes.indexOf(Prefs.captionsMode).coerceAtLeast(0)) { i ->
+            Prefs.captionsMode = captionModes[i]
+        }
+    }
+    SettingsNote(
+        if (Prefs.captionsMode == com.mcd.tv.data.Captions.OFF) {
+            "Captions start off. Turn them on with CC in the player."
+        } else {
+            "English captions come on when a title has them. A pick in the player's CC menu holds for that title only."
+        },
+    )
+
     // Play Next at credits (data/PlayNext.kt, PlayNextStore). New keys, this TV only; nothing else changes.
     SettingsSection("Play Next")
     ToggleRow(ctx.row(), "Play Next at the credits", "Shows Play next when the credits start: from the file's credits chapter, or where you skipped the credits of this show twice.", PlayNextStore.creditsOn) { PlayNextStore.creditsOn = it }

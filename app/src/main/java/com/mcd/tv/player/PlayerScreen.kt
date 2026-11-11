@@ -42,6 +42,8 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.VideoSize
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -69,6 +71,11 @@ import com.mcd.tv.data.QualityMode
 import com.mcd.tv.data.StallWatch
 import com.mcd.tv.data.ThroughputEstimator
 import com.mcd.tv.data.BadSources
+import com.mcd.tv.data.CaptionAction
+import com.mcd.tv.data.CaptionDefault
+import com.mcd.tv.data.CaptionState
+import com.mcd.tv.data.Captions
+import com.mcd.tv.data.ExternalSub
 import com.mcd.tv.data.PlaybackRescue
 import com.mcd.tv.data.SourceHealth
 import com.mcd.tv.data.RdErrors
@@ -96,15 +103,64 @@ interface NextSource {
     suspend fun stepDown(positionMs: Long): Boolean = false
 }
 
-/** Builds a MediaItem, hinting the format when the URL makes it obvious. */
-private fun mediaItemFor(url: String): MediaItem {
+/** Builds a MediaItem, hinting the format when the URL makes it obvious. [subs]: addon subtitle files to add. */
+private fun mediaItemFor(url: String, subs: List<ExternalSub> = emptyList()): MediaItem {
     val lower = url.lowercase()
     val mime = when {
         ".m3u8" in lower -> MimeTypes.APPLICATION_M3U8
         ".mpd" in lower -> MimeTypes.APPLICATION_MPD
         else -> null // let ExoPlayer detect MP4 / MKV / etc. from the file itself
     }
-    return MediaItem.Builder().setUri(url).apply { if (mime != null) setMimeType(mime) }.build()
+    return MediaItem.Builder().setUri(url).apply {
+        if (mime != null) setMimeType(mime)
+        if (subs.isNotEmpty()) {
+            setSubtitleConfigurations(
+                subs.map { s ->
+                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(s.url))
+                        .setMimeType(Captions.mimeFor(s.url))
+                        .setLanguage(s.lang.ifBlank { null })
+                        .setLabel(Captions.externalLabel(s))
+                        .build()
+                },
+            )
+        }
+    }.build()
+}
+
+/** The caption parts of the track parameters: what the CC menu changes (Media3 PlayerControlView). */
+private data class TextParams(val overrides: Set<TrackSelectionOverride>, val disabled: Boolean, val ignoredFlags: Int)
+
+private fun textParams(p: TrackSelectionParameters) = TextParams(
+    p.overrides.values.filter { it.type == C.TRACK_TYPE_TEXT }.toSet(),
+    C.TRACK_TYPE_TEXT in p.disabledTrackTypes,
+    p.ignoredTextSelectionFlags,
+)
+
+/** One text track for [CaptionDefault], with the group and the place in it that it came from. */
+private class TextRef(val track: Captions.Track, val group: Tracks.Group, val index: Int)
+
+/** The text tracks of [tracks], in the player's order. */
+@OptIn(UnstableApi::class)
+private fun textTracks(tracks: Tracks): List<TextRef> {
+    val out = ArrayList<TextRef>()
+    for (g in tracks.groups) {
+        if (g.type != C.TRACK_TYPE_TEXT) continue
+        for (i in 0 until g.length) {
+            val f = g.getTrackFormat(i)
+            val t = Captions.Track(
+                order = out.size,
+                language = f.language,
+                label = f.label,
+                forcedFlag = (f.selectionFlags and C.SELECTION_FLAG_FORCED) != 0,
+                sdhFlag = (f.roleFlags and C.ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND) != 0,
+                defaultFlag = (f.selectionFlags and C.SELECTION_FLAG_DEFAULT) != 0,
+                selected = g.isTrackSelected(i),
+                supported = g.isTrackSupported(i),
+            )
+            out.add(TextRef(t, g, i))
+        }
+    }
+    return out
 }
 
 @OptIn(UnstableApi::class)
@@ -148,6 +204,8 @@ fun PlayerScreen(
     hook: PlayerHook? = null,
     /** Drawn over the video (the Play next card). */
     overlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
+    /** Subtitle files the addon sent with this stream. They follow the same English default as the file's own tracks. */
+    subtitles: List<ExternalSub> = emptyList(),
 ) {
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
@@ -214,6 +272,13 @@ fun PlayerScreen(
     var rescueJob by remember { mutableStateOf<Job?>(null) }
     // A scheduled reconnect after a player error (live retries, the MPEG-TS reopen, 409 waits).
     var retryJob by remember { mutableStateOf<Job?>(null) }
+    // Captions default to English (data/Captions.kt). A pick in the CC menu holds for this title only.
+    val captionMode = remember { Prefs.captionsMode }
+    val captionKey = remember { meta?.let { "${it.type}:${it.tmdbId}:${it.season}:${it.episode}" } ?: "url:$title" }
+    val captions = remember { CaptionDefault(captionMode, Captions.carried(captionKey)) }
+    var captionState by remember { mutableStateOf<CaptionState>(CaptionState.Waiting) }
+    // Addon subtitles in the video; dropped once if the video fails with them (a dead subtitle link must not stop it).
+    var externalSubs by remember { mutableStateOf(if (live) emptyList() else subtitles) }
 
     // Live TV: the data source the player was built with, so a channel can be reopened in its other format.
     val liveSource = remember { arrayOfNulls<androidx.media3.datasource.DataSource.Factory>(1) }
@@ -239,7 +304,7 @@ fun PlayerScreen(
         ExoPlayer.Builder(context, renderers)
             .setTrackSelector(selector)
             // Play Next at credits: keep the file's first bytes as the player reads them (chapters), no extra request.
-            .setMediaSourceFactory(DefaultMediaSourceFactory(if (hook != null && !live) HeaderTap.factory(dataSource, hook.header) else dataSource))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(if (hook != null && !live) HeaderTap.factory(dataSource, hook.header, only = url) else dataSource))
             .apply { if (live) setLoadControl(LiveTuning.loadControl()) }
             .setSeekBackIncrementMs(SEEK_MS)
             .setSeekForwardIncrementMs(SEEK_MS)
@@ -251,7 +316,7 @@ fun PlayerScreen(
                 }
                 // Live: once a channel only played as MPEG-TS on this run, open the next ones that way at once.
                 val liveUrl = (if (StreamDiag.preferTs) StreamDiag.tsUrl(url) else null) ?: url
-                if (live) setMediaSource(LiveTuning.mediaSource(dataSource, liveUrl)) else setMediaItem(mediaItemFor(url))
+                if (live) setMediaSource(LiveTuning.mediaSource(dataSource, liveUrl)) else setMediaItem(mediaItemFor(url, externalSubs))
                 // Resume where you left off (Continue Watching), on this TV or another device.
                 if (resumeMs > 0) seekTo(resumeMs)
                 // Live: stop the previous channel's stream before this one opens (its player is released a moment
@@ -458,6 +523,40 @@ fun PlayerScreen(
         var tsTried = live && StreamDiag.preferTs && StreamDiag.tsUrl(url) != null
         var busyTries = 0
         var hookReady = false
+        // The caption parameters Jarvis set last. Any other change came from the CC menu.
+        var textSet = textParams(player.trackSelectionParameters)
+        var captionLog = ""
+        fun applyCaptions(tracks: Tracks) {
+            val text = textTracks(tracks)
+            val action = captions.onTracks(text.map { it.track }, loaded = !tracks.isEmpty())
+            val params = when (action) {
+                is CaptionAction.Select -> {
+                    val ref = text.first { it.track.order == action.track.order }
+                    player.trackSelectionParameters.buildUpon()
+                        .setOverrideForType(TrackSelectionOverride(ref.group.mediaTrackGroup, ref.index))
+                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                        .setIgnoredTextSelectionFlags(0)
+                        .build()
+                }
+                // The same as the CC menu's "None": forced lines (foreign dialogue) still show.
+                CaptionAction.TurnOff -> player.trackSelectionParameters.buildUpon()
+                    .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                    .setIgnoredTextSelectionFlags(C.SELECTION_FLAG_FORCED.inv())
+                    .build()
+                CaptionAction.None -> null
+            }
+            if (params != null) {
+                textSet = textParams(params)
+                player.trackSelectionParameters = params
+            }
+            captionState = captions.state
+            captions.choice?.let { Captions.rememberPick(captionKey, it) }
+            val line = "${captions.state} tracks=${text.joinToString(",") { r -> val t = r.track; "${t.language ?: "?"}/${t.label ?: ""}${if (t.forced) "/forced" else ""}${if (t.sdh) "/sdh" else ""}${if (t.selected) "*" else ""}" }}"
+            if (line != captionLog) {
+                captionLog = line
+                android.util.Log.i("Captions", "mode=$captionMode ${if (action is CaptionAction.Select) "select=${action.track.order} " else ""}$line")
+            }
+        }
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 paused = !playWhenReady
@@ -531,10 +630,32 @@ fun PlayerScreen(
                 } else {
                     null
                 }
+                applyCaptions(tracks)
+            }
+
+            override fun onTrackSelectionParametersChanged(parameters: TrackSelectionParameters) {
+                val now = textParams(parameters)
+                if (now == textSet) return // Jarvis's own change, or one that leaves captions alone
+                textSet = now
+                // The CC menu: "None" clears the text override and ignores every text track but forced ones.
+                captions.onUserChange(off = now.overrides.isEmpty() && (now.disabled || now.ignoredFlags != 0))
+                captionState = captions.state
+                captions.choice?.let { Captions.rememberPick(captionKey, it) }
+                android.util.Log.i("Captions", "picked in the CC menu: ${captions.state}")
             }
 
             override fun onPlayerError(e: PlaybackException) {
                 if (error != null) return // Failed is terminal: no retries behind the panel
+                // Addon subtitle files can be dead links. Play on once without them before any other rescue.
+                if (!live && externalSubs.isNotEmpty()) {
+                    externalSubs = emptyList()
+                    com.mcd.tv.data.RecentErrors.note("Playback: ${title.ifBlank { "video" }}: playing without the addon's subtitles (${e.errorCodeName})")
+                    val pos = player.currentPosition.coerceAtLeast(0L)
+                    player.setMediaItem(mediaItemFor(url), pos)
+                    player.prepare()
+                    player.playWhenReady = true
+                    return
+                }
                 // Live stream fell behind the window: jump back to the live edge.
                 if (e.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                     player.seekToDefaultPosition()
@@ -781,6 +902,21 @@ fun PlayerScreen(
         }
     }
 
+    // "No English captions for this title" shows for 6 s the first time this playback finds that.
+    var captionToast by remember { mutableStateOf<String?>(null) }
+    var noEnglishShown by remember { mutableStateOf(false) }
+    LaunchedEffect(captionState) {
+        if (captionState is CaptionState.NoEnglish && !noEnglishShown) {
+            noEnglishShown = true
+            captionToast = Captions.note(captionState, captionMode)
+            try {
+                delay(6_000)
+            } finally {
+                captionToast = null // also when the state moves on (a pick in the CC menu)
+            }
+        }
+    }
+
     // "Switched to 1080p for smoother playback" stays up for 5 s.
     LaunchedEffect(qualityNote) {
         if (qualityNote != null) {
@@ -938,8 +1074,28 @@ fun PlayerScreen(
                     .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)))
                     .padding(horizontal = 48.dp, vertical = 24.dp),
             ) {
-                Text(text = title, style = broadcastStyle(28.sp))
+                Column {
+                    Text(text = title, style = broadcastStyle(28.sp))
+                    // The caption state, with the CC menu: English by default, or why not (data/Captions.kt).
+                    Captions.note(captionState, captionMode)?.let { note ->
+                        Text(text = note, color = McdColors.White, fontSize = 16.sp, modifier = Modifier.padding(top = 6.dp))
+                    }
+                }
             }
+        }
+
+        // No English captions: say so for a few seconds when the video opens, not only with the controls.
+        if (error == null && !live && !controlsVisible) captionToast?.let { note ->
+            Text(
+                text = note,
+                color = McdColors.White,
+                fontSize = 16.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 80.dp, start = 40.dp, end = 40.dp)
+                    .background(McdColors.Card.copy(alpha = 0.9f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
 
         if (error == null) audioNote?.let { note ->

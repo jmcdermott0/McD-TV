@@ -25,6 +25,8 @@ data class StreamSource(
     /** Season and episode this source was requested for (TV only), so Real-Debrid can pick the right file in a pack. */
     val season: Int? = null,
     val episode: Int? = null,
+    /** Subtitle files the addon sends with this stream (Stremio `subtitles`). The player adds them to the video. */
+    val subtitles: List<ExternalSub> = emptyList(),
 )
 
 /** A browsable addon catalog of live channels or events (Stremio types tv, channel, events). */
@@ -210,6 +212,7 @@ object Addons {
             seeders = seedRx.find(title)?.groupValues?.get(1)?.toIntOrNull(),
             cached = cached,
             headers = headersOf(s),
+            subtitles = Captions.parseAddonSubs(s.optJSONArray("subtitles")),
         )
     }
 

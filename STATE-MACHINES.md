@@ -38,6 +38,7 @@ Status values:
 | Live retry budgets | `PlayerScreen` `networkRetries`, `busyTries`, `tsTried`, `recoveries` | NetRetry(n), Busy409(n), TsFallback, StallRecover(n) | open: these budgets do not share one cap (they do not overlap in practice) | `StreamDiagTest` (busyWait) |
 | Stall watch | `data/QualityFallback.kt` `StallWatch` | stall list plus `started`, `seekPending` | fixed 11-10: `onSeek(now)` ignores buffering only for 2 s after the seek, so a seek inside the buffer no longer hides the next stall | `QualityFallbackTest` |
 | Live zap / pre-swap | `ui/LivePlayer.kt` | Zapping, Resolving, Playing | open (no bug found; depends on effect order) | none |
+| Captions default | `data/Captions.kt` `CaptionDefault`, glue in `PlayerScreen` `applyCaptions` | Waiting, NoCaptions, English, NoEnglish, DefaultOff, Chosen | explicit (11-11): one `CaptionState`; `onTracks` decides Select, TurnOff or None. A change to the caption parameters that Jarvis did not make is the CC menu (`onUserChange`), so Jarvis never switches it back. The pick holds for that title only (`Captions.carried`), in memory. | `CaptionsTest`; emulator QA 4c |
 | Holiday intro jingle | `ui/IntroScreen.kt` | Waiting (prepared, not playing), Playing, Released | explicit (11-10): one flag (`playWhenReady`), set once when the video first plays; both players are released in one `onDispose`, so a skip or the end stops the jingle with the video. The greeting reads the video's position, not a second timer. Only in Holiday mode. | `HolidayTest` (source check) |
 
 ### TV data and sync

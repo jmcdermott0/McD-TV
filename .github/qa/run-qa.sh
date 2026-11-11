@@ -599,6 +599,44 @@ else
   fail "Play Next: BACK hides the card and the credits keep playing"
 fi
 
+# 4c) Captions default to English (data/Captions.kt). Test files: app/src/test/resources/captions (README there).
+# Each file marks Spanish as its default track, so the player's own rules would show Spanish. OK shows the controls,
+# where the caption note sits under the title. Screenshots: captions-*.png (with controls) and captions-*-cue.png.
+cp app/src/test/resources/captions/qa-multi.mkv app/src/test/resources/captions/qa-no-english.mkv app/src/test/resources/captions/qa-addon-en.srt qa-m3u/
+cap_open() { # tag, video file, extra am args...
+  local tag=$1 file=$2; shift 2
+  adb logcat -c
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa_mode true --es screen "captions:http://10.0.2.2:8765/$file" "$@" >/dev/null
+  sleep 14
+  shot "captions-$tag-cue"
+  adb shell input keyevent KEYCODE_DPAD_CENTER; sleep 1.5
+  shot "captions-$tag"
+  describe "captions-$tag"
+  adb logcat -d -s Captions:I > "qa-out/captions-$tag-log.txt"
+  sed 's/^/      [captions-'"$tag"'] /' "qa-out/captions-$tag-log.txt" | tail -4 | tee -a "$R"
+}
+# (a) Four tracks: English is picked over Spanish (file default), English Forced and English SDH.
+cap_open multi qa-multi.mkv --es qa_title "QA Captions Multi"
+if grep -q "Captions: English (default)" qa-out/ui-captions-multi.xml && grep -qE "(en|eng)/English\*" qa-out/captions-multi-log.txt; then
+  pass "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
+else
+  fail "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
+fi
+# (b) No English track: the note says so and names what shows.
+cap_open no-english qa-no-english.mkv --es qa_title "QA Captions None"
+if grep -q "No English captions for this title" qa-out/ui-captions-no-english.xml && grep -q "NoEnglish(showing=Spanish)" qa-out/captions-no-english-log.txt; then
+  pass "Captions: a title with no English track says so"
+else
+  fail "Captions: a title with no English track says so"
+fi
+# (c) An addon subtitle file (English) next to the file's Spanish and French: the addon's English is picked.
+cap_open addon qa-no-english.mkv --es qa_title "QA Captions Addon" --es qa_subs "http://10.0.2.2:8765/qa-addon-en.srt|eng"
+if grep -q "Captions: English (default)" qa-out/ui-captions-addon.xml && grep -qE "(en|eng)/English \(addon\)\*" qa-out/captions-addon-log.txt; then
+  pass "Captions: an English addon subtitle is on by default"
+else
+  fail "Captions: an English addon subtitle is on by default"
+fi
+
 # 5) Crash check.
 adb logcat -d > qa-out/logcat.txt
 if grep -q "ANR in com.mcd.tv" qa-out/logcat.txt; then fail "No freezes (ANR)"; grep -A 15 "ANR in com.mcd.tv" qa-out/logcat.txt > qa-out/anr.txt; else pass "No freezes (ANR)"; fi
