@@ -18,6 +18,29 @@ sleep 12; shot 02-home
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml qa-out/ui-home.xml >/dev/null 2>&1
 if grep -qiE "TRENDING THIS WEEK|PICKED FOR|BECAUSE YOU WATCHED" qa-out/ui-home.xml; then pass "Home loads TMDB rows"; else fail "Home loads TMDB rows"; fi
 
+# 1b) Holiday intro (issue #47). Holiday mode on (the date forced into the season): the holiday track is the only
+# sound (the video plays muted) and two layers of snow fall. Screenshots are taken on the device about a second
+# apart mid-intro, so the drift shows. Then Holiday mode off (a date out of season): the original sound, no snow.
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20261201 >/dev/null
+adb shell 'sleep 1.2; for k in a b c; do cut -d" " -f1 /proc/uptime > /sdcard/hi-$k.t; screencap -p /sdcard/hi-$k.png; sleep 0.75; done'
+for k in a b c; do
+  adb pull /sdcard/hi-$k.png "qa-out/30-holiday-intro-$k.png" >/dev/null 2>&1
+  echo "      holiday intro shot $k at uptime $(adb shell cat /sdcard/hi-$k.t | tr -d '\r') s" | tee -a "$R"
+done
+sleep 7
+adb logcat -d -s HolidayIntro:I HolidayIntro:W HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday: /' | tee -a "$R"
+adb logcat -d -s HolidayIntro:I | grep -q "holiday=true sound=HOLIDAY_TRACK" && pass "Holiday intro: holiday track only (video muted)" || fail "Holiday intro: holiday track only (video muted)"
+adb logcat -d -s HolidayIntro:W | grep -q "holiday track failed" && fail "Holiday intro: track plays" || pass "Holiday intro: track plays"
+adb logcat -d -s HolidaySnow:I | grep -q "frames=" && pass "Holiday intro: snow drawn (frame times logged)" || fail "Holiday intro: snow drawn (frame times logged)"
+ls -la qa-out/30-holiday-intro-a.png qa-out/30-holiday-intro-b.png >/dev/null 2>&1 && pass "Holiday intro: mid-intro screenshots" || fail "Holiday intro: mid-intro screenshots"
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20270201 >/dev/null
+sleep 2; shot 31-intro-holiday-off
+sleep 7
+adb logcat -d -s HolidayIntro:I | grep -q "holiday=false sound=ORIGINAL" && pass "Holiday mode off: original intro sound" || fail "Holiday mode off: original intro sound"
+adb logcat -d -s HolidaySnow:I | grep -q "frames=" && fail "Holiday mode off: no snow" || pass "Holiday mode off: no snow"
+
 # 2) Setup web page: reachable, and saves what a browser sends.
 adb forward tcp:8642 tcp:8642
 if curl -sf -m 10 http://127.0.0.1:8642/ -o qa-out/setup-page.html && grep -q "Jarvis" qa-out/setup-page.html; then
