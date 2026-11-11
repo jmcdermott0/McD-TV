@@ -93,6 +93,14 @@ object Prefs {
         get() = sp.getBoolean("play_intro", true)
         set(v) = sp.edit().putBoolean("play_intro", v).apply()
 
+    /**
+     * Holiday mode (Holiday.kt): holiday intro, Santa hats and Holiday Movies from November 1 to January 6.
+     * Default on. This TV only, never synced. Outside the season it does nothing, whatever it says.
+     */
+    var holidayMode: Boolean
+        get() = sp.getBoolean("holiday_mode", true)
+        set(v) = sp.edit().putBoolean("holiday_mode", v).apply()
+
     /** Like HuberTV's "US Only": limit lists to US releases / US streaming providers. */
     var usOnly: Boolean
         get() = sp.getBoolean("us_only", true)

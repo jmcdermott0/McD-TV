@@ -38,6 +38,7 @@ Status values:
 | Live retry budgets | `PlayerScreen` `networkRetries`, `busyTries`, `tsTried`, `recoveries` | NetRetry(n), Busy409(n), TsFallback, StallRecover(n) | open: these budgets do not share one cap (they do not overlap in practice) | `StreamDiagTest` (busyWait) |
 | Stall watch | `data/QualityFallback.kt` `StallWatch` | stall list plus `started`, `seekPending` | fixed 11-10: `onSeek(now)` ignores buffering only for 2 s after the seek, so a seek inside the buffer no longer hides the next stall | `QualityFallbackTest` |
 | Live zap / pre-swap | `ui/LivePlayer.kt` | Zapping, Resolving, Playing | open (no bug found; depends on effect order) | none |
+| Holiday intro jingle | `ui/IntroScreen.kt` | Waiting (prepared, not playing), Playing, Released | explicit (11-10): one flag (`playWhenReady`), set once when the video first plays; both players are released in one `onDispose`, so a skip or the end stops the jingle with the video. The greeting reads the video's position, not a second timer. Only in Holiday mode. | `HolidayTest` (source check) |
 
 ### TV data and sync
 

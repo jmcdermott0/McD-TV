@@ -38,6 +38,7 @@ import androidx.tv.material3.Text
 import com.mcd.tv.Nav
 import com.mcd.tv.Screen
 import com.mcd.tv.data.BROWSE_LANGUAGES
+import com.mcd.tv.data.Holiday
 import com.mcd.tv.data.POPULAR_COLLECTIONS
 import com.mcd.tv.data.SERVICES
 import com.mcd.tv.data.Title
@@ -62,6 +63,8 @@ private fun browseMenu(): List<MenuEntry> = buildList {
     add(MenuEntry("By Language", "English, Spanish, Korean, Japanese, Hindi…", Screen.BrowseGrid("lang", "en")))
     add(MenuEntry("Genres", "Action, Comedy, Drama, Horror…", Screen.Genres))
     add(MenuEntry("Collections", "Movie franchises", Screen.BrowseGrid("collections")))
+    // Holiday Movies (Holiday mode only): the same shelf as the Home row (HolidayHub.shelf), on every profile.
+    if (com.mcd.tv.data.HolidayHub.showFor()) add(MenuEntry(Holiday.LABEL, Holiday.SUBTITLE, Screen.BrowseGrid(Holiday.ID, "", Holiday.LABEL)))
     if (!com.mcd.tv.data.Prefs.isKidsProfile) add(MenuEntry("History", "Ken Burns, historical dramas, every era", Screen.History))
     // True Crime: the same shelf as the Home row (TrueCrimeHub.shelf), one category id on both surfaces.
     if (com.mcd.tv.data.TrueCrimeHub.showFor()) add(MenuEntry(TrueCrime.LABEL, TrueCrime.SUBTITLE, Screen.BrowseGrid(TrueCrime.ID, "", TrueCrime.LABEL)))
@@ -155,6 +158,7 @@ private fun defaultHeading(kind: String) = when (kind) {
     "collection" -> "Collection"
     "history" -> "History"
     TrueCrime.ID -> TrueCrime.LABEL
+    Holiday.ID -> Holiday.LABEL
     else -> "Browse"
 }
 
@@ -181,6 +185,7 @@ private suspend fun fetchGrid(kind: String, param: String, type: String, chip: S
     "collections" -> if (page == 1) popularCollections() else emptyList()
     "history" -> if (page == 1) com.mcd.tv.data.HistoryHub.shelf(param) else emptyList()
     TrueCrime.ID -> if (page == 1) com.mcd.tv.data.TrueCrimeHub.shelf() else emptyList()
+    Holiday.ID -> if (page == 1) com.mcd.tv.data.HolidayHub.shelf() else emptyList()
     else -> emptyList()
 }
 
