@@ -19,21 +19,36 @@ adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.x
 if grep -qiE "TRENDING THIS WEEK|PICKED FOR|BECAUSE YOU WATCHED" qa-out/ui-home.xml; then pass "Home loads TMDB rows"; else fail "Home loads TMDB rows"; fi
 
 # 1b) Holiday intro (issue #47). Holiday mode on (the date forced into the season): the holiday track is the only
-# sound (the video plays muted) and two layers of snow fall. Screenshots are taken on the device about a second
-# apart mid-intro, so the drift shows. Then Holiday mode off (a date out of season): the original sound, no snow.
+# sound (the video plays muted) and two layers of snow fall. First a clean pass for the snow's frame times (nothing
+# else running), then a pass with raw screen grabs 1.0 s apart mid-intro, so the drift shows. Raw grabs are fast
+# (no PNG encoding on the device); raw2png.py converts them here. Then Holiday mode off (a date out of season):
+# the original sound, no snow.
+HOLIDAY_ON="--ez qa true --ez qa_mode true --ei qa_holiday_day 20261201"
 adb logcat -c
-adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20261201 >/dev/null
-adb shell 'sleep 1.2; for k in a b c; do cut -d" " -f1 /proc/uptime > /sdcard/hi-$k.t; screencap -p /sdcard/hi-$k.png; sleep 0.75; done'
-for k in a b c; do
-  adb pull /sdcard/hi-$k.png "qa-out/30-holiday-intro-$k.png" >/dev/null 2>&1
-  echo "      holiday intro shot $k at uptime $(adb shell cat /sdcard/hi-$k.t | tr -d '\r') s" | tee -a "$R"
-done
-sleep 7
-adb logcat -d -s HolidayIntro:I HolidayIntro:W HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday: /' | tee -a "$R"
+adb shell am start -W -S -n com.mcd.tv/.MainActivity $HOLIDAY_ON >/dev/null
+sleep 9
+adb logcat -d -s HolidayIntro:I HolidayIntro:W HolidaySnow:I | grep -E "HolidayIntro|HolidaySnow" | sed 's/^/      holiday (clean pass): /' | tee -a "$R"
 adb logcat -d -s HolidayIntro:I | grep -q "holiday=true sound=HOLIDAY_TRACK" && pass "Holiday intro: holiday track only (video muted)" || fail "Holiday intro: holiday track only (video muted)"
 adb logcat -d -s HolidayIntro:W | grep -q "holiday track failed" && fail "Holiday intro: track plays" || pass "Holiday intro: track plays"
 adb logcat -d -s HolidaySnow:I | grep -q "frames=" && pass "Holiday intro: snow drawn (frame times logged)" || fail "Holiday intro: snow drawn (frame times logged)"
-ls -la qa-out/30-holiday-intro-a.png qa-out/30-holiday-intro-b.png >/dev/null 2>&1 && pass "Holiday intro: mid-intro screenshots" || fail "Holiday intro: mid-intro screenshots"
+adb logcat -c
+adb shell am start -W -S -n com.mcd.tv/.MainActivity $HOLIDAY_ON >/dev/null
+adb shell 'sleep 1.0; for k in a b c; do cut -d" " -f1 /proc/uptime > /sdcard/hi-$k.t; screencap /sdcard/hi-$k.raw; sleep 0.85; done'
+for k in a b c; do
+  adb pull /sdcard/hi-$k.raw "qa-out/hi-$k.raw" >/dev/null 2>&1
+  python3 .github/qa/raw2png.py "qa-out/hi-$k.raw" "qa-out/30-holiday-intro-$k.png" "qa-out/30-holiday-intro-$k-half.png" && rm -f "qa-out/hi-$k.raw"
+  echo "      holiday intro shot $k at uptime $(adb shell cat /sdcard/hi-$k.t | tr -d '\r') s" | tee -a "$R"
+done
+sleep 6
+adb logcat -d -s HolidaySnow:I | grep "frames=" | sed 's/^/      holiday (with grabs): /' | tee -a "$R"
+ls qa-out/30-holiday-intro-a.png qa-out/30-holiday-intro-b.png >/dev/null 2>&1 && pass "Holiday intro: mid-intro screenshots" || fail "Holiday intro: mid-intro screenshots"
+# The half-size frames, printed so they can be read from the job log too (the artifact is not reachable everywhere).
+for k in a b; do
+  [ -f "qa-out/30-holiday-intro-$k-half.png" ] || continue
+  echo "::group::holiday intro frame $k (half size, base64 PNG)"
+  echo "BEGIN-HOLIDAY-FRAME-$k"; base64 "qa-out/30-holiday-intro-$k-half.png"; echo "END-HOLIDAY-FRAME-$k"
+  echo "::endgroup::"
+done
 adb logcat -c
 adb shell am start -W -S -n com.mcd.tv/.MainActivity --ez qa true --ez qa_mode true --ei qa_holiday_day 20270201 >/dev/null
 sleep 2; shot 31-intro-holiday-off
