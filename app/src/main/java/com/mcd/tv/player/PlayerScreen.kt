@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
@@ -28,7 +27,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -1065,24 +1063,6 @@ fun PlayerScreen(
                 view.keepScreenOn = keepScreenOn
             },
         )
-
-        // Title strip, shown with the controls (Media3's control bar has no title).
-        if (controlsVisible && error == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)))
-                    .padding(horizontal = 48.dp, vertical = 24.dp),
-            ) {
-                Column {
-                    Text(text = title, style = broadcastStyle(28.sp))
-                    // The caption state, with the CC menu: English by default, or why not (data/Captions.kt).
-                    Captions.note(captionState, captionMode)?.let { note ->
-                        Text(text = note, color = McdColors.White, fontSize = 16.sp, modifier = Modifier.padding(top = 6.dp))
-                    }
-                }
-            }
-        }
 
         // No English captions: say so for a few seconds when the video opens, not only with the controls.
         if (error == null && !live && !controlsVisible) captionToast?.let { note ->
