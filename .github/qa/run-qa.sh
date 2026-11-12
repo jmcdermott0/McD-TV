@@ -646,6 +646,49 @@ else
   fail "Play Next: BACK hides the card and the credits keep playing"
 fi
 
+# 4cap) Captions default to English (data/Captions.kt). Test files: app/src/test/resources/captions (README there).
+# Each file marks Spanish as its default track, so the player's own rules would show Spanish. PAUSE shows the controls
+# and keeps them up (Media3 shows them for as long as a video is paused), with the caption note under the title.
+# Screenshots: captions-*.png (paused, with controls) and captions-*-cue.png (playing).
+# Extras with spaces or | get inner quotes: adb runs am through the device shell.
+cp app/src/test/resources/captions/qa-multi.mkv app/src/test/resources/captions/qa-no-english.mkv app/src/test/resources/captions/qa-addon-en.srt qa-m3u/
+cap_open() { # tag, video file, extra am args...
+  local tag=$1 file=$2; shift 2
+  adb logcat -c
+  adb shell am start -S -n com.mcd.tv/.MainActivity --ez qa_mode true --es screen "captions:http://10.0.2.2:8765/$file" "$@" >/dev/null
+  sleep 14
+  shot "captions-$tag-cue"
+  adb shell input keyevent KEYCODE_MEDIA_PAUSE; sleep 2
+  describe "captions-$tag"
+  shot "captions-$tag"
+  echo "      [captions-$tag] note: $(grep -o 'text="\(Captions\|No \)[^"]*"' "qa-out/ui-captions-$tag.xml" 2>/dev/null | tr '\n' ' ')" | tee -a "$R"
+  adb logcat -d -s Captions:I > "qa-out/captions-$tag-log.txt"
+  sed 's/^/      [captions-'"$tag"'] /' "qa-out/captions-$tag-log.txt" | tail -4 | tee -a "$R"
+}
+# (a) Four tracks: English is picked over Spanish (file default), English Forced and English SDH.
+cap_open multi qa-multi.mkv --es qa_title "'QA Captions Multi'"
+# The note is checked on screen (dump while paused) or, if the dump comes back empty, in the player's log line.
+note_seen() { grep -qF "$2" "qa-out/ui-captions-$1.xml" 2>/dev/null || grep -qF "note=$2" "qa-out/captions-$1-log.txt"; }
+if note_seen multi "Captions: English (default)" && grep -qE "(en|eng)/English\*" qa-out/captions-multi-log.txt; then
+  pass "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
+else
+  fail "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
+fi
+# (b) No English track: the note says so and names what shows.
+cap_open no-english qa-no-english.mkv --es qa_title "'QA Captions None'"
+if note_seen no-english "No English captions for this title. Showing Spanish." && grep -q "NoEnglish(showing=Spanish)" qa-out/captions-no-english-log.txt; then
+  pass "Captions: a title with no English track says so"
+else
+  fail "Captions: a title with no English track says so"
+fi
+# (c) An addon subtitle file (English) next to the file's Spanish and French: the addon's English is picked.
+cap_open addon qa-no-english.mkv --es qa_title "'QA Captions Addon'" --es qa_subs "'http://10.0.2.2:8765/qa-addon-en.srt|eng'"
+if note_seen addon "Captions: English (default)" && grep -qE "(en|eng)/English \(addon\)\*" qa-out/captions-addon-log.txt; then
+  pass "Captions: an English addon subtitle is on by default"
+else
+  fail "Captions: an English addon subtitle is on by default"
+fi
+
 # 5) Crash check.
 adb logcat -d > qa-out/logcat.txt
 if grep -q "ANR in com.mcd.tv" qa-out/logcat.txt; then fail "No freezes (ANR)"; grep -A 15 "ANR in com.mcd.tv" qa-out/logcat.txt > qa-out/anr.txt; else pass "No freezes (ANR)"; fi

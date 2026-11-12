@@ -28,16 +28,19 @@ class HeaderBytes(private val cap: Int = 512 * 1024) {
     fun snapshot(): ByteArray = buf.copyOf(filled)
 }
 
-/** A data source that hands what it reads to [sink] as well (no extra request or connection). */
+/**
+ * A data source that hands what it reads to [sink] as well (no extra request or connection). With [only] set, only
+ * reads of that link are kept (an addon subtitle file loads through the same factory and must not fill the header).
+ */
 @OptIn(UnstableApi::class)
-class HeaderTap(private val upstream: DataSource, private val sink: HeaderBytes) : DataSource {
+class HeaderTap(private val upstream: DataSource, private val sink: HeaderBytes, private val only: String? = null) : DataSource {
     private var pos = -1L
 
     override fun addTransferListener(transferListener: TransferListener) = upstream.addTransferListener(transferListener)
 
     override fun open(dataSpec: DataSpec): Long {
         val n = upstream.open(dataSpec)
-        pos = dataSpec.position
+        pos = if (only == null || dataSpec.uri.toString() == only) dataSpec.position else -1L
         return n
     }
 
@@ -60,8 +63,8 @@ class HeaderTap(private val upstream: DataSource, private val sink: HeaderBytes)
     }
 
     companion object {
-        fun factory(upstream: DataSource.Factory, sink: HeaderBytes): DataSource.Factory =
-            DataSource.Factory { HeaderTap(upstream.createDataSource(), sink) }
+        fun factory(upstream: DataSource.Factory, sink: HeaderBytes, only: String? = null): DataSource.Factory =
+            DataSource.Factory { HeaderTap(upstream.createDataSource(), sink, only) }
     }
 }
 

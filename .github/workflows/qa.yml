@@ -19,7 +19,8 @@ concurrency:
 jobs:
   qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    # 70: the full suite takes 40 to 52 min on a slow runner (QA run 284 stopped at 55 before the last steps).
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 

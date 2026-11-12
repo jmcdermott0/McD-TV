@@ -249,6 +249,19 @@ class MainActivity : ComponentActivity() {
                 screenExtra.substringAfter(":"), "QA Show  S1E1",
                 com.mcd.tv.data.PlayMeta("tv", com.mcd.tv.data.PlayNextQa.TMDB_ID, "QA Show", null, null, 1, 1), "tt0000000",
             )
+        } else if (screenExtra.startsWith("captions:") && intent?.getBooleanExtra("qa_mode", false) == true) {
+            // Automated QA only: "captions:<video url>" plays a test file through the source-list path, with the addon
+            // subtitles in "--es qa_subs '<url>|<lang>;<url>|<lang>'", so the run can check the English default.
+            val subs = (intent?.getStringExtra("qa_subs") ?: "").split(";").mapNotNull { p ->
+                val parts = p.split("|")
+                parts.getOrNull(0)?.trim()?.takeIf { it.startsWith("http") }?.let { com.mcd.tv.data.ExternalSub(it, parts.getOrElse(1) { "" }.trim()) }
+            }
+            val link = screenExtra.substringAfter(":")
+            val src = com.mcd.tv.data.StreamSource(
+                addon = "QA", name = "QA", title = "QA Captions", url = link, infoHash = null, fileIdx = null,
+                quality = "1080p", sizeText = "", sizeGb = 0.0, seeders = null, cached = true, subtitles = subs,
+            )
+            Screen.Player(link, intent?.getStringExtra("qa_title") ?: "QA Captions", queue = com.mcd.tv.data.SourceQueue.put(listOf(src)), queuePos = 0)
         } else if (screenExtra.startsWith("person:")) {
             screenExtra.substringAfter(":").toIntOrNull()?.let { Screen.Person(it) }
         } else when (screenExtra) {
@@ -503,6 +516,8 @@ private fun ScreenContent(screen: Screen, nav: Nav, isOnlyEntry: Boolean) {
                 // A failed stream offers "Try next source" from the list it was picked from.
                 val nextSource = com.mcd.tv.ui.rememberNextSource(nav, s)
                 val sourceKey = com.mcd.tv.data.SourceQueue.get(s.queue)?.getOrNull(s.queuePos)?.let { com.mcd.tv.data.SourceHealth.key(it) }
+                // Subtitle files the addon sent with this source (same English default as the file's own tracks).
+                val subs = com.mcd.tv.data.SourceQueue.get(s.queue)?.getOrNull(s.queuePos)?.subtitles.orEmpty()
                 // Quality fallback: the source's own name can say 4K; a struggling 4K file re-picks a 1080p source.
                 val label = androidx.compose.runtime.remember(s) {
                     com.mcd.tv.data.SourceQueue.get(s.queue)?.getOrNull(s.queuePos)?.let { "${it.name} ${it.title}" } ?: s.title
@@ -533,12 +548,14 @@ private fun ScreenContent(screen: Screen, nav: Nav, isOnlyEntry: Boolean) {
                         nextSource = nextSource, sourceKey = sourceKey,
                         qualityLabel = label, onStepDown = stepDown, startPositionMs = startMs, startNotice = notice,
                         next = if (next != null) nextEp else com.mcd.tv.data.NextEpisode.None,
+                        subtitles = subs,
                     )
                 } else {
                     PlayerScreen(
                         url = s.url, title = s.title, meta = m, onEnded = next, headers = s.headers, onSleep = { nav.back() },
                         nextSource = nextSource, onBack = { nav.back() }, sourceKey = sourceKey,
                         qualityLabel = label, onStepDown = stepDown, startPositionMs = startMs, startNotice = notice,
+                        subtitles = subs,
                     )
                 }
             }

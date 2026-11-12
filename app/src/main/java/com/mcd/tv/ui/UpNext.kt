@@ -86,6 +86,8 @@ fun UpNextPlayer(
     sourceKey: String? = null,
     /** The episode after this one (TMDB). [NextEpisode.Unknown] keeps the old end card with no early card. */
     next: NextEpisode.Result = NextEpisode.Unknown,
+    /** Subtitle files the addon sent with this stream (see [PlayerScreen]). */
+    subtitles: List<com.mcd.tv.data.ExternalSub> = emptyList(),
 ) {
     var ended by remember { mutableStateOf(false) }
     val currentNext by rememberUpdatedState(next)
@@ -192,7 +194,7 @@ fun UpNextPlayer(
             url = url, title = title, meta = meta, onEnded = if (episode) ({ card = false; ended = true }) else null, headers = headers, onSleep = onSleep,
             nextSource = nextSource, onBack = onCancel, sourceKey = sourceKey,
             qualityLabel = qualityLabel, onStepDown = onStepDown, startPositionMs = startPositionMs, startNotice = startNotice,
-            onKeyEvent = keys, hook = hook,
+            onKeyEvent = keys, hook = hook, subtitles = subtitles,
             overlay = { if (card) PlayNextCard(meta, episode, nextLabel(currentNext, meta), remaining, choice, Modifier.align(Alignment.BottomEnd)) },
         )
     } else if (!episode || next is NextEpisode.None) {

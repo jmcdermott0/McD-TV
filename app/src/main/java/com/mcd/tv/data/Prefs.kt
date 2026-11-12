@@ -129,6 +129,14 @@ object Prefs {
         get() = QualityMode.clean(sp.getString("quality_mode", QualityMode.AUTO))
         set(v) = put("quality_mode", QualityMode.clean(v))
 
+    /**
+     * Settings > Playback > Captions: "en" (default: English captions on when the title has them) or "off".
+     * A new key, this TV only, never synced. A TV without the key reads English; no other setting changes.
+     */
+    var captionsMode: String
+        get() = Captions.cleanMode(sp.getString("captions_lang", Captions.ENGLISH))
+        set(v) = put("captions_lang", Captions.cleanMode(v))
+
     /** Source list: movie files bigger than this many GB are hidden (0 = no limit). Synced with the account. */
     var maxMovieGb: Int
         get() = sp.getInt("max_movie_gb", 40)
