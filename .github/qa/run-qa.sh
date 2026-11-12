@@ -671,7 +671,8 @@ fi
 
 # 4cap) Captions default to English (data/Captions.kt). Test files: app/src/test/resources/captions (README there).
 # Each file marks Spanish as its default track, so the player's own rules would show Spanish. PAUSE shows the controls
-# and keeps them up (Media3 shows them for as long as a video is paused), with the caption note under the title.
+# and keeps them up (Media3 shows them for as long as a video is paused). Since issue #53 the player draws no title
+# or caption-note banner at the top, so the note is read from the player's log line and the paused screen must not show it.
 # Screenshots: captions-*.png (paused, with controls) and captions-*-cue.png (playing).
 # Extras with spaces or | get inner quotes: adb runs am through the device shell.
 cp app/src/test/resources/captions/qa-multi.mkv app/src/test/resources/captions/qa-no-english.mkv app/src/test/resources/captions/qa-addon-en.srt qa-m3u/
@@ -696,6 +697,13 @@ if note_seen multi "Captions: English (default)" && grep -qE "(en|eng)/English\*
   pass "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
 else
   fail "Captions: English is on by default (not the file's Spanish, not forced or SDH)"
+fi
+# Issue #53: no banner at the top with the title or the caption note, even with the controls up.
+if grep -q "com.mcd.tv" qa-out/ui-captions-multi.xml 2>/dev/null \
+  && ! grep -qF "QA Captions Multi" qa-out/ui-captions-multi.xml && ! grep -qF 'text="Captions:' qa-out/ui-captions-multi.xml; then
+  pass "Player: no title or caption banner at the top (issue #53)"
+else
+  fail "Player: no title or caption banner at the top (issue #53)"
 fi
 # (b) No English track: the note says so and names what shows.
 cap_open no-english qa-no-english.mkv --es qa_title "'QA Captions None'"
