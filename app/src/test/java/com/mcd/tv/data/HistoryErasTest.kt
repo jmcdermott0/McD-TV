@@ -157,6 +157,26 @@ class HistoryErasTest {
         assertEquals(listOf("tv:2", "tv:3"), HistoryEras.kenBurnsOrder(credits, "2026-10-20"))
     }
 
+    @Test fun kenBurnsPinnedThoreauIsTheThreePartSeries() {
+        val pin = HistoryEras.KEN_BURNS_PINNED.single { it.name == "Henry David Thoreau" }
+        assertEquals("tv", pin.type)
+        assertEquals(2026, pin.year)
+        assertEquals(listOf("Who Are We?", "Being Alive", "Several More Lives to Live"), pin.episodes)
+        // TMDB also lists it as a movie with more votes: the pinned series replaces that entry, nothing else moves.
+        val credits = listOf(
+            Credit("movie:1", "Henry David Thoreau", "2026-03-30", setOf(99), listOf("Executive Producer"), 50),
+            Credit("tv:3", "The Civil War", "1990-09-23", setOf(99), listOf("Director"), 300),
+            Credit("tv:4", "Baseball", "1994-09-18", setOf(99), listOf("Director"), 200),
+        )
+        val found = listOf(pin to Credit("tv:2", "Henry David Thoreau", "", setOf(18), emptyList(), 9))
+        assertEquals(listOf("tv:2", "tv:3", "tv:4"), HistoryEras.kenBurnsOrder(HistoryEras.withPinned(credits, found), "2026-11-12"))
+        // Not found on TMDB: the shelf is exactly what his credits give.
+        assertEquals(HistoryEras.kenBurnsOrder(credits, "2026-11-12"), HistoryEras.kenBurnsOrder(HistoryEras.withPinned(credits, emptyList()), "2026-11-12"))
+        // Already on his credits as the series: it shows once.
+        val asSeries = credits.drop(1) + Credit("tv:2", "Henry David Thoreau", "2026-03-30", setOf(99), listOf("Executive Producer"), 9)
+        assertEquals(listOf("tv:2", "tv:3", "tv:4"), HistoryEras.kenBurnsOrder(HistoryEras.withPinned(asSeries, found), "2026-11-12"))
+    }
+
     @Test fun kenBurnsRecentWindowIsEighteenMonths() {
         val credits = listOf(credit("a", "2025-03-01", listOf("Director"), 1), credit("b", "1990-01-01", listOf("Director"), 500))
         // March 2025 is more than 18 months before October 2026: ordered by votes like the rest.

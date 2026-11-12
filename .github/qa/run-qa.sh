@@ -181,6 +181,29 @@ for s in $HISTORY_SHELVES; do
 done
 check_screen history:kenburns "content-desc=\"The American Revolution\""
 if grep -q 'content-desc="The Civil War"' qa-out/ui-history-kenburns.xml; then pass "History: Ken Burns shows The Civil War"; else fail "History: Ken Burns shows The Civil War"; fi
+# Issue #51: HENRY DAVID THOREAU is pinned to the Ken Burns shelf as the three-part PBS series, episodes in order.
+if grep -q 'content-desc="Henry David Thoreau"' qa-out/ui-history-kenburns.xml; then pass "History: Ken Burns shows Henry David Thoreau"; else fail "History: Ken Burns shows Henry David Thoreau"; fi
+THOREAU=$(adb logcat -d -s HistoryHub:I | grep -o "kenburns_pin Henry David Thoreau -> tv:[0-9]\+" | tail -n 1 | sed 's/.*-> //')
+echo "      [history] Thoreau resolves to: ${THOREAU:-nothing}" | tee -a "$R"
+if [ -n "$THOREAU" ]; then
+  check_screen "detail:$THOREAU" "Henry David Thoreau"
+  # The episode row sits below the title: move down to it, dumping each step, and keep the names in screen order.
+  for i in 1 2 3 4; do
+    adb shell input keyevent KEYCODE_DPAD_DOWN; sleep 3
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "qa-out/ui-thoreau-$i.xml" >/dev/null 2>&1
+  done
+  shot screen-thoreau-episodes
+  EPS=$(cat "qa-out/ui-detail-${THOREAU//:/-}.xml" qa-out/ui-thoreau-*.xml 2>/dev/null | grep -o '\(text\|content-desc\)="[123]\. [^"]*"' \
+    | sed 's/^[a-z-]*=//' | awk '!seen[$0]++' | tr '\n' ' ')
+  echo "      [history] Thoreau episodes: $EPS" | tee -a "$R"
+  if [ "$EPS" = '"1. Who Are We?" "2. Being Alive" "3. Several More Lives to Live" ' ]; then
+    pass "History: Henry David Thoreau lists its three parts in order"
+  else
+    fail "History: Henry David Thoreau lists its three parts in order"
+  fi
+else
+  fail "History: Henry David Thoreau found on TMDB as a series"
+fi
 check_screen history:docs "content-desc=\"(The Civil War|The Vietnam War|Baseball|The War)\""
 check_screen history:history "content-desc="
 check_screen history:movies "content-desc=\"Young Washington\""

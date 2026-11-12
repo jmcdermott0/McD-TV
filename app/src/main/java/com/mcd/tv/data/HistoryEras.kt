@@ -47,6 +47,19 @@ data class Credit(
     val votes: Int,
 )
 
+/**
+ * A title pinned to the Ken Burns shelf by hand. [date] = its premiere ("yyyy-MM-dd"), used when TMDB has none.
+ * [jobs] = his credit on it. [episodes] = its episode names in order, as TMDB lists them (QA checks them).
+ */
+data class KenBurnsPin(
+    val type: String,
+    val name: String,
+    val year: Int,
+    val date: String,
+    val jobs: List<String>,
+    val episodes: List<String> = emptyList(),
+)
+
 /** The hub's sections, in the order the hub shows them. The era shelves follow, in story order. */
 enum class HubSection(val id: String, val label: String) {
     DOCUMENTARIES("docs", "Documentaries"),
@@ -513,6 +526,34 @@ object HistoryEras {
     )
 
     // ---------------------------------------------------------------- Ken Burns
+
+    /**
+     * Ken Burns titles placed on his shelf by hand. Each is found on TMDB by name and first year (like the marquee
+     * titles), so search, artwork, episodes and playback resolve as they do for his other films. A pin replaces
+     * any credit with the same name and year: TMDB lists some of his series a second time as a movie, and a movie
+     * entry has no episodes.
+     */
+    val KEN_BURNS_PINNED: List<KenBurnsPin> = listOf(
+        // PBS, March 30 and 31, 2026. Executive producers Ken Burns and Don Henley. Directed by Erik Ewers and
+        // Christopher Loren Ewers. Narrated by George Clooney; Jeff Goldblum voices Thoreau.
+        KenBurnsPin(
+            "tv", "Henry David Thoreau", 2026, "2026-03-30", listOf("Executive Producer"),
+            listOf("Who Are We?", "Being Alive", "Several More Lives to Live"),
+        ),
+    )
+
+    /**
+     * Ken Burns' credits with the pinned titles in. [found] = each pin and the TMDB title it resolved to
+     * (key, name, votes); a pin TMDB could not find is left out.
+     */
+    fun withPinned(credits: List<Credit>, found: List<Pair<KenBurnsPin, Credit>>): List<Credit> {
+        if (found.isEmpty()) return credits
+        val pinned = found.map { (pin, c) -> c.copy(date = c.date.ifBlank { pin.date }, genres = emptySet(), jobs = (c.jobs + pin.jobs).distinct()) }
+        fun same(c: Credit) = normName(c.name) + "|" + c.date.take(4)
+        val keys = pinned.map { it.key }.toSet()
+        val names = pinned.map(::same).toSet()
+        return pinned + credits.filter { it.key !in keys && same(it) !in names }
+    }
 
     private val DIRECTED = setOf("Director", "Co-Director", "Creator", "Series Director")
     private val KEN_BURNS_JOBS = DIRECTED + setOf("Writer", "Producer", "Executive Producer")
