@@ -326,9 +326,27 @@ object HistoryHub {
     private suspend fun kenBurnsLoad(): List<Title> {
         val id = kenBurnsId() ?: throw IllegalStateException("Couldn't find Ken Burns on TMDB.")
         val p = net.withPermit { Tmdb.person(id) }
-        val byKey = p.crew.associate { keyOf(it.first) to it.first }
-        val credits = p.crew.map { (t, jobs) -> Credit(keyOf(t), t.name, t.releaseDate, t.genreIds.toSet(), jobs.split(", "), t.votes) }
-        return HistoryEras.kenBurnsOrder(credits, today()).mapNotNull(byKey::get)
+        val pins = kenBurnsPins()
+        val byKey = p.crew.associate { keyOf(it.first) to it.first } + pins.associate { keyOf(it.second) to it.second }
+        fun credit(t: Title, jobs: List<String>) = Credit(keyOf(t), t.name, t.releaseDate, t.genreIds.toSet(), jobs, t.votes)
+        val credits = p.crew.map { (t, jobs) -> credit(t, jobs.split(", ")) }
+        val all = HistoryEras.withPinned(credits, pins.map { (pin, t) -> pin to credit(t, emptyList()) })
+        return HistoryEras.kenBurnsOrder(all, today()).mapNotNull(byKey::get)
+    }
+
+    /** The hand-pinned Ken Burns titles found on TMDB (name and first year, a year either side). */
+    private suspend fun kenBurnsPins(): List<Pair<KenBurnsPin, Title>> = coroutineScope {
+        HistoryEras.KEN_BURNS_PINNED.map { pin ->
+            async {
+                val t = runCatching {
+                    net.withPermit {
+                        listOf(pin.year, pin.year - 1, pin.year + 1).firstNotNullOfOrNull { y -> Tmdb.findTitle(pin.type, pin.name, y, exact = true) }
+                    }
+                }.getOrNull()
+                android.util.Log.i("HistoryHub", "kenburns_pin ${pin.name} -> ${t?.type}:${t?.id}")
+                t?.let { pin to it }
+            }
+        }.awaitAll().filterNotNull()
     }
 
     /** Ken Burns' films, or none when TMDB can't be reached (the other shelves still load). */
