@@ -502,7 +502,7 @@ for (const w of [390,1280]) {
   for (const w of [390,1280]) {
     const {ctx,p,errs}=await mk({width:w,height:844});
     await p.goto(B); await p.evaluate((k)=>{ localStorage.clear(); for(const [a,v] of Object.entries(k)) localStorage.setItem(a,v); },seedKeys);
-    for (const cat of ['','tvs','profile','rd','playback','addons','keys','house','help']) {
+    for (const cat of ['','tvs','profile','rd','playback','look','addons','keys','house','help']) {
       await p.goto(B+'#/settings'+(cat?'/'+cat:'')); await p.reload(); await p.waitForTimeout(500);
       const h=await hsc(p); if(h.sw>h.iw) fails.push(`${w} settings/${cat} overflow ${h.sw} ${h.wide}`);
       const leak=await p.evaluate((sec)=>{ const html=document.documentElement.outerHTML; return sec.filter(x=>html.includes(x)); },[TOK,TM,MDB,'QASECRET','QAREFRESH']);
@@ -527,7 +527,7 @@ for (const w of [390,1280]) {
     const sib=await p.evaluate(()=>{ const L=[{raw:'US| ESPN 4K',url:'a'},{raw:'US| ESPN',url:'b'},{raw:'US| ESPN 2 FHD',url:'d'},{raw:'US| ESPN FHD',url:'c'},{raw:'US| ESPN UHD',url:'e'}]; return QF.liveSibling(L,L[0],LV.gkey,()=>true); });
     if(sib!==3) fails.push(`${w} live 1080p copy of ESPN 4K: index ${sib}`);
     if(w===390){ await p.goto(B+'#/settings'); await p.reload(); await p.waitForTimeout(400);
-      const rows=await p.$$eval('.slist .srow',a=>a.length); if(rows!==8) fails.push(`settings overview rows ${rows}`);
+      const rows=await p.$$eval('.slist .srow',a=>a.length); if(rows!==9) fails.push(`settings overview rows ${rows}`);
       if(await p.$('.spane-body')) fails.push('settings overview on a phone shows a category too'); }
     const after=await p.evaluate((k)=>Object.keys(k).filter(a=>localStorage.getItem(a)!==k[a]),seedKeys);
     log(w,'settings stored values changed',after.join(',')||'none');
@@ -717,6 +717,32 @@ for (const w of [390,1280]) {
   for (const k of Object.keys(want)) if (JSON.stringify(got[k])!==JSON.stringify(want[k])) fails.push(`photos ${k}: got ${JSON.stringify(got[k])} want ${JSON.stringify(want[k])}`);
   log('profile photos', fails.filter(f=>f.startsWith('photos')).length ? 'FAIL' : 'ok', JSON.stringify({pieces:pieces.length,chars:saved.d.length}));
   if(errs.length) fails.push(...errs.map(e=>`photos pageerror ${e}`));
+  await ctx.close();
+}
+// Settings > Look: Calm switches at once, survives a reload (set before the page draws), and Jarvis (the default) clears it. No cyan HUD effects leak into Calm.
+{
+  const {ctx,p,errs}=await mk({width:390,height:844});
+  await p.goto(B); await p.evaluate(()=>localStorage.clear());
+  await p.goto(B+'#/settings/look'); await p.reload(); await p.waitForTimeout(500);
+  const st=()=>p.evaluate(()=>({t:document.documentElement.dataset.theme||'',bar:document.querySelector('meta[name="theme-color"]').content,
+    k:localStorage.getItem('mcdtv_web_theme'),on:[...document.querySelectorAll('[data-act="settheme"].on')].map(b=>b.dataset.look).join()}));
+  const got={}, want={def:{t:'',bar:'#02060A',k:null,on:'jarvis'},calm:{t:'calm',bar:'#0E1620',k:'calm',on:'calm'},
+    reload:{t:'calm',bar:'#0E1620',k:'calm',on:'calm'},back:{t:'',bar:'#02060A',k:null,on:'jarvis'}};
+  got.def=await st();
+  await p.click('[data-act="settheme"][data-look="calm"]'); await p.waitForTimeout(200); got.calm=await st();
+  // Early apply: the <head> script has already set it when the first style is read.
+  await p.addInitScript(()=>{ document.addEventListener('readystatechange',()=>{ if(document.readyState==='interactive') window.__qaEarly=document.documentElement.dataset.theme||''; },{once:true}); });
+  await p.reload(); await p.waitForTimeout(500); got.reload=await st();
+  got.early=await p.evaluate(()=>window.__qaEarly); want.early='calm';
+  got.css=await p.evaluate(()=>{ const q=(s)=>document.querySelector(s); const cs=(e,k)=>e?getComputedStyle(e)[k]:'missing';
+    const b=q('[data-act="settheme"]'), g=q('.sgroup'), h=q('.sgroup h2');
+    return {btnClip:cs(b,'clipPath'),btnRadius:cs(b,'borderTopLeftRadius'),grpRadius:cs(g,'borderTopLeftRadius'),h2Case:cs(h,'textTransform'),
+      bg:getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),accent:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}; });
+  want.css={btnClip:'none',btnRadius:'999px',grpRadius:'12px',h2Case:'none',bg:'#0E1620',accent:'#9CC5B8'};
+  await p.click('[data-act="settheme"][data-look="jarvis"]'); await p.waitForTimeout(200); got.back=await st();
+  for (const k of Object.keys(want)) if (JSON.stringify(got[k])!==JSON.stringify(want[k])) fails.push(`look ${k}: got ${JSON.stringify(got[k])} want ${JSON.stringify(want[k])}`);
+  log('look', fails.filter(f=>f.startsWith('look')).length ? 'FAIL' : 'ok');
+  if(errs.length) fails.push(...errs.map(e=>`look pageerror ${e}`));
   await ctx.close();
 }
 // The real failure, replayed with a real video: web dies at 34:50 on a cut-off file, resumes on a healthy one.

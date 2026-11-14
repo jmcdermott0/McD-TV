@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#02060A">
+<script>
+/* Look (Settings > Look): set before the styles load so the HUD look never flashes. Key: mcdtv_web_theme. */
+try { if (localStorage.getItem("mcdtv_web_theme") === "calm") { document.documentElement.dataset.theme = "calm"; document.querySelector('meta[name="theme-color"]').content = "#0E1620"; } } catch (e) {}
+</script>
 <title>Jarvis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -356,7 +360,7 @@ body{color:var(--white);font-size:16px;
 :focus-visible{outline:2px solid var(--accent);border-radius:0}
 h1,h2,h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:1.5px}
 header.top{background:linear-gradient(180deg,rgba(2,6,10,.85),rgba(2,6,10,.55));border-bottom:1px solid rgba(14,106,122,.6)}
-.logo{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:3px;color:var(--white);text-shadow:0 0 12px rgba(0,229,255,.75)}
+.logo{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:3px;text-transform:uppercase;color:var(--white);text-shadow:0 0 12px rgba(0,229,255,.75)}
 .logo .ring{flex:0 0 auto;filter:drop-shadow(0 0 4px rgba(0,229,255,.6))}
 nav.links a{font-family:var(--disp);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;border-radius:0;position:relative}
 nav.links a:hover{color:var(--bright)}
@@ -633,12 +637,182 @@ nav.tabbar{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-in
 .ioshint{position:fixed;left:12px;right:12px;bottom:calc(var(--tab) + env(safe-area-inset-bottom) + 12px);z-index:80;display:flex;gap:12px;align-items:center;background:rgba(6,23,34,.97);border:1px solid var(--accent);clip-path:var(--cut);padding:12px 14px;font-size:15px;max-width:520px;margin:0 auto}
 .ioshint p{margin:0;flex:1}
 .ioshint button{flex:0 0 auto;border:0;background:transparent;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 8px}
+
+/* ---------- Calm look (Settings > Look, key mcdtv_web_theme = "calm") ----------
+   A quiet dusk lake: slate blue, soft sage and moonlight. Rounded shapes, no glow, no grid, no scanlines,
+   no chamfers, no uppercase. Same palette as the TV app's Calm look; keep the values in step. */
+html[data-theme="calm"]{--bg:#0E1620;--nav1:#1A2838;--nav2:#131E2A;--card:rgba(28,40,54,.82);--raised:#243445;--line:#3A4D5E;
+  --accent:#9CC5B8;--bright:#C9E4DA;--white:#E8EEF2;--muted:#9AABB8;--ink:#0E1620;--warn:#E6C79C;--bad:#E39A9A;--ok:#9CC5B8;
+  --font:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--disp:var(--font);--cut:none;--cut-s:none}
+html[data-theme="calm"] body{color:var(--white);font-size:15px;
+  background:radial-gradient(ellipse 90% 420px at 50% 0,rgba(201,228,218,.06),transparent 70%) no-repeat,
+  linear-gradient(180deg,var(--nav1) 0,var(--nav2) 280px,var(--bg) 680px) no-repeat,var(--bg)}
+html[data-theme="calm"] body.playmode{background:#000}
+html[data-theme="calm"] :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
+html[data-theme="calm"] h1,html[data-theme="calm"] h2,html[data-theme="calm"] h3{font-family:var(--font);text-transform:none;letter-spacing:-.2px}
+html[data-theme="calm"] header.top{background:linear-gradient(180deg,rgba(26,40,56,.9),rgba(19,30,42,.62));border-bottom:1px solid rgba(58,77,94,.55)}
+html[data-theme="calm"] .logo{font-family:var(--font);font-weight:600;font-size:20px;letter-spacing:.2px;text-transform:none;color:var(--white);text-shadow:none}
+html[data-theme="calm"] .logo .ring{filter:none}
+html[data-theme="calm"] :is(.logo,.ask-h) svg [stroke]{stroke:var(--accent)}
+html[data-theme="calm"] :is(.logo,.ask-h) svg [fill="#00E5FF"]{fill:var(--accent)}
+html[data-theme="calm"] :is(.logo,.ask-h) svg [fill="#7DF9FF"]{fill:var(--bright)}
+html[data-theme="calm"] nav.links a{font-family:var(--font);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;transition:color .25s,background .25s}
+html[data-theme="calm"] nav.links a:hover{color:var(--white)}
+html[data-theme="calm"] nav.links a.on{color:var(--white);background:rgba(156,197,184,.14)}
+html[data-theme="calm"] nav.links a.on::after{content:none}
+html[data-theme="calm"] .tvpill,html[data-theme="calm"] .profpill{border-radius:999px;background:var(--card);border-color:var(--line);font-family:var(--font);font-size:13px;letter-spacing:0;text-transform:none}
+html[data-theme="calm"] .dot.online{background:var(--accent);box-shadow:none}
+html[data-theme="calm"] .sdot.ok{background:var(--accent)}
+html[data-theme="calm"] .iconbtn{color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);transition:color .25s,background .25s}
+html[data-theme="calm"] .iconbtn:hover{color:var(--white);background:rgba(156,197,184,.14)}
+html[data-theme="calm"] nav.tabbar{background:rgba(19,30,42,.94)}
+html[data-theme="calm"] nav.tabbar a{font-family:var(--font);font-size:11px;letter-spacing:0;text-transform:none}
+html[data-theme="calm"] nav.tabbar a.on{color:var(--white)}
+html[data-theme="calm"] nav.tabbar a.on svg{color:var(--accent);filter:none}
+html[data-theme="calm"] #tvpick{background:#1C2836;border-radius:12px}
+
+/* buttons, chips, segments: soft pills */
+html[data-theme="calm"] .btn{border-radius:999px;clip-path:none;background:rgba(232,238,242,.08);color:var(--white);box-shadow:inset 0 0 0 1px var(--line);
+  font-family:var(--font);font-weight:600;text-transform:none;letter-spacing:0;transition:background .25s,color .25s,box-shadow .25s,transform .1s}
+html[data-theme="calm"] .btn:hover,html[data-theme="calm"] .btn:focus-visible{background:rgba(156,197,184,.16);color:var(--white);box-shadow:inset 0 0 0 1px var(--accent)}
+html[data-theme="calm"] .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+html[data-theme="calm"] .btn.primary,html[data-theme="calm"] .btn.blue{background:var(--accent);color:var(--ink);box-shadow:none}
+html[data-theme="calm"] .btn.primary:hover,html[data-theme="calm"] .btn.primary:focus-visible,html[data-theme="calm"] .btn.blue:hover{background:var(--bright);color:var(--ink);box-shadow:none}
+html[data-theme="calm"] .btn[aria-pressed="true"],html[data-theme="calm"] details.replace[open]>summary{background:rgba(156,197,184,.18);color:var(--bright)}
+html[data-theme="calm"] .btn.danger{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 1px rgba(227,154,154,.55)}
+html[data-theme="calm"] .btn.danger:hover,html[data-theme="calm"] .btn.danger:focus-visible{background:rgba(227,154,154,.14);color:var(--bad)}
+html[data-theme="calm"] .chip{border-radius:999px;font-family:var(--font);text-transform:none;letter-spacing:0;transition:color .25s,border-color .25s,background .25s}
+html[data-theme="calm"] .chip:hover{color:var(--white);border-color:var(--accent)}
+html[data-theme="calm"] .chip.on{background:var(--accent);color:var(--ink);border-color:var(--accent)}
+html[data-theme="calm"] .seg{border-radius:999px}
+html[data-theme="calm"] .seg button{border-radius:999px;text-transform:none;letter-spacing:0;transition:background .25s,color .25s}
+html[data-theme="calm"] .seg button.on{background:var(--accent);color:var(--ink)}
+html[data-theme="calm"] .linkbtn,html[data-theme="calm"] .sback{color:var(--accent)}
+
+/* headings: plain sentence case, no markers or rules */
+html[data-theme="calm"] .page h1{font-size:26px;font-weight:650}
+@media (min-width:900px){html[data-theme="calm"] .page h1{font-size:32px}}
+html[data-theme="calm"] :is(.section-h,.row-h,.panel) h2{font-size:18px;font-weight:600}
+@media (min-width:900px){html[data-theme="calm"] .row-h h2{font-size:20px}}
+html[data-theme="calm"] :is(.section-h,.row-h,.panel) h2::before,html[data-theme="calm"] :is(.section-h,.row-h) h2::after{content:none}
+html[data-theme="calm"] .row-h a{font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted)}
+html[data-theme="calm"] .row-h a:hover{color:var(--white)}
+html[data-theme="calm"] .sgroup h2{font-size:17px;font-weight:600}
+
+/* hero and title page: true colour backdrop, soft slate shade, no scanlines */
+html[data-theme="calm"] .hero .bd,html[data-theme="calm"] .tp-bd{filter:none}
+html[data-theme="calm"] .hero .bd::after,html[data-theme="calm"] .tp-bd::before{content:none}
+html[data-theme="calm"] .hero .shade{background:linear-gradient(0deg,var(--bg) 2%,rgba(14,22,32,.66) 38%,rgba(14,22,32,.12) 70%,rgba(14,22,32,.45) 100%),linear-gradient(90deg,rgba(14,22,32,.72),rgba(14,22,32,0) 60%)}
+html[data-theme="calm"] .tp-bd::after{background:linear-gradient(0deg,var(--bg) 3%,rgba(14,22,32,.55) 45%,rgba(14,22,32,.2) 75%,rgba(14,22,32,.5)),linear-gradient(90deg,rgba(14,22,32,.8),rgba(14,22,32,0) 65%)}
+html[data-theme="calm"] .hero .kicker{font-family:var(--font);font-weight:600;font-size:13px;letter-spacing:.2px;text-transform:none;color:var(--accent)}
+html[data-theme="calm"] .hero .kicker::before{content:none}
+html[data-theme="calm"] .hero h1{font-size:clamp(28px,5.4vw,52px);font-weight:700;letter-spacing:-.6px;line-height:1.05;text-shadow:none}
+html[data-theme="calm"] .tp-info h1{font-size:clamp(26px,4.6vw,46px);font-weight:700;letter-spacing:-.5px;line-height:1.08}
+html[data-theme="calm"] :is(.hero .meta,.tp-meta){color:var(--muted);text-transform:none;letter-spacing:0;font-weight:500}
+html[data-theme="calm"] :is(.hero p,.overview,.bio){color:#CBD5DC}
+html[data-theme="calm"] .hero .dots button{border-radius:999px;height:4px;background:rgba(232,238,242,.25)}
+html[data-theme="calm"] .hero .dots button.on{background:var(--accent)}
+html[data-theme="calm"] .tagline{color:var(--accent)}
+html[data-theme="calm"] .arr{background:linear-gradient(90deg,rgba(14,22,32,.85),rgba(14,22,32,0))}
+html[data-theme="calm"] .arr.r{background:linear-gradient(270deg,rgba(14,22,32,.85),rgba(14,22,32,0))}
+
+/* cards and panels: rounded, no brackets, a soft sage ring on hover and focus */
+html[data-theme="calm"] :is(.poster,.wimg,.tile,.ep,.src,.panel,.sgroup,.slist,.trailer,.tp-poster,.pp .ph,.pl-msg,#toast,.sk,
+  .lv-ch,.lv-row,.lh-tile,.gm-card,.ho-ask,.upd-chip,.ioshint){border-radius:12px;clip-path:none}
+html[data-theme="calm"] :is(.score,.badge,.pill,.wlmark){border-radius:999px;clip-path:none}
+html[data-theme="calm"] .ep .still{border-radius:8px;clip-path:none}
+html[data-theme="calm"] .searchbox input{border-radius:999px;clip-path:none}
+html[data-theme="calm"] :is(.poster,.wimg,.tile,.panel)::after{content:none}
+html[data-theme="calm"] :is(.poster,.wimg){box-shadow:0 4px 14px rgba(0,0,0,.28);transition:transform .25s ease,box-shadow .25s ease}
+html[data-theme="calm"] :is(.card,.wcard,.tile){filter:none}
+@media (hover:hover){
+  html[data-theme="calm"] .card:hover .poster,html[data-theme="calm"] .wcard:hover .wimg{transform:translateY(-3px);box-shadow:0 0 0 2px var(--accent),0 10px 24px rgba(0,0,0,.32)}
+  html[data-theme="calm"] .tile:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 8px 22px rgba(0,0,0,.28)}
+  html[data-theme="calm"] .pcard:hover .face{box-shadow:0 0 0 2px var(--accent)}
+}
+html[data-theme="calm"] .card:focus-visible{filter:none}
+html[data-theme="calm"] .card:focus-visible .poster{transform:translateY(-3px);box-shadow:0 0 0 2px var(--accent)}
+html[data-theme="calm"] .wcard a:focus-visible .wimg,html[data-theme="calm"] .pcard:focus-visible .face{box-shadow:0 0 0 2px var(--accent)}
+html[data-theme="calm"] .cap{font-weight:600;text-transform:none;letter-spacing:0}
+html[data-theme="calm"] .badge{background:rgba(14,22,32,.78);border:0}
+html[data-theme="calm"] .wlmark{background:rgba(14,22,32,.8);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+html[data-theme="calm"] .prog{background:rgba(232,238,242,.18)}
+html[data-theme="calm"] .prog i{background:var(--accent);box-shadow:none}
+html[data-theme="calm"] .miniplay{background:rgba(14,22,32,.72);color:var(--white);box-shadow:none;transition:background .25s,color .25s}
+html[data-theme="calm"] .miniplay:hover{background:var(--accent);color:var(--ink)}
+html[data-theme="calm"] .pcard .face{box-shadow:0 0 0 1px var(--line);transition:box-shadow .25s}
+html[data-theme="calm"] .tile{background:linear-gradient(150deg,var(--raised),var(--card));border-color:var(--line);font-family:var(--font);font-size:16px;font-weight:600;letter-spacing:0;text-transform:none;transition:transform .25s,border-color .25s,box-shadow .25s}
+html[data-theme="calm"] .tile small{font-size:12px}
+html[data-theme="calm"] .tile::before{background:radial-gradient(rgba(156,197,184,.14),transparent 70%)}
+html[data-theme="calm"] .score{background:rgba(14,22,32,.55);border-color:var(--line);font-family:var(--font);font-size:13px;letter-spacing:0;padding:4px 11px}
+html[data-theme="calm"] .score .k{color:var(--accent)}
+html[data-theme="calm"] .ep .t{text-transform:none;letter-spacing:0}
+html[data-theme="calm"] .ep.resume{border-color:var(--accent);box-shadow:none}
+html[data-theme="calm"] .trailer .pb{background:var(--accent);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+html[data-theme="calm"] .pill{background:var(--raised);color:var(--white)}
+html[data-theme="calm"] .pill.ok{background:rgba(156,197,184,.18);color:var(--accent)}
+html[data-theme="calm"] .pill.no{background:rgba(227,154,154,.15);color:var(--bad)}
+html[data-theme="calm"] .srow{transition:background .25s}
+html[data-theme="calm"] .srow:hover{background:rgba(232,238,242,.04)}
+html[data-theme="calm"] .srow.on{background:rgba(156,197,184,.12)}
+html[data-theme="calm"] .sgroup.danger{border-color:rgba(227,154,154,.35)}
+html[data-theme="calm"] :is(select,input[type=text],input[type=search],input[type=password],input[type=url]){border-radius:10px;clip-path:none;background:rgba(14,22,32,.6);color:var(--white);border-color:var(--line);transition:border-color .25s}
+html[data-theme="calm"] :is(select,input):focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);box-shadow:none}
+html[data-theme="calm"] .searchbox svg{color:var(--muted)}
+html[data-theme="calm"] .sk{background:linear-gradient(90deg,#1A2838 0,#243445 45%,#1A2838 90%);background-size:220% 100%}
+html[data-theme="calm"] .switch input:checked{background:rgba(156,197,184,.3);box-shadow:inset 0 0 0 1px var(--accent)}
+
+/* loading: one soft ring, turning slowly */
+html[data-theme="calm"] .spinner{border:3px solid var(--raised);border-top-color:var(--accent);animation:spin 1.4s linear infinite}
+html[data-theme="calm"] .spinner::after{content:none}
+
+html[data-theme="calm"] #toast{background:rgba(36,52,69,.97);border-color:var(--line);letter-spacing:0}
+html[data-theme="calm"] #toast.ok{border-color:var(--accent)}
+html[data-theme="calm"] #toast.warn{border-color:var(--warn)}
+
+/* play here */
+html[data-theme="calm"] .src{transition:background .25s,border-color .25s}
+html[data-theme="calm"] .src:hover,html[data-theme="calm"] .src:focus-visible{border-color:var(--accent)}
+html[data-theme="calm"] .src .st i{color:rgba(232,238,242,.18)}
+html[data-theme="calm"] .src .bdg{border-radius:999px;box-shadow:none}
+html[data-theme="calm"] .src .bdg.hi{background:#3E5D55}
+html[data-theme="calm"] .src .badsrc{background:rgba(227,154,154,.22);color:var(--bad)}
+html[data-theme="calm"] .pl-back{border-radius:999px;color:var(--white);background:rgba(232,238,242,.1);box-shadow:none;text-transform:none;letter-spacing:0}
+html[data-theme="calm"] .pl-back:hover{background:rgba(156,197,184,.2);color:var(--white)}
+html[data-theme="calm"] .pl-msg{background:rgba(28,40,54,.96);border-color:var(--line)}
+html[data-theme="calm"] .pl-note{background:rgba(28,40,54,.94);border-color:rgba(156,197,184,.6);border-radius:12px}
+html[data-theme="calm"] .pl-tap i{background:rgba(28,40,54,.88);box-shadow:0 0 0 2px var(--accent),0 8px 24px rgba(0,0,0,.4)}
+html[data-theme="calm"] .pl-feed{background:rgba(14,22,32,.8);border-radius:8px}
+
+/* Ask Jarvis */
+html[data-theme="calm"] .ask-h h2{font-family:var(--font);text-transform:none;letter-spacing:0}
+html[data-theme="calm"] .ask-line b,html[data-theme="calm"] .ask-lbl{letter-spacing:0;text-transform:none}
+html[data-theme="calm"] .ask-scan{background:rgba(58,77,94,.55);border-radius:999px}
+
+/* profiles */
+html[data-theme="calm"] .who button{background:linear-gradient(150deg,var(--raised),var(--card));border-radius:16px;clip-path:none;transition:border-color .25s}
+html[data-theme="calm"] .who button:hover{border-color:var(--accent);filter:none}
+html[data-theme="calm"] .who button:focus-visible{border-color:var(--accent);filter:none;outline:2px solid var(--accent);outline-offset:3px}
+html[data-theme="calm"] .who .pav{box-shadow:inset 0 0 0 3px var(--accent)}
+html[data-theme="calm"] .who .pav.kids{box-shadow:inset 0 0 0 3px var(--warn)}
+html[data-theme="calm"] .who b{font-family:var(--font);font-size:16px;letter-spacing:0;text-transform:none}
+
+/* live tv */
+html[data-theme="calm"] :is(.lv-ch,.lv-row,.lh-tile){transition:border-color .25s}
+html[data-theme="calm"] :is(.lv-ch,.lv-row,.lh-tile):is(:hover,:focus-visible){border-color:var(--accent);filter:none}
+html[data-theme="calm"] :is(.lv-ch,.lv-row,.lh-tile):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+html[data-theme="calm"] .lv-row .lv-logo{background:rgba(14,22,32,.45);border-radius:8px}
+html[data-theme="calm"] :is(.lv-hd,.gm-h,.lh-row h2,.lh-badge){letter-spacing:.2px;text-transform:none}
+html[data-theme="calm"] .gm-h,html[data-theme="calm"] .lh-row h2{font-size:15px;font-weight:600}
+html[data-theme="calm"] .lv-bar{background:rgba(58,77,94,.6);border-radius:999px}
+html[data-theme="calm"] .lv-bar i{border-radius:999px}
+html[data-theme="calm"] .ioshint{background:rgba(28,40,54,.97)}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2302060A%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2218%22%20fill%3D%22none%22%20stroke%3D%22%2300E5FF%22%20stroke-width%3D%224%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%227%22%20fill%3D%22%237DF9FF%22/%3E%3Cg%20stroke%3D%22%2300E5FF%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M32%204v6M32%2054v6M4%2032h6M54%2032h6%22/%3E%3C/g%3E%3C/svg%3E"><meta name="apple-mobile-web-app-title" content="Jarvis">
 </head>
 <body>
 <header class="top">
-  <a class="logo" href="#/" aria-label="Jarvis home"><svg class="ring" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="11.5" fill="none" stroke="#00E5FF" stroke-opacity=".25" stroke-width="4"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="#00E5FF" stroke-width="1.4"/><path d="M28.80 16.00L31.60 16.00M27.60 22.70L29.51 23.80M22.70 27.60L23.80 29.51M16.00 28.80L16.00 31.60M9.30 27.60L8.20 29.51M4.40 22.70L2.49 23.80M3.20 16.00L0.40 16.00M4.40 9.30L2.49 8.20M9.30 4.40L8.20 2.49M16.00 3.20L16.00 0.40M22.70 4.40L23.80 2.49M27.60 9.30L29.51 8.20" stroke="#00E5FF" stroke-width="1.4"/><circle cx="16" cy="16" r="4" fill="#00E5FF" fill-opacity=".25"/><circle cx="16" cy="16" r="2" fill="#7DF9FF"/></svg>JARVIS</a>
+  <a class="logo" href="#/" aria-label="Jarvis home"><svg class="ring" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="11.5" fill="none" stroke="#00E5FF" stroke-opacity=".25" stroke-width="4"/><circle cx="16" cy="16" r="11.5" fill="none" stroke="#00E5FF" stroke-width="1.4"/><path d="M28.80 16.00L31.60 16.00M27.60 22.70L29.51 23.80M22.70 27.60L23.80 29.51M16.00 28.80L16.00 31.60M9.30 27.60L8.20 29.51M4.40 22.70L2.49 23.80M3.20 16.00L0.40 16.00M4.40 9.30L2.49 8.20M9.30 4.40L8.20 2.49M16.00 3.20L16.00 0.40M22.70 4.40L23.80 2.49M27.60 9.30L29.51 8.20" stroke="#00E5FF" stroke-width="1.4"/><circle cx="16" cy="16" r="4" fill="#00E5FF" fill-opacity=".25"/><circle cx="16" cy="16" r="2" fill="#7DF9FF"/></svg>Jarvis</a>
   <nav class="links" aria-label="Main">
     <a href="#/" data-nav="home">Home</a>
     <a href="#/browse" data-nav="browse">Browse</a>
@@ -686,6 +860,21 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
+/** Settings > Look: "calm" on this device only (never synced). Unset means the Jarvis HUD look. The <head> script
+ *  applies it before the page draws; applyTheme switches it live. */
+const THEME_KEY = "mcdtv_web_theme";
+const THEME_NAME = { jarvis: "Jarvis", calm: "Calm" };
+const THEME_BAR = { jarvis: "#02060A", calm: "#0E1620" };
+const themeNow = () => LS.get(THEME_KEY) === "calm" ? "calm" : "jarvis";
+function applyTheme(t) {
+  const calm = t === "calm", root = document.documentElement;
+  if (calm) root.dataset.theme = "calm"; else delete root.dataset.theme;
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = THEME_BAR[calm ? "calm" : "jarvis"];
+}
+function setTheme(t) {
+  if (t === "calm") LS.set(THEME_KEY, "calm"); else LS.del(THEME_KEY);
+  applyTheme(themeNow());
+}
 function readJSON(k) { try { return JSON.parse(LS.get(k) || "null"); } catch { return null; } }
 
 // ---------- recent errors (Settings > Recent errors) ----------
@@ -6867,7 +7056,7 @@ function renderProfiles(v, next) {
 // nothing set up before has to be entered again.
 const SET_CATS = [
   ["tvs", "Your TVs"], ["profile", "Profile"], ["rd", "Real-Debrid"], ["playback", "Playback"],
-  ["addons", "Addons"], ["keys", "Keys"], ["house", "House and devices"], ["help", "Help"],
+  ["look", "Look"], ["addons", "Addons"], ["keys", "Keys"], ["house", "House and devices"], ["help", "Help"],
 ];
 // When each key last worked on this device: {tmdb, rdt, rdc} in ms. Written at most once a minute per key.
 const VERIFIED_KEY = "mcdtv_web_verified";
@@ -6908,6 +7097,7 @@ function setSummary(id) {
     case "profile": return S.profile ? "Watching as " + profileName(S.profile) : "Not chosen";
     case "rd": return rdHere() ? "Connected on this device" : rdViaTv() ? "Connected through your TV" : "Not connected";
     case "playback": return (extPref() === "ask" ? "Ask each time" : EXT_NAME[extPref()] || "VLC") + " · Quality " + QUALITY_NAME[qualityMode()] + " · " + (S.originPref ? oName[S.originPref] : "Titles as on the TV");
+    case "look": return THEME_NAME[themeNow()];
     case "addons": { const tv = ((S.init && S.init.addon_urls) || []).filter(okUrl).length, mine = myAddons().length;
       return (tv ? tv + " from your TV" : "None from your TV") + (mine ? ", " + mine + " added here" : ""); }
     case "keys": return "TMDB " + (k.fromTv ? "from your TV" : S.manualTmdb ? "saved here" : "not set") + " · Ask Jarvis " + (jarvisKey() ? "ready" : jarvisLocalOn() ? "on" : "through the TV");
@@ -6989,6 +7179,14 @@ function setPlaybackHTML() {
       <label class="switch"><input type="checkbox" id="gxOn" ${LS.get(GX_OFF) !== "1" ? "checked" : ""}> Guide for free channels</label>
       <p class="muted">Adds listings for free streaming channels your provider's guide skips, from the Roku and Plex guides. Your provider's guide does not change. This device only.</p></section>`;
 }
+function setLookHTML() {
+  const t = themeNow();
+  return `<section class="sgroup"><h2>Look</h2>
+      <p class="muted">Choose how Jarvis looks on this device.</p>
+      <div class="seg" role="radiogroup" aria-label="Look">${Object.entries(THEME_NAME).map(([id, n]) =>
+        `<button type="button" role="radio" aria-checked="${id === t}" class="${id === t ? "on" : ""}" data-act="settheme" data-look="${id}">${n}</button>`).join("")}</div>
+      <p class="muted" style="margin-top:10px">Jarvis is the bright cyan look. Calm is soft blue and sage, with rounded shapes. This device only. Your TVs keep their own look.</p></section>`;
+}
 function setKeysHTML() {
   const k = keys(), i = S.init || {};
   const tmdbState = k.fromTv ? pill(true, "Connected · from your TV") : S.manualTmdb ? pill(true, "Saved on this device") : pill(false, "Not set");
@@ -7055,7 +7253,7 @@ function renderSettings(v) {
   const cur = SET_CATS.some(([id]) => id === asked) ? asked : wide ? "tvs" : "";
   const name = (SET_CATS.find(([id]) => id === cur) || [])[1] || "";
   const body = {
-    tvs: setTvsHTML, profile: setProfileHTML, rd: () => `<div id="rdPanel">${rdPanelHTML()}</div>`, playback: setPlaybackHTML,
+    tvs: setTvsHTML, profile: setProfileHTML, rd: () => `<div id="rdPanel">${rdPanelHTML()}</div>`, playback: setPlaybackHTML, look: setLookHTML,
     addons: () => `<section class="sgroup"><h2>Addons on this device</h2>${addonPanelHTML()}</section>`, keys: setKeysHTML, house: setHouseHTML, help: setHelpHTML,
   }[cur];
   v.innerHTML = `<div class="page settings${cur ? " has-cat" : ""}">
@@ -7429,6 +7627,8 @@ document.addEventListener("click", async (e) => {
       const val = $("#tmdbIn").value.trim(); if (!val) return;
       S.manualTmdb = val; LS.set("mcdtv_web_tmdb", val); tcache.clear(); toast("TMDB key saved", "ok"); renderSettings($("#view")); break;
     }
+    case "settheme": setTheme(d.look); toast(THEME_NAME[themeNow()] + " look on", "ok"); renderSettings($("#view"));
+      { const f = $(`[data-act="settheme"][data-look="${themeNow()}"]`); if (f) f.focus({ preventScroll: true }); } break;
     case "setprofile": setProfile(d.pid); toast("Watching as " + profileName(d.pid), "ok"); renderSettings($("#view")); break;
     case "photopick": { const inp = $("#photoIn"); if (!inp || !PIDS.includes(d.pid)) break; inp.dataset.pid = d.pid; inp.value = ""; inp.click(); break; }
     case "photodel":
@@ -7499,7 +7699,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-11-09.2";
+const BUILD = "2026-11-14.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;
