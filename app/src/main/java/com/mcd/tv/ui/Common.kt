@@ -395,7 +395,7 @@ fun FocusMemory?.tileModifier(key: String, index: Int, restoreAt: Int): Modifier
 @Composable
 fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false) {
     var focused by remember { mutableStateOf(false) }
-    val shape = HudShapeSmall
+    val shape = HudButtonShape
     val solid = primary || focused
     val fill = when {
         primary && focused -> McdColors.AccentBright
@@ -407,7 +407,7 @@ fun ActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
             .onFocusChanged { focused = it.isFocused }
             .graphicsLayer { val s = if (focused) 1.05f else 1f; scaleX = s; scaleY = s }
             .hudGlow(focused, shape, McdColors.Accent)
-            .hudBrackets(focused, McdColors.AccentBright, inset = (-4).dp, arm = 7.dp, stroke = 1.5.dp)
+            .hudBrackets(focused && !McdLook.calm, McdColors.AccentBright, inset = (-4).dp, arm = 7.dp, stroke = 1.5.dp)
             .clip(shape)
             .background(fill)
             .border(1.dp, if (solid) Color.Transparent else McdColors.Accent.copy(alpha = 0.75f), shape)

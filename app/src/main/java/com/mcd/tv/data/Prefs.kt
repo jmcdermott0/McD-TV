@@ -101,6 +101,14 @@ object Prefs {
         get() = sp.getBoolean("holiday_mode", true)
         set(v) = sp.edit().putBoolean("holiday_mode", v).apply()
 
+    /**
+     * Settings > This TV > Look: "jarvis" (default) or "calm" (see Look.kt). This TV only, never synced.
+     * MainActivity applies it before the first frame.
+     */
+    var look: Look
+        get() = Look.fromKey(sp.getString(Look.PREF_KEY, null))
+        set(v) = put(Look.PREF_KEY, v.key)
+
     /** Like HuberTV's "US Only": limit lists to US releases / US streaming providers. */
     var usOnly: Boolean
         get() = sp.getBoolean("us_only", true)

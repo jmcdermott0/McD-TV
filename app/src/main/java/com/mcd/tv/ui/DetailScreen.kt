@@ -159,7 +159,7 @@ private fun DetailBody(nav: Nav, d: Details) {
                     AsyncImage(
                         Tmdb.img(t.poster, "w342"), t.name, contentScale = ContentScale.Crop,
                         modifier = Modifier.width(160.dp).height(240.dp)
-                            .hudBrackets(true, McdColors.Accent, inset = (-5).dp, arm = 12.dp, stroke = 1.5.dp)
+                            .hudBrackets(!McdLook.calm, McdColors.Accent, inset = (-5).dp, arm = 12.dp, stroke = 1.5.dp)
                             .clip(HudShape).background(McdColors.Card).border(1.dp, McdColors.Line, HudShape),
                     )
                     Spacer(Modifier.width(28.dp))

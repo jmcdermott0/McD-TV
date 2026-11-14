@@ -204,6 +204,8 @@ class MainActivity : ComponentActivity() {
         }
         ScreenAwake.guard.attach(keepOnWindow)
         Prefs.init(this)
+        // The saved look (Settings > This TV > Look), set before setContent so the first frame is already right.
+        com.mcd.tv.ui.McdLook.look = Prefs.look
         // Why the Wall stopped last time (sleep, the screensaver, a crash, Android ending Jarvis), and whether to
         // open it again because Jarvis ended while the Wall was in front. See WallWatch.
         com.mcd.tv.data.WallRecorder.installCrashHook()
@@ -296,6 +298,8 @@ class MainActivity : ComponentActivity() {
         // Automated QA only: "--ei qa_day 20261028" makes Picked for <name> use that day, so the run can compare two days;
         // "--es qa_list 'movie|603|The Matrix'" puts a title on the active profile's My List (Home's My List row).
         if (intent?.getBooleanExtra("qa_mode", false) == true) {
+            // "--es qa_look calm" shows the Calm look for this run only (nothing is saved).
+            intent?.getStringExtra("qa_look")?.let { com.mcd.tv.ui.McdLook.look = com.mcd.tv.data.Look.fromKey(it) }
             intent?.getIntExtra("qa_day", 0)?.takeIf { it > 0 }?.let { com.mcd.tv.data.Recommender.qaDay = it }
             // "--ei qa_holiday_day 20261201" sets the date Holiday mode uses (season and shelf order).
             intent?.getIntExtra("qa_holiday_day", 0)?.takeIf { it > 0 }?.let { com.mcd.tv.data.HolidayHub.qaDay = it }

@@ -201,8 +201,8 @@ fun BigButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, 
         modifier
             .onFocusChanged { focused = it.isFocused }
             .graphicsLayer { val s = if (focused) 1.04f else 1f; scaleX = s; scaleY = s }
-            .hudGlow(focused, HudShape, base)
-            .clip(HudShape)
+            .hudGlow(focused, HudButtonShape, base)
+            .clip(HudButtonShape)
             .background(if (focused) (if (highlight) McdColors.Amber else McdColors.AccentBright) else base.copy(alpha = 0.85f))
             .clickable(onClick = onClick)
             .widthIn(min = 360.dp)

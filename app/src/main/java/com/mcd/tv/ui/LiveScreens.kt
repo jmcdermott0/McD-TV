@@ -55,6 +55,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -165,7 +166,7 @@ internal class FocusedChannel {
     var home by mutableStateOf(false)
 }
 
-private val InkOnWhite = McdColors.Ink
+private val InkOnWhite: Color get() = McdColors.Ink
 private val StarGold = Color(0xFFFFC94D)
 
 internal fun countText(n: Int): String = "%,d".format(n)
@@ -1051,7 +1052,7 @@ internal fun ChannelGrid(
     }
 }
 
-private val LiveCardShape = HudShape
+private val LiveCardShape: Shape get() = HudShape
 
 /**
  * One channel in a section list: logo, name (gold star on favorites), then NOW: title, "8:00 PM to 9:00 PM"

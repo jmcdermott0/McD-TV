@@ -340,6 +340,19 @@ private fun ThisTvCategory(ctx: SettingsCtx, changed: () -> Unit) {
     InfoRow("Model", android.os.Build.MODEL.orEmpty().ifBlank { "Unknown" })
     InfoRow("Maker", android.os.Build.MANUFACTURER.orEmpty().ifBlank { "Unknown" })
     InfoRow("Jarvis version", com.mcd.tv.BuildConfig.VERSION_NAME)
+    // Pref ui_look (data/Look.kt): this TV only, never synced. Applies at once.
+    SettingsSection("Look")
+    val looks = com.mcd.tv.data.Look.entries
+    val look = McdLook.look
+    DialogRow(ctx, ctx.row(), "Look", look.label, RowEnd.Change) {
+        SettingsDialog.Choice("Look", looks.map { it.label }, looks.indexOf(look).coerceAtLeast(0)) { i ->
+            val picked = looks[i]
+            Prefs.look = picked
+            McdLook.look = picked
+            changed()
+        }
+    }
+    SettingsNote(look.blurb)
     SettingsSection("Start-up")
     ToggleRow(ctx.row(), "Intro on launch", "Play the Jarvis intro when the app opens.", Prefs.playIntro) { Prefs.playIntro = it }
     SettingsRow("Replay intro", { ctx.nav.push(Screen.Intro) }, ctx.row().modifier, value = "Watch the intro now.")

@@ -332,7 +332,7 @@ private fun ColumnScope.AgendaPanel(feed: Wall.Feed?, now: Long, error: String?,
 /** A one-off event coming up: "In 3 weeks", the title, the dates and the place. */
 @Composable
 private fun HeadsUpCard(feed: Wall.Feed, spot: WallSpotlight.Spot) {
-    val color = Color(feed.sources.getOrNull(spot.event.source)?.color ?: 0xFF00E5FF)
+    val color = wallSourceColor(feed.sources.getOrNull(spot.event.source)?.color)
     Row(
         Modifier.fillMaxWidth().height(IntrinsicSize.Min).border(1.dp, McdColors.Accent.copy(alpha = 0.6f), HudShapeSmall)
             .background(McdColors.Accent.copy(alpha = 0.08f), HudShapeSmall),
@@ -405,7 +405,7 @@ private fun agendaRows(feed: Wall.Feed, today: Int, now: Long): List<AgendaRow> 
 @Composable
 private fun EventRow(feed: Wall.Feed, e: Wall.Event, day: Int) {
     val src = feed.sources.getOrNull(e.source)
-    val color = Color(src?.color ?: 0xFF00E5FF)
+    val color = wallSourceColor(src?.color)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(4.dp).height(36.dp).background(color))
         Spacer(Modifier.width(10.dp))
@@ -518,7 +518,7 @@ private fun MonthCell(feed: Wall.Feed?, day: Int, today: Int, inMonth: Boolean, 
         )
         val max = 3
         events.take(max).forEach { e ->
-            val color = Color(feed?.sources?.getOrNull(e.source)?.color ?: 0xFF00E5FF)
+            val color = wallSourceColor(feed?.sources?.getOrNull(e.source)?.color)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(6.dp).background(color, CircleShape))
                 Spacer(Modifier.width(3.dp))
@@ -590,3 +590,6 @@ private fun dueLabel(e: Wall.Event, today: Int): String {
         else -> SimpleDateFormat("EEE M/d", Locale.US).format(Day.calendar(d).time)
     }
 }
+
+/** A Wall source's color. No color, or the feed's default cyan, follows the active look's accent. */
+private fun wallSourceColor(c: Long?): Color = if (c == null || c == 0xFF00E5FFL) McdColors.Accent else Color(c)
