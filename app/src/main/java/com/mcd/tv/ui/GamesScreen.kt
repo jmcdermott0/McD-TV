@@ -2,6 +2,7 @@ package com.mcd.tv.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,7 +67,11 @@ import com.mcd.tv.data.MyTeams
 import com.mcd.tv.data.Game
 import com.mcd.tv.data.GameChannels
 import com.mcd.tv.data.GameMatcher
+import com.mcd.tv.data.GameOdds
 import com.mcd.tv.data.Games
+import com.mcd.tv.data.Http
+import com.mcd.tv.data.Odds
+import com.mcd.tv.data.OddsTicks
 import com.mcd.tv.data.League
 import com.mcd.tv.data.LiveIndex
 import com.mcd.tv.data.LiveOrganizer
@@ -89,7 +94,7 @@ import java.util.Locale
 // ============================== Games: every game this week, and where to watch it ==============================
 
 /** The star and accent on a favorite team's game. */
-val MyTeamGold = androidx.compose.ui.graphics.Color(0xFFFFC94D)
+val MyTeamGold = androidx.compose.ui.graphics.Color(0xFFFFB020)
 
 /** A league's schedule as the screens see it. */
 sealed interface LeagueLoad {
@@ -199,6 +204,45 @@ object GameBoard {
     }
 
     fun gameCount(l: League): Int? = (state[l] as? LeagueLoad.Ok)?.schedule?.games?.size
+}
+
+/**
+ * In-game lines for the live games on screen (Odds.liveFromCore, ESPN's core odds endpoint). Each live game card
+ * asks while it is on screen; one request per game per 30 s at most, none for games off screen or not live.
+ * A failed read waits the same 30 s and the card keeps the pre-game line meanwhile. Main thread.
+ */
+object LiveOdds {
+    private const val TTL_MS = 30_000L
+    val lines = mutableStateMapOf<String, GameOdds>()
+
+    /** Which prices moved on the last read, per game (green / red tint until the next read). */
+    val ticks = mutableStateMapOf<String, OddsTicks>()
+    private val at = HashMap<String, Long>()
+    private val busy = HashSet<String>()
+
+    suspend fun refresh(g: Game) {
+        if (!g.live) return
+        val key = g.key
+        val now = System.currentTimeMillis()
+        if (key in busy || now - (at[key] ?: 0L) < TTL_MS) return
+        busy.add(key)
+        try {
+            val body = Http.get(Odds.coreUrl(g), timeoutMs = 8_000)
+            at[key] = System.currentTimeMillis()
+            val o = withContext(Dispatchers.Default) { Odds.liveFromCore(body) } ?: return
+            val before = lines[key]
+            if (before != o) {
+                ticks[key] = if (before != null) OddsTicks.between(before, o) else OddsTicks()
+                lines[key] = o
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            at[key] = System.currentTimeMillis()
+        } finally {
+            busy.remove(key)
+        }
+    }
 }
 
 /**
@@ -505,7 +549,7 @@ private fun GamesGrid(
     val card: @Composable (Game, Boolean) -> Unit = { g, compact -> gameCard(g, compact, false) }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(320.dp),
+        columns = GridCells.Adaptive(if (Prefs.isKidsProfile) 320.dp else 380.dp),
         state = gridState,
         contentPadding = PaddingValues(start = 6.dp, end = 32.dp, top = 6.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -582,8 +626,12 @@ private fun SectionLabel(text: String, color: androidx.compose.ui.graphics.Color
 // ============================== Game card ==============================
 
 /**
- * Score-bug style card: away over home with logos, records and scores; status (LIVE + clock, kick-off time
- * or Final), networks, and how many of your channels carry it. Menu (☰) or a long press lists the channels.
+ * Sportsbook-style game card. Header: status (LIVE + clock, start time or Final) and networks. Then away over home
+ * with logos, records and scores and, when the book has lines, three market cells per side like a sportsbook:
+ * SPREAD (line and price), TOTAL (over / under and price) and MONEYLINE. Footer: each side's win chance from the
+ * moneylines and how many of your channels carry the game. Live games swap to in-game lines (LiveOdds) and tint a
+ * price green or red when it moved since the last read. No lines on the Kids profile, on finals, or when compact.
+ * Menu (☰) or a long press lists the channels.
  */
 @Composable
 fun GameCard(
@@ -602,13 +650,44 @@ fun GameCard(
     val showScore = g.state != "pre" && (awayScore != null || homeScore != null)
     val awayLeads = (awayScore ?: 0) > (homeScore ?: 0)
     val homeLeads = (homeScore ?: 0) > (awayScore ?: 0)
+    val kids = Prefs.isKidsProfile
+    val board = !kids && !compact && !g.final
+    if (board && g.live) {
+        LaunchedEffect(g.key) {
+            while (true) {
+                LiveOdds.refresh(g)
+                delay(30_000)
+            }
+        }
+    }
+    val liveLines = if (board && g.live) LiveOdds.lines[g.key] else null
+    val odds: GameOdds? = if (!board) null else (liveLines ?: g.odds)?.takeUnless { it.isEmpty }
+    val ticks = if (liveLines != null) LiveOdds.ticks[g.key] else null
+    val teams = if (mine) GameBoard.myTeams() else emptyList()
+    val awayFav = teams.any { it.league == g.league && it.matches(g.away) }
+    val homeFav = teams.any { it.league == g.league && it.matches(g.home) }
+    val channelText = when {
+        !hasPlaylist -> "Add a playlist to watch"
+        channels == null -> "Finding channels…"
+        channels.size == 1 -> "1 channel"
+        channels.size > 1 -> "${channels.size} channels"
+        else -> "No channel found"
+    }
+    val channelColor = if (hasPlaylist && (channels?.size ?: 0) > 0) McdColors.AccentBright else McdColors.Muted
+
     HudCard(
         onClick = onClick,
         onLongClick = onMenu,
         focusedScale = 1.03f,
         modifier = modifier
             .fillMaxWidth()
-            .height(if (compact) 84.dp else 112.dp)
+            .height(
+                when {
+                    compact -> 84.dp
+                    odds != null -> 146.dp
+                    else -> 112.dp
+                },
+            )
             .onPreviewKeyEvent { e ->
                 if (e.key == Key.Menu) {
                     if (e.type == KeyEventType.KeyUp) onMenu()
@@ -621,54 +700,209 @@ fun GameCard(
         if (g.live || mine) {
             Box(Modifier.align(Alignment.CenterStart).width(3.dp).fillMaxHeight().background(if (g.live) McdColors.LiveRed else MyTeamGold))
         }
-        Row(
-            Modifier.fillMaxSize().padding(start = 14.dp, end = 12.dp, top = if (compact) 8.dp else 10.dp, bottom = if (compact) 8.dp else 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)) {
-                val teams = if (mine) GameBoard.myTeams() else emptyList()
-                TeamRow(g.away, showScore, dim = g.final && homeLeads, compact = compact, fav = teams.any { it.league == g.league && it.matches(g.away) })
-                TeamRow(g.home, showScore, dim = g.final && awayLeads, compact = compact, fav = teams.any { it.league == g.league && it.matches(g.home) })
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(
-                Modifier.width(120.dp).fillMaxHeight(),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.SpaceBetween,
+        if (odds == null) {
+            Row(
+                Modifier.fillMaxSize().padding(start = 14.dp, end = 12.dp, top = if (compact) 8.dp else 10.dp, bottom = if (compact) 8.dp else 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                when {
-                    g.live -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        LiveBadge()
-                        Spacer(Modifier.width(6.dp))
-                        Text(g.detail, color = McdColors.LiveRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)) {
+                    TeamRow(g.away, showScore, dim = g.final && homeLeads, compact = compact, fav = awayFav)
+                    TeamRow(g.home, showScore, dim = g.final && awayLeads, compact = compact, fav = homeFav)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(
+                    Modifier.width(120.dp).fillMaxHeight(),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    GameStatus(g, withDay)
+                    if (g.broadcasts.isNotEmpty()) {
+                        Text(
+                            g.broadcasts.take(3).joinToString(" · ").uppercase(),
+                            style = hudLabelStyle(9.sp, McdColors.Accent),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
-                    g.final -> Text(g.detail.ifBlank { "Final" }, color = McdColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                    else -> Text(startText(g, withDay), color = McdColors.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                }
-                if (g.broadcasts.isNotEmpty()) {
-                    Text(
-                        g.broadcasts.take(3).joinToString(" · ").uppercase(),
-                        style = hudLabelStyle(9.sp, McdColors.Accent),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (!compact || !g.final) {
-                    val n = channels?.size ?: 0
-                    Text(
-                        when {
-                            !hasPlaylist -> "Add a playlist to watch"
-                            channels == null -> "Finding channels…"
-                            n == 1 -> "1 channel"
-                            n > 1 -> "$n channels"
-                            else -> "No channel found"
-                        },
-                        color = if (hasPlaylist && n > 0) McdColors.AccentBright else McdColors.Muted,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                    )
+                    if (!compact || !g.final) Text(channelText, color = channelColor, fontSize = 11.sp, maxLines = 1)
                 }
             }
+        } else {
+            Column(
+                Modifier.fillMaxSize().padding(start = 14.dp, end = 12.dp, top = 9.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                // Header: status and networks on the left, the market names over their columns on the right.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(16.dp)) {
+                    GameStatus(g, withDay)
+                    if (g.broadcasts.isNotEmpty()) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            g.broadcasts.take(2).joinToString(" · ").uppercase(),
+                            style = hudLabelStyle(9.sp, McdColors.Muted),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    MarketHead("SPREAD")
+                    Spacer(Modifier.width(MARKET_GAP))
+                    MarketHead("TOTAL")
+                    Spacer(Modifier.width(MARKET_GAP))
+                    MarketHead("MONEY")
+                }
+                BookRow(
+                    t = g.away, showScore = showScore, fav = awayFav,
+                    spread = odds.awaySpread, spreadPrice = odds.awaySpreadPrice, spreadTick = ticks?.awaySpread ?: 0,
+                    total = if (odds.hasTotal) "O " + odds.total else "", totalPrice = odds.overPrice, totalTick = ticks?.over ?: 0,
+                    ml = odds.awayMl, mlTick = ticks?.awayMl ?: 0, mlBest = odds.hasMoneyline && (Odds.implied(odds.awayMl) ?: 0.0) > (Odds.implied(odds.homeMl) ?: 0.0),
+                )
+                BookRow(
+                    t = g.home, showScore = showScore, fav = homeFav,
+                    spread = odds.homeSpread, spreadPrice = odds.homeSpreadPrice, spreadTick = ticks?.homeSpread ?: 0,
+                    total = if (odds.hasTotal) "U " + odds.total else "", totalPrice = odds.underPrice, totalTick = ticks?.under ?: 0,
+                    ml = odds.homeMl, mlTick = ticks?.homeMl ?: 0, mlBest = odds.hasMoneyline && (Odds.implied(odds.homeMl) ?: 0.0) >= (Odds.implied(odds.awayMl) ?: 0.0),
+                )
+                // Footer: win chance bar and text, the line source, and the channels.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(14.dp)) {
+                    val w = odds.winChance
+                    if (w != null) {
+                        Row(Modifier.width(84.dp).height(4.dp)) {
+                            if (w.away > 0) Box(Modifier.weight(w.away.toFloat()).fillMaxHeight().background(McdColors.Muted))
+                            if (w.draw > 0) {
+                                Spacer(Modifier.width(2.dp))
+                                Box(Modifier.weight(w.draw.toFloat()).fillMaxHeight().background(McdColors.Line))
+                            }
+                            if (w.home > 0) {
+                                Spacer(Modifier.width(2.dp))
+                                Box(Modifier.weight(w.home.toFloat()).fillMaxHeight().background(McdColors.Accent))
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "${g.away.abbr} ${w.away}%" + (if (w.draw > 0) "  ·  Draw ${w.draw}%" else "") + "  ·  ${g.home.abbr} ${w.home}%",
+                            color = McdColors.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                        )
+                        if (odds.drawMl.isNotEmpty()) {
+                            Spacer(Modifier.width(8.dp))
+                            Text("Draw ${odds.drawMl}", color = tickColor(ticks?.drawMl ?: 0, McdColors.Accent), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        if (odds.live) "LIVE ODDS" else odds.provider.uppercase(),
+                        style = hudLabelStyle(8.sp, if (odds.live) McdColors.LiveRed else McdColors.Muted),
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(channelText, color = channelColor, fontSize = 11.sp, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+private val MARKET_W = 64.dp
+private val MARKET_GAP = 5.dp
+private val PriceUp = androidx.compose.ui.graphics.Color(0xFF3BE38A)
+private val PriceDown = androidx.compose.ui.graphics.Color(0xFFFF5468)
+
+private fun tickColor(tick: Int, base: androidx.compose.ui.graphics.Color) = when {
+    tick > 0 -> PriceUp
+    tick < 0 -> PriceDown
+    else -> base
+}
+
+@Composable
+private fun GameStatus(g: Game, withDay: Boolean) {
+    when {
+        g.live -> Row(verticalAlignment = Alignment.CenterVertically) {
+            LiveBadge()
+            Spacer(Modifier.width(6.dp))
+            Text(g.detail, color = McdColors.LiveRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        g.final -> Text(g.detail.ifBlank { "Final" }, color = McdColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        else -> Text(startText(g, withDay), color = McdColors.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun MarketHead(text: String) {
+    Box(Modifier.width(MARKET_W), contentAlignment = Alignment.Center) {
+        Text(text, style = hudLabelStyle(8.sp, McdColors.Muted), maxLines = 1)
+    }
+}
+
+/** One side of a game on the odds board: team, score, then the spread, total and moneyline cells. */
+@Composable
+private fun BookRow(
+    t: TeamLine,
+    showScore: Boolean,
+    fav: Boolean,
+    spread: String,
+    spreadPrice: String,
+    spreadTick: Int,
+    total: String,
+    totalPrice: String,
+    totalTick: Int,
+    ml: String,
+    mlTick: Int,
+    mlBest: Boolean,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(34.dp)) {
+        AsyncImage(t.logo, t.name, contentScale = ContentScale.Fit, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                (if (t.rank > 0) "#${t.rank} " else "") + t.short,
+                style = broadcastStyle(16.sp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val sub = listOfNotNull(t.record.takeIf { it.isNotBlank() }, if (fav) "MY TEAM" else null).joinToString("  ·  ")
+            if (sub.isNotEmpty()) Text(sub, style = hudLabelStyle(8.sp, if (fav) MyTeamGold else McdColors.Muted), maxLines = 1)
+        }
+        if (showScore) {
+            Text(t.score, style = hudDisplayStyle(20.sp, McdColors.White, 0.sp), maxLines = 1)
+            Spacer(Modifier.width(10.dp))
+        }
+        OddsCell(spread, spreadPrice, spreadTick, emphasize = false)
+        Spacer(Modifier.width(MARKET_GAP))
+        OddsCell(total, totalPrice, totalTick, emphasize = false)
+        Spacer(Modifier.width(MARKET_GAP))
+        OddsCell(ml, "", mlTick, emphasize = mlBest)
+    }
+}
+
+/** A market cell: the line on top and its price under it (the moneyline is one bigger price). "OFF" when off the board. */
+@Composable
+private fun OddsCell(top: String, price: String, tick: Int, emphasize: Boolean) {
+    val border = when {
+        tick > 0 -> PriceUp
+        tick < 0 -> PriceDown
+        emphasize -> McdColors.Accent.copy(alpha = 0.6f)
+        else -> McdColors.Line
+    }
+    Column(
+        Modifier
+            .width(MARKET_W)
+            .height(32.dp)
+            .background(McdColors.Raised, HudShapeTiny)
+            .border(1.dp, border, HudShapeTiny),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        if (top.isEmpty()) {
+            Text("OFF", style = hudLabelStyle(8.sp, McdColors.Muted), maxLines = 1)
+        } else if (price.isEmpty()) {
+            Text(top, style = hudDisplayStyle(15.sp, tickColor(tick, McdColors.Accent), 0.sp), maxLines = 1)
+        } else {
+            Text(top, style = hudDisplayStyle(12.sp, McdColors.White, 0.sp), maxLines = 1)
+            Text(price, color = tickColor(tick, McdColors.Accent), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
     }
 }

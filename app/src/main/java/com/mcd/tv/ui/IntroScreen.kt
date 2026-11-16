@@ -53,9 +53,11 @@ import com.mcd.tv.data.SnowField
 import kotlinx.coroutines.delay
 
 /*
- * Jarvis intro: a pre-rendered 5.6 s HUD boot sequence (res/raw/intro_video.mp4) with an
- * original synth sting and the "All systems online" voiceover and the full JARVIS name. Rendered offline so it can use
- * bloom and glow effects that would be too heavy to draw live on a Fire TV Stick.
+ * Jarvis intro: a pre-rendered 5.6 s "Night Ops" sequence at 60 fps (res/raw/intro_video.mp4, made by
+ * tools/intro/make_intro.py with its own synthesized sound): a hairline of light opens and pulls in, the diamond mark
+ * ignites with a shockwave at 1.1 s, angled panels slide in while JARVIS assembles, and the wordmark locks with a
+ * second hit at 4.3 s ("ALL SYSTEMS ONLINE"). Rendered offline so it can use bloom and glow effects that would be too
+ * heavy to draw live on a Fire TV Stick. The two hits keep the first intro's beat times (HolidayIntro.HIT1_MS, HIT2_MS).
  * Any remote button skips straight to the home screen. If the video cannot play, the
  * intro ends at once instead of showing a black screen.
  *

@@ -47,6 +47,8 @@ MAIN_FILES+=(Chapters.kt PlayNext.kt)
 MAIN_FILES+=(SourcePick.kt SleepTimer.kt)
 # Captions default to English: the pure decider (tests in CaptionsTest).
 MAIN_FILES+=(Captions.kt)
+# Game lines (spread, total, moneyline) from ESPN: pure parser (tests in OddsTest).
+MAIN_FILES+=(Odds.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

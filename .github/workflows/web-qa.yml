@@ -57,6 +57,12 @@ jobs:
           curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
           sleep 1
           node truecrime-qa.mjs
+      - name: Odds board in the browser (real ESPN lines, pre-game and live; none on Kids)
+        working-directory: tools/webtest
+        run: |
+          curl -s -o /dev/null http://127.0.0.1:8781/index.html || (python3 srv.py &)
+          sleep 1
+          node odds-qa.mjs
       - name: True Crime screenshots
         if: always()
         uses: actions/upload-artifact@v4
