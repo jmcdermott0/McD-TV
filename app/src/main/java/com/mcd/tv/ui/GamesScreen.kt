@@ -735,17 +735,15 @@ fun GameCard(
                 // Header: status and networks on the left, the market names over their columns on the right.
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(16.dp)) {
                     GameStatus(g, withDay)
-                    if (g.broadcasts.isNotEmpty()) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            g.broadcasts.take(2).joinToString(" · ").uppercase(),
-                            style = hudLabelStyle(9.sp, McdColors.Muted),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
+                    // Takes all the free width, so the market names sit right over their columns (flush right).
+                    Text(
+                        g.broadcasts.take(2).joinToString(" · ").uppercase(),
+                        style = hudLabelStyle(9.sp, McdColors.Muted),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
                     MarketHead("SPREAD")
                     Spacer(Modifier.width(MARKET_GAP))
                     MarketHead("TOTAL")
