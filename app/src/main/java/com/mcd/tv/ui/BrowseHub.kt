@@ -102,37 +102,35 @@ private suspend fun loadBrowse(kids: Boolean, profile: String): BrowseData = cor
     val tp = async { safe({ if (kids) Tmdb.kidsMovies(genreId = 16, topRated = true) else Tmdb.topRated("movie") }, none) }
     val sh = async { safe({ if (kids) Tmdb.kidsShows() else Tmdb.popular("tv") }, none) }
     val tc = async { if (kids) none else safe({ com.mcd.tv.data.TrueCrimeHub.shelf(profile) }, none) }
-    val coll = async { safe({ Tmdb.collection(POPULAR_COLLECTIONS.first()).backdrop }, null) }
-    val hist = async { if (kids) null else safe({ com.mcd.tv.data.HistoryHub.shelf(HubSection.entries.first().id, profile).firstNotNullOfOrNull { it.backdrop } }, null) }
-    val hol = async { if (com.mcd.tv.data.HolidayHub.showFor()) safe({ com.mcd.tv.data.HolidayHub.shelf(profile).firstNotNullOfOrNull { it.backdrop } }, null) else null }
+    fun arts(l: List<Title>) = l.mapNotNull { it.backdrop }
+    val coll = async { safe({ Tmdb.collection(POPULAR_COLLECTIONS.first()).let { c -> listOfNotNull(c.backdrop) + c.parts.mapNotNull { it.backdrop } } }, emptyList<String>()) }
+    val hist = async { if (kids) emptyList<String>() else safe({ arts(com.mcd.tv.data.HistoryHub.shelf(HubSection.entries.first().id, profile)) }, emptyList<String>()) }
+    val hol = async { if (com.mcd.tv.data.HolidayHub.showFor()) safe({ arts(com.mcd.tv.data.HolidayHub.shelf(profile)) }, emptyList<String>()) else emptyList<String>() }
     // Kids: these tiles take art from the kids lists below instead (no grown-up backdrops).
-    val gen = async { if (kids) null else safe({ Tmdb.byGenre("movie", 28, false).firstNotNullOfOrNull { it.backdrop } }, null) }
-    val yr = async { if (kids) null else safe({ Tmdb.byYear("movie", java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - 1).firstNotNullOfOrNull { it.backdrop } }, null) }
-    val lang = async { if (kids) null else safe({ Tmdb.byLanguage("movie", "ko").firstNotNullOfOrNull { it.backdrop } }, null) }
+    val gen = async { if (kids) emptyList<String>() else safe({ arts(Tmdb.byGenre("movie", 28, false)) }, emptyList<String>()) }
+    val yr = async { if (kids) emptyList<String>() else safe({ arts(Tmdb.byYear("movie", java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - 1)) }, emptyList<String>()) }
+    val lang = async { if (kids) emptyList<String>() else safe({ arts(Tmdb.byLanguage("movie", "ko")) }, emptyList<String>()) }
     val trending = tr.await()
     val fresh = nw.await()
     val top = tp.await()
     val shows = sh.await()
     val trueCrime = tc.await()
-    fun firstArt(l: List<Title>, skip: Int = 0) = l.drop(skip).firstNotNullOfOrNull { it.backdrop }
-    val art = buildMap {
-        firstArt(trending)?.let { put(HubKind.TRENDING, it) }
-        firstArt(fresh)?.let { put(HubKind.NEW, it) }
-        firstArt(top)?.let { put(HubKind.TOP, it) }
-        firstArt(trueCrime)?.let { put(HubKind.TRUE_CRIME, it) }
-        firstArt(shows, 1)?.let { put(HubKind.NOISE, it) }
-        coll.await()?.let { put(HubKind.COLLECTIONS, it) }
-        hist.await()?.let { put(HubKind.HISTORY, it) }
-        hol.await()?.let { put(HubKind.HOLIDAY, it) }
-        gen.await()?.let { put(HubKind.GENRES, it) }
-        yr.await()?.let { put(HubKind.YEAR, it) }
-        lang.await()?.let { put(HubKind.LANGUAGE, it) }
-        if (kids) {
-            firstArt(fresh, 1)?.let { put(HubKind.GENRES, it) }
-            firstArt(top, 1)?.let { put(HubKind.YEAR, it) }
-            firstArt(trending, 2)?.let { put(HubKind.LANGUAGE, it) }
-        }
-    }
+    // Candidates per tile, then one picture per tile with no repeats (BrowseHubs.assignArt), in tile order.
+    val candidates = mapOf(
+        HubKind.TRENDING to arts(trending),
+        HubKind.TRUE_CRIME to arts(trueCrime),
+        HubKind.COLLECTIONS to coll.await(),
+        HubKind.NEW to arts(fresh),
+        HubKind.HOLIDAY to hol.await(),
+        HubKind.TOP to arts(top),
+        HubKind.HISTORY to hist.await(),
+        HubKind.GENRES to if (kids) arts(fresh).drop(1) else gen.await(),
+        HubKind.YEAR to if (kids) arts(top).drop(1) else yr.await(),
+        HubKind.LANGUAGE to if (kids) arts(trending).drop(2) else lang.await(),
+        HubKind.NOISE to arts(shows),
+    )
+    val order = BrowseHubs.hubs(kids, com.mcd.tv.data.HolidayHub.showFor(), com.mcd.tv.data.TrueCrimeHub.showFor(profile)).map { it.kind }
+    val art = BrowseHubs.assignArt(order, candidates)
     BrowseData(trending, fresh, top, shows, trueCrime, art)
 }
 
@@ -260,12 +258,13 @@ private fun SpotlightBackdrop(path: String?) {
 
 @Composable
 private fun SpotlightText(s: Spot?) {
-    Column(Modifier.padding(start = 48.dp, top = 8.dp, end = 48.dp).height(150.dp).widthIn(max = 470.dp)) {
+    // Fixed height, so the page never jumps; the overview stops at 2 lines so it never runs into Explore.
+    Column(Modifier.padding(start = 48.dp, top = 8.dp, end = 48.dp, bottom = 14.dp).height(150.dp).widthIn(max = 470.dp)) {
         if (s == null) return@Column
         Text(s.kicker, style = hudLabelStyle(10.sp, McdColors.Accent), maxLines = 1)
         Text(s.headline, style = broadcastStyle(34.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
         if (s.meta.isNotBlank()) Text(s.meta, color = McdColors.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
-        if (s.body.isNotBlank()) Text(s.body, color = McdColors.Muted, fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = 17.sp, modifier = Modifier.padding(top = 6.dp))
+        if (s.body.isNotBlank()) Text(s.body, color = McdColors.Muted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 17.sp, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
