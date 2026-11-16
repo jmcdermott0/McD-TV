@@ -58,7 +58,9 @@ check('Home and Browse use one source', () => {
   assert.ok(html.includes('fillRow(TC.ID, TC.homeRow(), posterCard, tok)'), 'Home row fill');
   assert.ok(html.includes('homeRow: () => shelf(20)'), 'Home row is the first 20 of the shelf');
   assert.ok(html.includes('[TC.ID]: { title: TC.LABEL, types: ["all"], fetch: (ty, v, p) => (p === 1 ? TC.shelf() : Promise.resolve([])) }'), 'Browse grid kind');
-  assert.ok(html.includes('tile("#/browse/" + TC.ID, TC.LABEL, TC.SUBTITLE)'), 'Browse tile');
+  // Browse is a hub (renderBrowse): its True Crime tile and row open the same grid kind.
+  assert.ok(html.includes('[TC.ID, "#/browse/" + TC.ID, TC.LABEL, TC.SUBTITLE]'), 'Browse tile');
+  assert.ok(html.includes('rowShell("b-tc", TC.LABEL, "#/browse/" + TC.ID)'), 'Browse row See all');
 });
 
 if (fails.length) { console.error('FAIL\n  ' + fails.join('\n  ')); process.exit(1); }
