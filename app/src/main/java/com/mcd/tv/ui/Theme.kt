@@ -33,21 +33,21 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Jarvis palette: an original holographic heads-up display. Near-black glass, cyan light, amber alerts.
- * Property names are kept from the first theme so every screen picks up the new look:
- * Red / RedBright / RedDark map to the cyan accents, Navy / NavyLight to the dark glass.
+ * Jarvis palette, "Night Ops": near-black ground, hard chamfered edges, one cold arc-cyan accent for focus and
+ * progress, red only for live. Property names are kept from the first theme so every screen picks up the look:
+ * Red / RedBright / RedDark map to the cyan accents, Navy / NavyLight to the dark ground.
  */
 object McdColors {
-    val Navy = Color(0xFF02060A)       // page background (darkest)
-    val NavyLight = Color(0xFF0A2230)  // raised surfaces, focused rows
-    val Card = Color(0xD9061722)       // panels and cards at rest (#061722 at 85%)
-    val Line = Color(0xFF0E6A7A)       // dim cyan hairlines and outlines
-    val Red = Color(0xFF00E5FF)        // primary accent cyan (name kept for compatibility)
-    val RedBright = Color(0xFF7DF9FF)  // bright accent: focus rings, glows
-    val RedDark = Color(0xFF0B5F6E)    // deep accent
-    val Cyan = Color(0xFF00E5FF)
-    val White = Color(0xFFEAFBFF)      // HUD white (slightly cyan)
-    val Muted = Color(0xFF8FB8C4)      // secondary text
+    val Navy = Color(0xFF050607)       // page background (darkest)
+    val NavyLight = Color(0xFF12151A)  // raised surfaces, focused rows
+    val Card = Color(0xF00B0D10)       // panels and cards at rest (#0B0D10 at 94%)
+    val Line = Color(0xFF232932)       // hairlines and outlines
+    val Red = Color(0xFF2EE6FF)        // primary accent: arc cyan (name kept for compatibility)
+    val RedBright = Color(0xFF8FF3FF)  // bright accent: focus brackets, glows
+    val RedDark = Color(0xFF0E4A55)    // deep accent
+    val Cyan = Color(0xFF2EE6FF)
+    val White = Color(0xFFEEF1F5)      // primary text
+    val Muted = Color(0xFF8B95A5)      // labels and secondary text
 
     /** Accent aliases for new code. */
     val Accent = Red
@@ -55,65 +55,59 @@ object McdColors {
     val Raised = NavyLight
     val Dim = Line
 
-    /** Text on cyan fills. */
-    val Ink = Color(0xFF02060A)
+    /** Text on cyan and red fills. */
+    val Ink = Color(0xFF050607)
 
-    /** Alerts and live badges. */
-    val Amber = Color(0xFFFFB300)
-    val Coral = Color(0xFFFF4D6D)
+    /** Favorites, warnings and the provider stream. */
+    val Amber = Color(0xFFFFB020)
+    val Coral = Color(0xFFFF5468)
 
-    /** Live badges: warning amber (the name is kept from the old red badge). */
-    val LiveRed = Amber
+    /** Live badges and live clocks: the only red in the app. */
+    val LiveRed = Color(0xFFFF3045)
 }
 
-/** Base gradient for every page: a faint cyan-lit top fading into near-black. */
+/** Base gradient for every page: a near-black ground, a touch lighter at the top. */
 val ScreenBackground = Brush.verticalGradient(
-    0f to Color(0xFF031018),
-    0.55f to Color(0xFF02080D),
+    0f to Color(0xFF0A0C10),
+    0.5f to Color(0xFF06080A),
     1f to McdColors.Navy,
 )
 
 /**
- * The full page background: [ScreenBackground], a very faint cyan grid (a line every 40dp at about 4%)
- * and a soft vignette toward the edges. Use instead of `.background(ScreenBackground)`.
+ * The full page background: [ScreenBackground], a faint diagonal hatch (every 12dp at 2.5%) and a vignette toward
+ * the edges. Use instead of `.background(ScreenBackground)`.
  */
 fun Modifier.hudBackground(): Modifier = this
     .background(ScreenBackground)
     .drawBehind {
-        val step = 40.dp.toPx()
-        val line = McdColors.Accent.copy(alpha = 0.04f)
-        val stroke = 1f
-        var x = step
+        val step = 12.dp.toPx()
+        val line = Color.White.copy(alpha = 0.025f)
+        var x = -size.height
         while (x < size.width) {
-            drawLine(line, Offset(x, 0f), Offset(x, size.height), stroke)
+            drawLine(line, Offset(x, size.height), Offset(x + size.height, 0f), 1f)
             x += step
-        }
-        var y = step
-        while (y < size.height) {
-            drawLine(line, Offset(0f, y), Offset(size.width, y), stroke)
-            y += step
         }
         val radius = maxOf(size.width, size.height) * 0.75f
         if (radius > 0f) {
             drawRect(
                 Brush.radialGradient(
                     0f to Color.Transparent,
-                    0.6f to Color.Transparent,
-                    1f to Color.Black.copy(alpha = 0.55f),
-                    center = Offset(size.width / 2f, size.height * 0.42f),
+                    0.55f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.65f),
+                    center = Offset(size.width / 2f, size.height * 0.38f),
                     radius = radius,
                 ),
             )
         }
     }
 
-/** Orbitron: wide techno display face for headings, the wordmark, tab labels and big numbers (SIL OFL). */
+/** Saira Condensed: tall, narrow display face for headings, the wordmark, tab labels and big numbers (SIL OFL). */
 val HudDisplay = FontFamily(
     Font(R.font.hud_display_bold, FontWeight.Bold),
     Font(R.font.hud_display_medium, FontWeight.Medium),
 )
 
-/** Rajdhani: condensed tech sans for body text, cards and buttons (SIL OFL). */
+/** Barlow Semi Condensed: clean, sharp body face for text, cards and buttons (SIL OFL). */
 val HudText = FontFamily(
     Font(R.font.hud_text_medium, FontWeight.Medium),
     Font(R.font.hud_text_semibold, FontWeight.SemiBold),
@@ -121,22 +115,22 @@ val HudText = FontFamily(
 )
 
 /**
- * Headlines, section titles, card titles: Orbitron Bold. Orbitron is wide, so sizes are scaled down
- * (big titles top out at 30sp) and small sizes get extra letter spacing.
+ * Headlines, section titles, card titles: Saira Condensed Bold, about the old height (fixed-height rows keep fitting)
+ * but far narrower, so long titles fit without cutting. Big titles top out at 34sp.
  */
 fun broadcastStyle(size: TextUnit, color: Color = McdColors.White): TextStyle {
     val v = if (size.isSp) size.value else 16f
-    val px = if (v >= 20f) minOf(v * 0.85f, 30f) else v * 0.92f
+    val px = if (v >= 20f) minOf(v * 0.98f, 34f) else v
     return TextStyle(
         fontFamily = HudDisplay,
         fontWeight = FontWeight.Bold,
         fontSize = px.sp,
         color = color,
-        letterSpacing = if (px < 20f) 1.2.sp else 0.5.sp,
+        letterSpacing = if (px < 20f) 0.6.sp else 0.3.sp,
     )
 }
 
-/** Orbitron at the exact size given (no cap): big numbers such as codes and scores. */
+/** Saira Condensed at the exact size given (no cap): big numbers such as codes, scores and odds. */
 fun hudDisplayStyle(size: TextUnit, color: Color = McdColors.White, spacing: TextUnit = 1.5.sp) = TextStyle(
     fontFamily = HudDisplay,
     fontWeight = FontWeight.Bold,
@@ -145,16 +139,16 @@ fun hudDisplayStyle(size: TextUnit, color: Color = McdColors.White, spacing: Tex
     letterSpacing = spacing,
 )
 
-/** Small uppercase HUD label: Orbitron Medium, wide tracking. */
+/** Small uppercase label: Saira Condensed SemiBold, wide tracking. */
 fun hudLabelStyle(size: TextUnit = 10.sp, color: Color = McdColors.Accent) = TextStyle(
     fontFamily = HudDisplay,
     fontWeight = FontWeight.Medium,
-    fontSize = size,
+    fontSize = (if (size.isSp) size.value * 1.1f else 11f).sp,
     color = color,
-    letterSpacing = 1.5.sp,
+    letterSpacing = 1.6.sp,
 )
 
-/** Every Material text style in Rajdhani, so plain Text() calls pick up the HUD body face. */
+/** Every Material text style in Barlow Semi Condensed, so plain Text() calls pick up the body face. */
 private fun hudTypography(): Typography {
     val b = Typography()
     fun TextStyle.hud() = copy(fontFamily = HudText)
@@ -222,19 +216,41 @@ fun HudRing(diameter: Dp, modifier: Modifier = Modifier, color: Color = McdColor
     }
 }
 
-/** The "JARVIS" wordmark for headers: ring glyph plus Orbitron lettering with a cyan glow. */
+/**
+ * The Jarvis mark: a diamond outline with a solid diamond inside (original mark, also the intro's emblem).
+ */
+@Composable
+fun JarvisMark(size: Dp, modifier: Modifier = Modifier, color: Color = McdColors.Accent) {
+    Canvas(modifier.size(size)) {
+        val w = this.size.minDimension
+        val c = Offset(this.size.width / 2f, this.size.height / 2f)
+        val r = w / 2f * 0.92f
+        val sw = (w * 0.085f).coerceAtLeast(1.5f)
+        val outer = androidx.compose.ui.graphics.Path().apply {
+            moveTo(c.x, c.y - r); lineTo(c.x + r, c.y); lineTo(c.x, c.y + r); lineTo(c.x - r, c.y); close()
+        }
+        drawPath(outer, color.copy(alpha = 0.22f), style = Stroke(sw * 3f))
+        drawPath(outer, color, style = Stroke(sw))
+        val ir = r * 0.42f
+        val inner = androidx.compose.ui.graphics.Path().apply {
+            moveTo(c.x, c.y - ir); lineTo(c.x + ir, c.y); lineTo(c.x, c.y + ir); lineTo(c.x - ir, c.y); close()
+        }
+        drawPath(inner, color)
+    }
+}
+
+/** The "JARVIS" wordmark for headers: the diamond mark plus wide-tracked Saira Condensed lettering. */
 @Composable
 fun McdLogo(modifier: Modifier = Modifier, scale: Float = 1f) {
     val style = TextStyle(
         fontFamily = HudDisplay,
         fontWeight = FontWeight.Bold,
-        fontSize = (26 * scale).sp,
-        letterSpacing = (3 * scale).sp,
+        fontSize = (30 * scale).sp,
+        letterSpacing = (6 * scale).sp,
         color = McdColors.White,
-        shadow = Shadow(color = McdColors.Accent.copy(alpha = 0.85f), offset = Offset.Zero, blurRadius = 18f * scale),
     )
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((8 * scale).dp)) {
-        HudRing((30 * scale).dp)
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((10 * scale).dp)) {
+        JarvisMark((26 * scale).dp)
         Text("JARVIS", style = style, maxLines = 1)
     }
 }

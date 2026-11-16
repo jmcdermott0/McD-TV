@@ -23,6 +23,10 @@ The app was called "McD TV" and is now "Jarvis". Only the visible name changed. 
 - **Local copy:** `~/Desktop/McD TV` on J's MacBook Air is a git repo. J pushes with GitHub Desktop.
 - **Secrets:** the signing key is in `keystore/` (git-ignored) and in the GitHub secret `KEYSTORE_BASE64`. Never commit `keystore/`.
 
+- **Night Ops look (Nov 16, 2026):** near-black ground, chamfered edges, arc cyan (#2EE6FF) for focus and progress, red (#FF3045) only for live. Fonts: Saira Condensed (display, `hud_display_*`) and Barlow Semi Condensed (body, `hud_text_*`), both SIL OFL. Theme tokens stay in `ui/Theme.kt` (`McdColors`) and `ui/Hud.kt`; the web app's "Night Ops skin" block overrides the older HUD block. Design canvas: the "Jarvis UI Overhaul" artifact.
+- **Game lines (Nov 16, 2026):** `data/Odds.kt`. Pre-game spread, total and moneyline come from the scoreboard Games.kt already loads (top book, DraftKings). Live games swap to ESPN core odds provider 200 "DraftKings - Live Odds", read by `LiveOdds` (ui/GamesScreen.kt) at most once per 30 s per live game card on screen; the web app does the same (`ODDS`). Prices that moved since the last read show green (longer) or red (shorter). Never on the Kids profile. Information only: no bets, no betting links. Tests: `OddsTest`, `tools/webtest/odds-qa.mjs`.
+- **Intro:** `res/raw/intro_video.mp4` is made by `tools/intro/make_intro.py` (5.6 s, 60 fps, own synthesized sound). Keep its hits at 1.1 s and 4.3 s: the holiday track and `HolidayIntro` follow them.
+
 ## Architecture
 
 The app is one Activity with Compose for TV screens. Code lives in three packages under `app/src/main/java/com/mcd/tv/`.

@@ -138,6 +138,8 @@ data class Game(
     val away: TeamLine,
     /** Networks: "CBS", "FOX", "ESPN", "Prime Video"... */
     val broadcasts: List<String>,
+    /** The top book's pre-game lines from the scoreboard (Odds.kt). Null when the book has none. */
+    val odds: GameOdds? = null,
 ) {
     val live: Boolean get() = state == "in"
     val final: Boolean get() = state == "post"
@@ -384,6 +386,7 @@ object Games {
             home = home,
             away = away,
             broadcasts = casts.toList(),
+            odds = runCatching { Odds.fromScoreboard(comp) }.getOrNull(),
         )
     }
 

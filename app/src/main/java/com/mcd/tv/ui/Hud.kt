@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,11 +57,11 @@ import java.util.Locale
 
 // ---------------- Shapes ----------------
 
-/** Chamfered card / panel shape: top-left and bottom-right corners cut. */
-val HudShape: Shape = CutCornerShape(topStart = 8.dp, bottomEnd = 8.dp)
+/** Chamfered card / panel shape: top-left and bottom-right corners cut. No round corners anywhere. */
+val HudShape: Shape = CutCornerShape(topStart = 7.dp, bottomEnd = 7.dp)
 
 /** Smaller chamfer for buttons, badges and chips. */
-val HudShapeSmall: Shape = CutCornerShape(topStart = 6.dp, bottomEnd = 6.dp)
+val HudShapeSmall: Shape = CutCornerShape(topStart = 5.dp, bottomEnd = 5.dp)
 
 /** Tiny chamfer for little badges. */
 val HudShapeTiny: Shape = CutCornerShape(topStart = 3.dp, bottomEnd = 3.dp)
@@ -71,15 +72,16 @@ val HudDuotone: ColorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setT
 // ---------------- Focus decoration ----------------
 
 /**
- * Four small L-shaped corner brackets, drawn over the content. A negative [inset] draws them outside
- * the bounds (keep it before any clip in the chain).
+ * Focus reticle: two heavy L-shaped brackets on the top-right and bottom-left corners (the chamfered ones are
+ * the other two), drawn over the content. A negative [inset] draws them outside the bounds (keep it before any
+ * clip in the chain).
  */
 fun Modifier.hudBrackets(
     visible: Boolean,
     color: Color = McdColors.AccentBright,
-    inset: Dp = 5.dp,
-    arm: Dp = 12.dp,
-    stroke: Dp = 2.dp,
+    inset: Dp = 4.dp,
+    arm: Dp = 14.dp,
+    stroke: Dp = 2.5.dp,
 ): Modifier = if (!visible) this else drawWithContent {
     drawContent()
     val i = inset.toPx()
@@ -89,14 +91,10 @@ fun Modifier.hudBrackets(
     val t = i
     val r = size.width - i
     val b = size.height - i
-    drawLine(color, Offset(l, t), Offset(l + a, t), s, StrokeCap.Square)
-    drawLine(color, Offset(l, t), Offset(l, t + a), s, StrokeCap.Square)
     drawLine(color, Offset(r, t), Offset(r - a, t), s, StrokeCap.Square)
     drawLine(color, Offset(r, t), Offset(r, t + a), s, StrokeCap.Square)
     drawLine(color, Offset(l, b), Offset(l + a, b), s, StrokeCap.Square)
     drawLine(color, Offset(l, b), Offset(l, b - a), s, StrokeCap.Square)
-    drawLine(color, Offset(r, b), Offset(r - a, b), s, StrokeCap.Square)
-    drawLine(color, Offset(r, b), Offset(r, b - a), s, StrokeCap.Square)
 }
 
 /**
@@ -129,19 +127,19 @@ fun Modifier.hudScanlines(spacing: Dp = 3.dp, color: Color = McdColors.AccentBri
 @Composable
 fun hudCardBorder() = CardDefaults.border(
     border = Border(border = BorderStroke(1.dp, McdColors.Line), shape = HudShape),
-    focusedBorder = Border(border = BorderStroke(1.5.dp, McdColors.Accent), shape = HudShape),
+    focusedBorder = Border(border = BorderStroke(2.dp, McdColors.Accent), shape = HudShape),
 )
 
 @Composable
 fun hudCardGlow() = CardDefaults.glow(
-    focusedGlow = Glow(elevationColor = McdColors.Accent.copy(alpha = 0.55f), elevation = 12.dp),
+    focusedGlow = Glow(elevationColor = McdColors.Accent.copy(alpha = 0.45f), elevation = 14.dp),
 )
 
 /** Border for clickable tv-material Surfaces (rows, list items). */
 @Composable
 fun hudSurfaceBorder() = ClickableSurfaceDefaults.border(
-    border = Border(border = BorderStroke(1.dp, McdColors.Line.copy(alpha = 0.7f)), shape = HudShape),
-    focusedBorder = Border(border = BorderStroke(1.5.dp, McdColors.Accent), shape = HudShape),
+    border = Border(border = BorderStroke(1.dp, McdColors.Line.copy(alpha = 0.8f)), shape = HudShape),
+    focusedBorder = Border(border = BorderStroke(2.dp, McdColors.Accent), shape = HudShape),
 )
 
 /**
@@ -181,19 +179,19 @@ fun HudPanel(modifier: Modifier = Modifier, padding: Dp = 18.dp, content: @Compo
         modifier
             .background(McdColors.Card, HudShape)
             .border(1.dp, McdColors.Line, HudShape)
-            .hudBrackets(true, McdColors.Accent.copy(alpha = 0.55f), inset = 4.dp, arm = 10.dp, stroke = 1.5.dp)
+            .hudBrackets(true, McdColors.Accent.copy(alpha = 0.35f), inset = 4.dp, arm = 10.dp, stroke = 1.5.dp)
             .padding(padding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         content = content,
     )
 }
 
-/** Amber "LIVE" badge. */
+/** Red "LIVE" badge with dark lettering (the only red in the app). */
 @Composable
 fun LiveBadge(modifier: Modifier = Modifier, text: String = "LIVE") {
     Text(
         text,
-        style = hudLabelStyle(8.sp, McdColors.Ink),
+        style = hudLabelStyle(8.sp, McdColors.Ink).copy(fontWeight = FontWeight.Bold),
         maxLines = 1,
         modifier = modifier
             .background(McdColors.LiveRed, HudShapeTiny)
@@ -258,7 +256,7 @@ fun HudGauge(fraction: Float, valueText: String, label: String, modifier: Modifi
     }
 }
 
-/** HUD clock: "HH:MM" and "THU 08 OCT" in Orbitron, updated on each minute. */
+/** Clock: "7:42 PM" and "THU 08 OCT", updated on each minute. */
 @Composable
 fun HudClock(modifier: Modifier = Modifier) {
     val now by produceState(System.currentTimeMillis()) {
@@ -268,7 +266,7 @@ fun HudClock(modifier: Modifier = Modifier) {
             delay(60_000L - t % 60_000L + 50L)
         }
     }
-    val time = remember(now / 60_000L) { SimpleDateFormat("HH:mm", Locale.US).format(Date(now)) }
+    val time = remember(now / 60_000L) { SimpleDateFormat("h:mm a", Locale.US).format(Date(now)) }
     val date = remember(now / 60_000L) { SimpleDateFormat("EEE dd MMM", Locale.US).format(Date(now)).uppercase(Locale.US) }
     Column(modifier, horizontalAlignment = Alignment.End) {
         Text(time, style = hudDisplayStyle(15.sp, McdColors.AccentBright, 1.sp), maxLines = 1)

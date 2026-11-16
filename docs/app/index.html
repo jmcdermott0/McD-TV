@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="theme-color" content="#02060A">
+<meta name="theme-color" content="#050607">
 <title>Jarvis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://image.tmdb.org">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -449,6 +449,57 @@ select:focus-visible,input:focus-visible{outline:none;border-color:var(--accent)
 .searchbox svg{color:var(--accent)}
 .sk{background:linear-gradient(90deg,#061722 0,#0A2230 45%,#061722 90%);background-size:220% 100%}
 
+/* ---------- Night Ops skin (Nov 2026): near-black, hard edges, arc cyan, red only for live ---------- */
+:root{--bg:#050607;--nav1:#0A0C10;--nav2:#06080A;--card:rgba(11,13,16,.94);--raised:#12151A;--accent:#2EE6FF;--bright:#8FF3FF;--muted:#8B95A5;--line:#232932;--ok:#3BE38A;--warn:#FFB020;--bad:#FF3045;--ink:#050607;--white:#EEF1F5;
+  --font:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;--disp:"Saira Condensed","Arial Narrow",Arial,sans-serif;
+  --cut:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);--cut-s:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+body{background:repeating-linear-gradient(135deg,rgba(255,255,255,.022) 0 1px,transparent 1px 12px),radial-gradient(ellipse at 50% 30%,transparent 55%,rgba(0,0,0,.6)) fixed,linear-gradient(180deg,var(--nav1) 0,var(--nav2) 280px,var(--bg) 680px) no-repeat,var(--bg)}
+h1,h2,h3{letter-spacing:.6px;font-weight:800}
+header.top{background:linear-gradient(180deg,rgba(5,6,7,.92),rgba(5,6,7,.6));border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:22px;letter-spacing:5px;text-shadow:none}
+.logo .ring{filter:none}
+nav.links a{font-size:15px;font-weight:700;letter-spacing:1px}
+nav.links a.on{color:var(--white)}
+nav.links a.on::after{height:3px;bottom:0;background:var(--accent);box-shadow:none}
+.tvpill{font-size:13px;font-weight:700}
+nav.tabbar{background:rgba(11,13,16,.97)}
+nav.tabbar a{font-size:11px;font-weight:700}
+nav.tabbar a.on svg{filter:none}
+.btn{box-shadow:inset 0 0 0 1px var(--line);color:var(--white);font-weight:700;letter-spacing:1.2px}
+.btn:hover,.btn:focus-visible{background:var(--accent);color:var(--ink)}
+.btn.primary{box-shadow:0 0 24px rgba(46,230,255,.25)}
+.btn[aria-pressed="true"]{background:rgba(46,230,255,.16)}
+.section-h h2::before,.row-h h2::before,.panel h2::before{content:"";width:3px;height:14px;background:var(--accent)}
+.row-h h2::after,.section-h h2::after{display:none}
+.section-h h2,.row-h h2,.panel h2{font-size:16px;font-weight:800;letter-spacing:.8px}
+@media (min-width:900px){.row-h h2{font-size:19px}}
+.row-h a{font-size:12px}
+.hero .bd,.tp-bd{filter:none}
+.hero .bd::after{background:linear-gradient(90deg,rgba(5,6,7,.92) 0,rgba(5,6,7,.55) 45%,rgba(5,6,7,0) 75%),linear-gradient(0deg,var(--bg) 0,rgba(5,6,7,0) 45%)}
+.tp-bd::before{background:linear-gradient(90deg,rgba(5,6,7,.9),rgba(5,6,7,.3) 60%),linear-gradient(0deg,var(--bg),rgba(5,6,7,0) 50%)}
+.hero .kicker{font-size:12px;font-weight:700;letter-spacing:2.4px}
+.hero .kicker::before{content:""}
+.hero h1{font-size:clamp(32px,6vw,72px);font-weight:800;letter-spacing:.5px;line-height:.92;text-shadow:none}
+.tp-info h1{font-size:clamp(30px,5vw,64px);font-weight:800;letter-spacing:.5px;line-height:.92}
+.poster::after,.wimg::after,.tile::after,.panel::after{border-color:var(--line)}
+.panel::after{opacity:.35}
+@media (hover:hover){.card:hover,.wcard:hover,.tile:hover{filter:drop-shadow(0 0 10px rgba(46,230,255,.35))}
+  .card:hover .poster::after,.wcard:hover .wimg::after,.tile:hover::after{border:2px solid var(--accent)}}
+.card:focus-visible{filter:drop-shadow(0 0 10px rgba(46,230,255,.35))}
+.card:focus-visible .poster::after,.wcard a:focus-visible .wimg::after{border:2px solid var(--accent)}
+.prog{background:rgba(255,255,255,.14)}.prog i{box-shadow:none}
+.pcard .face{box-shadow:0 0 0 1px var(--line)}
+.tile{background:var(--card);font-size:16px;font-weight:800;letter-spacing:.6px}
+.tile::before{background:none}
+.score{background:rgba(5,6,7,.8);font-size:13px}
+.pill.ok{background:rgba(59,227,138,.14);color:var(--ok)}.pill.no{background:rgba(255,48,69,.14);color:#FF5468}
+select,input[type=text],input[type=search],input[type=password],input[type=url]{background:rgba(5,6,7,.8)}
+.sk{background:linear-gradient(90deg,#0B0D10 0,#151920 45%,#0B0D10 90%);background-size:220% 100%}
+.gm-card.live{border-color:rgba(255,48,69,.7)}
+.gm-live{color:var(--bad)}
+.gm-h{font-family:var(--disp);font-size:15px;font-weight:800;letter-spacing:1.2px;color:var(--white)}
+#toast{background:rgba(11,13,16,.97)}
+
 /* loading: two arcs turning in opposite directions */
 .spinner{position:relative;border:2px solid transparent;border-top-color:var(--accent);border-bottom-color:rgba(0,229,255,.35)}
 .spinner::after{content:"";position:absolute;inset:5px;border:2px solid transparent;border-left-color:var(--bright);border-right-color:var(--bright);border-radius:50%;animation:spin 1.1s linear infinite reverse}
@@ -586,6 +637,24 @@ nav.tabbar{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-in
 .gm-when small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
 .gm-live{color:var(--accent);font-weight:700;font-size:11px;letter-spacing:1px}
 .gm-chans{padding:0 10px 10px}
+/* odds board: spread, total and moneyline cells per side, like a sportsbook (Odds.kt on the TV) */
+.gm-grid.book{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.gm-book{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,64px);gap:5px 5px;align-items:center;width:100%}
+.gm-book .mh{font-family:var(--disp);font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);text-align:center}
+.gm-book .st{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-book .st small{color:var(--muted);font-size:11px;margin-left:6px;text-transform:uppercase;letter-spacing:.8px}
+.oc{height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--raised);border:1px solid var(--line);clip-path:var(--cut-s);font-variant-numeric:tabular-nums;line-height:1.1}
+.oc b{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--white)}
+.oc i{font-style:normal;font-size:12px;font-weight:700;color:var(--accent)}
+.oc.ml b{font-size:17px;color:var(--accent)}
+.oc.best{border-color:rgba(46,230,255,.6)}
+.oc.up{border-color:#3BE38A}.oc.up i,.oc.ml.up b{color:#3BE38A}
+.oc.dn{border-color:#FF5468}.oc.dn i,.oc.ml.dn b{color:#FF5468}
+.oc.off b{font-size:11px;color:var(--muted);letter-spacing:1px}
+.gm-foot{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:var(--white);margin-top:2px;flex-wrap:wrap}
+.gm-foot .bar{display:flex;gap:2px;width:84px;height:4px}.gm-foot .bar span{display:block;height:4px}
+.gm-foot .gm-src{margin-left:auto;font-family:var(--disp);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.gm-foot .gm-src.live{color:var(--bad)}
 .lv-now,.lv-next{min-width:0}
 .lv-now .t,.lv-next .t{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lv-now .t{font-weight:600;font-size:14px}
@@ -6155,6 +6224,60 @@ const LV = (() => {
   const foreign = (raw) => /^\s*(nz|uk|gb|au|ca|can|mx|es|fr|de|it|ar|br|pt|nl|ie|in|za|ph|latam|lat)\s*[:|]/i.test(raw);
   const NET_SECS = new Set(["Sports", "Local", "Events & PPV", "Entertainment", "Other"]);
   const LEAGUE_WORD = { NFL: /\bnfl\b/, NCAAF: /\b(ncaaf|ncaa|cfb|college football)\b/, NBA: /\bnba\b/, MLB: /\bmlb\b/, NHL: /\bnhl\b/, WNBA: /\bwnba\b/, MLS: /\bmls\b/, EPL: /\b(epl|premier league)\b/ };
+  // Game lines (data/Odds.kt on the TV): the scoreboard's top book before the game, ESPN core odds'
+  // "DraftKings - Live Odds" (provider 200) during it, at most once per 30 s per live game on screen.
+  // Information only: no bets, no betting links, never on the Kids profile.
+  const ODDS = (() => {
+    const am = (v) => { if (v == null || v === "") return ""; const t = String(v).trim(); if (/^(even|ev)$/i.test(t)) return "EVEN"; const d = +t; if (!isFinite(d) || d === 0) return ""; const n = Math.round(d); return n > 0 ? "+" + n : String(n); };
+    const ln = (v, signed) => { if (v == null) return ""; const t = String(v).trim().replace(/^[ouOU]/, ""); if (!t || t === "null") return ""; if (/^(pk|pick)$/i.test(t)) return "PK"; const d = +t; if (!isFinite(d)) return ""; if (!signed) return String(d); return d === 0 ? "PK" : d > 0 ? "+" + d : String(d); };
+    const flip = (x) => !x ? "" : x === "PK" ? "PK" : x[0] === "-" ? "+" + x.slice(1) : x[0] === "+" ? "-" + x.slice(1) : "-" + x;
+    const num = (x) => x === "" ? null : x === "PK" ? 0 : x === "EVEN" ? 100 : +x;
+    const implied = (x) => { const a = num(x); return a == null || !isFinite(a) ? null : a >= 100 ? 100 / (a + 100) : a <= -100 ? -a / (-a + 100) : null; };
+    function win(o) { const a = implied(o.awayMl), h = implied(o.homeMl); if (a == null || h == null) return null; const d = o.drawMl ? implied(o.drawMl) || 0 : 0; const sum = a + h + d; const away = Math.round(a / sum * 100), draw = Math.round(d / sum * 100); return { away, draw, home: 100 - away - draw }; }
+    const empty = (o) => !o.homeSpread && !o.awaySpread && !o.total && !(o.homeMl && o.awayMl);
+    function fromComp(c) {
+      const arr = (c && c.odds) || []; if (!arr.length) return null;
+      const o = arr.slice().sort((x, y) => ((y.provider || {}).priority || 0) - ((x.provider || {}).priority || 0))[0];
+      const cur = (m, side, k) => (((o[m] || {})[side] || {}).close || {})[k], op = (m, side, k) => (((o[m] || {})[side] || {}).open || {})[k];
+      let hs = ln(cur("pointSpread", "home", "line"), true), as = ln(cur("pointSpread", "away", "line"), true);
+      if (!hs && o.spread != null) hs = ln(o.spread, true); if (!as && hs) as = flip(hs); if (!hs && as) hs = flip(as);
+      let tot = ln(cur("total", "over", "line"), false); if (!tot && o.overUnder != null) tot = ln(o.overUnder, false);
+      const r = { live: false, provider: (o.provider || {}).displayName || (o.provider || {}).name || "", homeSpread: hs, awaySpread: as,
+        homeSpreadPrice: am(cur("pointSpread", "home", "odds")), awaySpreadPrice: am(cur("pointSpread", "away", "odds")), total: tot,
+        overPrice: am(cur("total", "over", "odds")), underPrice: am(cur("total", "under", "odds")),
+        homeMl: am(cur("moneyline", "home", "odds")) || am((o.homeTeamOdds || {}).moneyLine), awayMl: am(cur("moneyline", "away", "odds")) || am((o.awayTeamOdds || {}).moneyLine),
+        drawMl: am(cur("moneyline", "draw", "odds")) || am((o.drawOdds || {}).moneyLine), openHomeSpread: ln(op("pointSpread", "home", "line"), true), openTotal: ln(op("total", "over", "line"), false) };
+      return empty(r) ? null : r;
+    }
+    function fromCore(j) {
+      const it = ((j && j.items) || []).find((x) => x.provider && (String(x.provider.id) === "200" || /live/i.test(x.provider.name || ""))); if (!it) return null;
+      const h = it.homeTeamOdds || {}, a = it.awayTeamOdds || {}, cur = it.current || {};
+      const tc = (t, k) => ((t.current || {})[k] || {}).american;
+      let hs = ln(tc(h, "pointSpread"), true), as = ln(tc(a, "pointSpread"), true); if (!as && hs) as = flip(hs); if (!hs && as) hs = flip(as);
+      const r = { live: true, provider: String((it.provider || {}).name || "").split(" - ")[0], homeSpread: hs, awaySpread: as,
+        homeSpreadPrice: am(tc(h, "spread")), awaySpreadPrice: am(tc(a, "spread")), total: ln((cur.total || {}).american, false) || ln(it.overUnder, false),
+        overPrice: am((cur.over || {}).american), underPrice: am((cur.under || {}).american), homeMl: am(tc(h, "moneyLine")) || am(h.moneyLine), awayMl: am(tc(a, "moneyLine")) || am(a.moneyLine),
+        drawMl: am((cur.draw || {}).american) || am((it.drawOdds || {}).moneyLine), openHomeSpread: ln(((h.open || {}).pointSpread || {}).american, true), openTotal: ln(((it.open || {}).total || {}).american, false) };
+      return empty(r) ? null : r;
+    }
+    const pay = (x) => { const v = num(x); return v == null ? null : v >= 100 ? v : v <= -100 ? 10000 / -v : null; };
+    const tick = (b, a) => { const pb = pay(b), pa = pay(a); return pb == null || pa == null || pa === pb ? 0 : pa > pb ? 1 : -1; };
+    const LIVE = new Map(); // game id -> { o, ticks, at }
+    async function refresh(g) {
+      const e = LIVE.get(g.id); if (e && (e.busy || Date.now() - e.at < 30000)) return false;
+      const ent = e || { o: null, ticks: {}, at: 0 }; ent.busy = true; LIVE.set(g.id, ent);
+      try {
+        const [sport, league] = g.L.path.split("/");
+        const r = await fetch(`https://sports.core.api.espn.com/v2/sports/${sport}/leagues/${league}/events/${g.eid}/competitions/${g.eid}/odds`);
+        ent.at = Date.now(); if (!r.ok) return false;
+        const o = fromCore(await r.json()); if (!o) return false;
+        const b = ent.o; ent.ticks = b ? { awaySpread: b.awaySpread === o.awaySpread ? tick(b.awaySpreadPrice, o.awaySpreadPrice) : 0, homeSpread: b.homeSpread === o.homeSpread ? tick(b.homeSpreadPrice, o.homeSpreadPrice) : 0,
+          over: b.total === o.total ? tick(b.overPrice, o.overPrice) : 0, under: b.total === o.total ? tick(b.underPrice, o.underPrice) : 0, awayMl: tick(b.awayMl, o.awayMl), homeMl: tick(b.homeMl, o.homeMl), drawMl: tick(b.drawMl, o.drawMl) } : {};
+        const changed = !b || JSON.stringify(b) !== JSON.stringify(o); ent.o = o; return changed;
+      } catch (_) { ent.at = Date.now(); return false; } finally { ent.busy = false; }
+    }
+    return { fromComp, fromCore, win, implied, refresh, live: (id) => (LIVE.get(id) || {}), tick };
+  })();
   const SCHED = {}; // league id -> { at, games: [...], week }
   const inSeason = (L) => L.months.includes(new Date().getMonth() + 1);
   const ymd = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
@@ -6167,7 +6290,7 @@ const LV = (() => {
       const home = side("home"), away = side("away"); if (!home || !away) continue;
       const st2 = ((e.status || c.status || {}).type) || {};
       const casts = [...new Set([...(c.broadcasts || []).flatMap((b) => b.names || []), ...(c.geoBroadcasts || []).map((b) => b.media && b.media.shortName).filter(Boolean)])];
-      out.push({ id: L.id + ":" + e.id, L, state: st2.state || "pre", detail: st2.shortDetail || "", start: Date.parse(e.date || c.date || "") || 0, home, away, casts });
+      out.push({ id: L.id + ":" + e.id, eid: e.id, L, state: st2.state || "pre", detail: st2.shortDetail || "", start: Date.parse(e.date || c.date || "") || 0, home, away, casts, odds: ODDS.fromComp(c) });
     }
     return { games: out, week: j.week && j.week.number };
   }
@@ -6234,13 +6357,37 @@ const LV = (() => {
     return hits.sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.i).filter((i) => { const k = list[i].name.toLowerCase().replace(/\W+/g, ""); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 12);
   }
   const dayName = (ms) => { const d = new Date(ms), t = new Date(); t.setHours(0, 0, 0, 0); const diff = Math.round((new Date(d).setHours(0, 0, 0, 0) - t) / 864e5); return diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : diff === -1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); };
+  function bookHtml(g) {
+    const live = g.state === "in";
+    const L = live ? ODDS.live(g.id) : {};
+    const o = (L.o) || g.odds; if (!o || isKids() || g.state === "post") return "";
+    const t = (L.o && L.ticks) || {};
+    const cls = (k) => (t[k] > 0 ? " up" : t[k] < 0 ? " dn" : "");
+    const cell = (top, price, k, ml, best) => !top ? `<span class="oc off"><b>OFF</b></span>` : ml ? `<span class="oc ml${best ? " best" : ""}${cls(k)}"><b>${esc(top)}</b></span>` : `<span class="oc${cls(k)}"><b>${esc(top)}</b><i>${esc(price)}</i></span>`;
+    const ia = ODDS.implied(o.awayMl) || 0, ih = ODDS.implied(o.homeMl) || 0;
+    const row = (tm, sp, spp, spk, tot, totp, totk, ml, mlk, best) => `<span class="gm-team">${tm.logo ? `<img src="${esc(tm.logo)}" alt="" loading="lazy">` : ""}<span>${tm.rank ? `<small>${tm.rank}</small> ` : ""}${esc(tm.short || tm.name)}</span>${live ? `<b>${esc(tm.score)}</b>` : ""}</span>${cell(sp, spp, spk)}${cell(tot, totp, totk)}${cell(ml, "", mlk, true, best)}`;
+    const w = ODDS.win(o);
+    const when = live ? `<span class="gm-live">LIVE</span> ${esc(g.detail)}` : esc(clock(g.start));
+    return `<div class="gm-book"><span class="st">${when}<small>${esc(g.casts.slice(0, 2).join(" · "))}</small></span><span class="mh">Spread</span><span class="mh">Total</span><span class="mh">Money</span>
+      ${row(g.away, o.awaySpread, o.awaySpreadPrice, "awaySpread", o.total ? "O " + o.total : "", o.overPrice, "over", o.awayMl, "awayMl", ia > ih)}
+      ${row(g.home, o.homeSpread, o.homeSpreadPrice, "homeSpread", o.total ? "U " + o.total : "", o.underPrice, "under", o.homeMl, "homeMl", ih >= ia)}
+      <div class="gm-foot">${w ? `<span class="bar"><span style="flex:${w.away};background:var(--muted)"></span>${w.draw ? `<span style="flex:${w.draw};background:var(--line)"></span>` : ""}<span style="flex:${w.home};background:var(--accent)"></span></span>
+        <span>${esc(g.away.abbr)} ${w.away}%${w.draw ? ` · Draw ${w.draw}%` : ""} · ${esc(g.home.abbr)} ${w.home}%</span>${o.drawMl ? ` <b class="${cls("drawMl").trim()}">Draw ${esc(o.drawMl)}</b>` : ""}` : ""}
+        <span class="gm-src${o.live ? " live" : ""}">${o.live ? "Live odds" : esc(o.provider)}</span></div></div>`;
+  }
   function gameCard(g) {
+    const book = bookHtml(g);
+    if (book) {
+      const open = view.game === g.id, chans = open ? channelsFor(g) : null;
+      return `<div class="gm-card${g.state === "in" ? " live" : ""}${open ? " open" : ""}" data-gid="${esc(g.id)}"><button class="gm-main" type="button" data-act="livegame" data-id="${esc(g.id)}">${book}</button>
+      ${open ? `<div class="gm-chans">${chans.length ? `<div class="lv-list">${chans.map((x) => row(x.i, favs())).join("")}</div>` : `<p class="muted">No channel in your playlist names this game. Try ${esc(g.casts[0] || "the league channels")} or search.</p>`}</div>` : ""}</div>`;
+    }
     const live = g.state === "in", post = g.state === "post";
     const side = (t) => `<div class="gm-team">${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : ""}<span>${t.rank ? `<small>${t.rank}</small> ` : ""}${esc(t.short || t.name)}</span>${live || post ? `<b>${esc(t.score)}</b>` : ""}</div>`;
     const when = live ? `<span class="gm-live">LIVE</span> ${esc(g.detail)}` : post ? esc(g.detail || "Final") : esc(clock(g.start));
     const open = view.game === g.id;
     const chans = open ? channelsFor(g) : null;
-    return `<div class="gm-card${live ? " live" : ""}${open ? " open" : ""}"><button class="gm-main" type="button" data-act="livegame" data-id="${esc(g.id)}">
+    return `<div class="gm-card${live ? " live" : ""}${open ? " open" : ""}" data-gid="${esc(g.id)}"><button class="gm-main" type="button" data-act="livegame" data-id="${esc(g.id)}">
         <div class="gm-teams">${side(g.away)}${side(g.home)}</div>
         <div class="gm-when">${when}<small>${esc(g.casts.join(" · "))}</small></div></button>
       ${open ? `<div class="gm-chans">${chans.length ? `<div class="lv-list">${chans.map((x) => row(x.i, favs())).join("")}</div>` : `<p class="muted">No channel in your playlist names this game. Try ${esc(g.casts[0] || "the league channels")} or search.</p>`}</div>` : ""}</div>`;
@@ -6260,11 +6407,28 @@ const LV = (() => {
     const y = window.scrollY;
     // Games first (tap one for the channels showing it), then the league's own channels, as on the TV.
     g.innerHTML = `${sc.week && L.weekly ? `<p class="muted gm-week">Week ${sc.week}</p>` : ""}
-      ${[...byDay.entries()].map(([d, gs]) => `<div class="gm-h">${esc(d)}</div><div class="gm-grid">${gs.map(gameCard).join("")}</div>`).join("") || `<p class="muted">No ${esc(L.label)} games this week.</p>`}
+      ${[...byDay.entries()].map(([d, gs]) => `<div class="gm-h">${esc(d)}</div><div class="gm-grid${isKids() ? "" : " book"}">${gs.map(gameCard).join("")}</div>`).join("") || `<p class="muted">No ${esc(L.label)} games this week.</p>`}
       ${lc.length ? `<div class="gm-h">League channels</div><div class="lv-list">${lc.slice(0, 8).map((i) => row(i, favs())).join("")}</div>` : ""}`;
     window.scrollTo(0, y);
     watchRows(g); wantFirst(g);
     $$("#lvChips .chip").forEach((b) => b.classList.toggle("on", b.dataset.sec === view.sec));
+    liveOddsLoop(L, sc);
+  }
+  // Live lines for the live games on screen: every 30 s while this league stays open; each changed card is redrawn.
+  let oddsT = 0;
+  function liveOddsLoop(L, sc) {
+    clearTimeout(oddsT);
+    if (isKids()) return;
+    const sec = "game:" + L.id;
+    const tick = async () => {
+      if (view.sec !== sec || !$("#lvGrid")) return;
+      const live = sc.games.filter((x) => x.state === "in").slice(0, 10);
+      for (const gm of live) {
+        if (await ODDS.refresh(gm)) { const el = $(`.gm-card[data-gid="${CSS.escape(gm.id)}"]`); if (el && view.sec === sec) el.outerHTML = gameCard(gm); }
+      }
+      if (live.length && view.sec === sec) oddsT = setTimeout(tick, 30000);
+    };
+    tick();
   }
   async function loadGameCounts() {
     for (const L of LEAGUES.filter((x) => inSeason(x) && HOME_LEAGUES.has(x.id))) {
@@ -7499,7 +7663,7 @@ document.addEventListener("click", async (e) => {
 // to the screen, compare BUILD with the published page. A new version reloads at once only when nothing is going
 // on. During playback, a source lookup, Real-Debrid sign-in or the hand-off question it waits: a small "Update
 // ready" button shows instead, and the update applies on the next quiet moment (a page change or a return to the app).
-const BUILD = "2026-11-09.2";
+const BUILD = "2026-11-16.1";
 let lastUpdateCheck = 0, updateReady = "";
 function updateBusy() {
   const h = location.hash;

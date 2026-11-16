@@ -705,7 +705,7 @@ private fun MyTeamsPane(
             )
         }
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(320.dp),
+            columns = GridCells.Adaptive(if (com.mcd.tv.data.Prefs.isKidsProfile) 320.dp else 380.dp),
             contentPadding = PaddingValues(start = 6.dp, end = 32.dp, top = 6.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
