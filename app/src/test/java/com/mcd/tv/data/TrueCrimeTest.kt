@@ -143,7 +143,10 @@ class TrueCrimeTest {
         assertTrue("Home's True Crime row found", row.contains("TrueCrimeHub.homeRow()"))
         assertTrue("Home's See all opens the category", home.contains("Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID, \"\", com.mcd.tv.data.TrueCrime.LABEL)"))
         val browse = src("com/mcd/tv/ui/CatalogScreens.kt")
-        assertTrue("Browse menu entry", browse.contains("MenuEntry(TrueCrime.LABEL, TrueCrime.SUBTITLE, Screen.BrowseGrid(TrueCrime.ID, \"\", TrueCrime.LABEL))"))
+        // Browse is a hub (ui/BrowseHub.kt): its True Crime tile and row both open the same grid.
+        val hubSrc = src("com/mcd/tv/ui/BrowseHub.kt")
+        assertTrue("Browse tile", hubSrc.contains("HubKind.TRUE_CRIME -> Screen.BrowseGrid(TrueCrime.ID, \"\", TrueCrime.LABEL)"))
+        assertTrue("Browse row See all", hubSrc.contains("\"truecrime\" -> Screen.BrowseGrid(TrueCrime.ID, \"\", TrueCrime.LABEL)"))
         assertTrue("Browse grid loads the shelf", browse.contains("TrueCrime.ID -> if (page == 1) com.mcd.tv.data.TrueCrimeHub.shelf() else emptyList()"))
         assertTrue("QA screen", src("com/mcd/tv/MainActivity.kt").contains("com.mcd.tv.data.TrueCrime.ID -> Screen.BrowseGrid(com.mcd.tv.data.TrueCrime.ID"))
     }

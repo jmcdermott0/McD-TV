@@ -118,7 +118,8 @@ class HolidayTest {
         val holiday = home.indexOf("item(key = com.mcd.tv.data.Holiday.ID)")
         assertTrue("Holiday Movies comes after Picked for <name>", picked in 0 until holiday)
         val browse = src("com/mcd/tv/ui/CatalogScreens.kt")
-        assertTrue("Browse entry", browse.contains("MenuEntry(Holiday.LABEL, Holiday.SUBTITLE, Screen.BrowseGrid(Holiday.ID, \"\", Holiday.LABEL))"))
+        // Browse is a hub (ui/BrowseHub.kt): its Holiday tile opens the same grid.
+        assertTrue("Browse entry", src("com/mcd/tv/ui/BrowseHub.kt").contains("HubKind.HOLIDAY -> Screen.BrowseGrid(com.mcd.tv.data.Holiday.ID, \"\", com.mcd.tv.data.Holiday.LABEL)"))
         assertTrue("Browse grid loads the shelf", browse.contains("Holiday.ID -> if (page == 1) com.mcd.tv.data.HolidayHub.shelf() else emptyList()"))
     }
 
