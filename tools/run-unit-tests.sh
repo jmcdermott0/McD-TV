@@ -49,6 +49,8 @@ MAIN_FILES+=(SourcePick.kt SleepTimer.kt)
 MAIN_FILES+=(Captions.kt)
 # Game lines (spread, total, moneyline) from ESPN: pure parser (tests in OddsTest).
 MAIN_FILES+=(Odds.kt)
+# Browse: the Explore tiles per profile (tests in BrowseHubsTest).
+MAIN_FILES+=(BrowseHubs.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

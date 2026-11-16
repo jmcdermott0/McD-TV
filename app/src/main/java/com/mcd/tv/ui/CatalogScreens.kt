@@ -49,85 +49,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
-// ============================== Browse menu ==============================
-
-/** One row of the Browse menu. [section] starts a new group with that heading. */
-private class MenuEntry(val title: String, val subtitle: String, val target: Screen, val section: String? = null)
-
-private fun browseMenu(): List<MenuEntry> = buildList {
-    add(MenuEntry("Trending", "This week's most watched", Screen.BrowseGrid("trending"), section = "Catalog"))
-    add(MenuEntry("Popular", "Movies and shows everyone is watching", Screen.BrowseGrid("popular", "movie")))
-    add(MenuEntry("Top Rated", "Best reviewed of all time", Screen.BrowseGrid("top", "movie")))
-    add(MenuEntry("New Releases", "In theaters now", Screen.BrowseGrid("new")))
-    add(MenuEntry("By Year", "Pick any year", Screen.BrowseGrid("year")))
-    add(MenuEntry("By Language", "English, Spanish, Korean, Japanese, Hindi…", Screen.BrowseGrid("lang", "en")))
-    add(MenuEntry("Genres", "Action, Comedy, Drama, Horror…", Screen.Genres))
-    add(MenuEntry("Collections", "Movie franchises", Screen.BrowseGrid("collections")))
-    // Holiday Movies (Holiday mode only): the same shelf as the Home row (HolidayHub.shelf), on every profile.
-    if (com.mcd.tv.data.HolidayHub.showFor()) add(MenuEntry(Holiday.LABEL, Holiday.SUBTITLE, Screen.BrowseGrid(Holiday.ID, "", Holiday.LABEL)))
-    if (!com.mcd.tv.data.Prefs.isKidsProfile) add(MenuEntry("History", "Ken Burns, historical dramas, every era", Screen.History))
-    // True Crime: the same shelf as the Home row (TrueCrimeHub.shelf), one category id on both surfaces.
-    if (com.mcd.tv.data.TrueCrimeHub.showFor()) add(MenuEntry(TrueCrime.LABEL, TrueCrime.SUBTITLE, Screen.BrowseGrid(TrueCrime.ID, "", TrueCrime.LABEL)))
-    SERVICES.forEachIndexed { i, s ->
-        add(MenuEntry(s.name, "Current catalog", Screen.ServiceGrid(s), section = if (i == 0) "Streaming services" else null))
-    }
-    add(MenuEntry("Websites", "Sites you added on the Control page", Screen.Sports, section = "More"))
-    add(MenuEntry("Background Noise", "Random episodes of your shows", Screen.Noise))
-}
-
-/** Catalog sheet: a plain vertical list (dark rows, hairline separators, focused row bright). */
-@Composable
-fun BrowseScreen(nav: Nav) {
-    val entries = remember { browseMenu() }
-    val listState = rememberLazyListState()
-    TabPage(nav, NavTab.Browse) {
-        LazyColumn(state = listState, contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 4.dp, bottom = 48.dp)) {
-            entries.forEachIndexed { i, e ->
-                val section = e.section
-                if (section != null) item(key = "section-$i") {
-                    Text(
-                        section.uppercase(),
-                        color = McdColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp,
-                        modifier = Modifier.padding(start = 14.dp, top = if (i == 0) 4.dp else 22.dp, bottom = 6.dp),
-                    )
-                }
-                item(key = "row-$i") { MenuRow(e.title, e.subtitle) { nav.push(e.target) } }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MenuRow(title: String, subtitle: String, onClick: () -> Unit) {
-    var focused by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth()
-                .onFocusChanged { focused = it.isFocused }
-                .hudBrackets(focused, McdColors.AccentBright, inset = 0.dp, arm = 7.dp, stroke = 1.5.dp)
-                .clip(HudShapeSmall)
-                .background(if (focused) McdColors.Accent.copy(alpha = 0.12f) else Color.Transparent)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.width(3.dp).height(18.dp).background(if (focused) McdColors.Red else Color.Transparent))
-            Spacer(Modifier.width(12.dp))
-            Text(
-                title,
-                color = if (focused) McdColors.AccentBright else McdColors.White.copy(alpha = 0.82f),
-                fontSize = 17.sp,
-                fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1,
-                modifier = Modifier.weight(1f),
-            )
-            Text(subtitle, color = McdColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.width(14.dp))
-            Text("›", color = if (focused) McdColors.Accent else McdColors.Muted, fontSize = 20.sp)
-        }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(McdColors.Line))
-    }
-}
+// The Browse page itself is ui/BrowseHub.kt (spotlight, Explore tiles, rows). This file holds its grids.
 
 // ============================== Browse grid ==============================
 
@@ -155,6 +77,7 @@ private fun defaultHeading(kind: String) = when (kind) {
     "year" -> "By Year"
     "lang" -> "By Language"
     "collections" -> "Collections"
+    "genre" -> "Genre"
     "collection" -> "Collection"
     "history" -> "History"
     TrueCrime.ID -> TrueCrime.LABEL
@@ -183,6 +106,8 @@ private suspend fun fetchGrid(kind: String, param: String, type: String, chip: S
     "lang" -> Tmdb.byLanguage(type, chip.ifBlank { "en" }, page)
     "collection" -> if (page == 1) param.toIntOrNull()?.let { Tmdb.collection(it).parts } ?: emptyList() else emptyList()
     "collections" -> if (page == 1) popularCollections() else emptyList()
+    // A movie genre from Browse > Genres row: param = TMDB movie genre id.
+    "genre" -> param.toIntOrNull()?.let { Tmdb.byGenre("movie", it, false, page) } ?: emptyList()
     "history" -> if (page == 1) com.mcd.tv.data.HistoryHub.shelf(param) else emptyList()
     TrueCrime.ID -> if (page == 1) com.mcd.tv.data.TrueCrimeHub.shelf() else emptyList()
     Holiday.ID -> if (page == 1) com.mcd.tv.data.HolidayHub.shelf() else emptyList()
