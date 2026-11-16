@@ -38,4 +38,22 @@ class BrowseHubsTest {
             assertFalse(it.label + it.subtitle, (it.label + it.subtitle).contains('—'))
         }
     }
+
+    @Test
+    fun artIsNeverRepeated() {
+        val order = listOf(HubKind.TRENDING, HubKind.NEW, HubKind.GENRES, HubKind.YEAR)
+        val art = BrowseHubs.assignArt(
+            order,
+            mapOf(
+                HubKind.TRENDING to listOf("/odyssey.jpg", "/b.jpg"),
+                HubKind.NEW to listOf("/new.jpg"),
+                HubKind.GENRES to listOf("/odyssey.jpg", "/action2.jpg"),
+                HubKind.YEAR to listOf("/new.jpg"),
+            ),
+        )
+        assertEquals("/odyssey.jpg", art[HubKind.TRENDING])
+        assertEquals("/action2.jpg", art[HubKind.GENRES])
+        assertFalse(HubKind.YEAR in art)
+        assertEquals(art.size, art.values.toSet().size)
+    }
 }

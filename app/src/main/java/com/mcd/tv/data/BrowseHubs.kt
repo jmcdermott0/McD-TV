@@ -33,4 +33,20 @@ object BrowseHubs {
         add(Hub(HubKind.NOISE, "Background Noise", "Random episodes of your shows"))
         add(Hub(HubKind.WEBSITES, "Websites", "Sites you added"))
     }
+
+    /**
+     * One backdrop per tile, never the same picture twice: in [order], each tile takes its first candidate that
+     * no earlier tile took. A tile whose candidates are all taken (or that has none) gets no art.
+     * Example: the top trending film is also the top action film, so Genres takes the next action film.
+     */
+    fun assignArt(order: List<HubKind>, candidates: Map<HubKind, List<String>>): Map<HubKind, String> {
+        val used = HashSet<String>()
+        val out = LinkedHashMap<HubKind, String>()
+        for (k in order) {
+            val pick = candidates[k].orEmpty().firstOrNull { it.isNotBlank() && it !in used } ?: continue
+            used.add(pick)
+            out[k] = pick
+        }
+        return out
+    }
 }
