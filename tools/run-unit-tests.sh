@@ -53,6 +53,8 @@ MAIN_FILES+=(Odds.kt)
 MAIN_FILES+=(BrowseHubs.kt)
 # House copy rule: additive keys a copy without them never removes (tests in HouseKeysTest).
 MAIN_FILES+=(HouseKeys.kt)
+# Jarvis voice: policy, words, Wall schedule, state machine, cache and service request (tests in VoiceRulesTest, VoiceMachineTest, WallVoiceTest).
+MAIN_FILES+=(VoicePolicy.kt VoiceLines.kt WallVoice.kt VoiceMachine.kt FishTts.kt VoiceCache.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

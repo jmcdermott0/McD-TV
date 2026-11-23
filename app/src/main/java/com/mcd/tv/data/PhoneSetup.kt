@@ -180,6 +180,7 @@ class PhoneSetupServer(private val onChange: (String) -> Unit) {
         val done = mutableListOf<String>()
         f["tmdb"]?.takeIf { it.isNotBlank() }?.let { Prefs.tmdbKey = it; done += "TMDB key saved" }
         f["jarvis"]?.takeIf { it.isNotBlank() }?.let { Prefs.jarvisKey = it; done += "Jarvis key saved" }
+        f["voice"]?.takeIf { it.isNotBlank() }?.let { Prefs.voiceKey = it; done += "Jarvis voice key saved" }
         f["magnet"]?.takeIf { it.isNotBlank() }?.let { m ->
             done += runCatching { "Added to Real-Debrid: " + RdCloud.addMagnet(m) }
                 .getOrElse { "Real-Debrid add failed: ${it.message}" }
@@ -238,6 +239,7 @@ button{margin-top:12px;background:#00E5FF;color:#02060A;border:0;padding:12px 18
 <form method=post>
 <label>TMDB API key (posters and info). ${if (Prefs.tmdbKey.isNotBlank()) "✅ set" else "Not set"}</label><input name=tmdb placeholder="Paste key or read token">
 <label>Jarvis key (powers Ask Jarvis). ${if (Prefs.jarvisKey.isNotBlank()) "✅ set" else "Not set"}</label><input name=jarvis type=password autocomplete=off placeholder="Paste to replace">
+<label>Jarvis voice key (spoken lines on the TV). ${if (Prefs.voiceKey.isNotBlank()) "✅ Jarvis voice key set" else "Not set"}</label><input name=voice type=password autocomplete=off placeholder="Paste to replace">
 <label>Add an addon (manifest URL or stremio:// link)</label><input name=addon placeholder="https://…/manifest.json">
 <label>Live TV playlist (M3U URL). ${if (Prefs.m3uUrl.isNotBlank()) "✅ set" else "Not set"}</label><input name=m3u placeholder="https://…/playlist.m3u">
 <label>Add a magnet link to your Real-Debrid cloud (plays under My List &gt; Real-Debrid Cloud)</label><input name=magnet placeholder="magnet:?xt=urn:btih:…">

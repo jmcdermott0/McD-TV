@@ -26,6 +26,10 @@ object Prefs {
     /** The kids profile: Home shows family and animation rows. */
     const val KIDS_PROFILE = "p3"
 
+    /** Jarvis voice: the voice picked on November 23, 2026 (a public voice library id, not a key). */
+    const val DEFAULT_VOICE_ID = "76bb6ae7b26c41fbbd484514fdb014c2"
+    val VOICE_VOLUMES = listOf("soft", "normal", "loud")
+
     /**
      * Settings stored once per profile (watch history, progress, My List, favorites, Live TV favorites,
      * recents and last channel). The stored key is "<key>@<profile id>". Everything else is shared by the whole TV.
@@ -167,6 +171,50 @@ object Prefs {
     var jarvisModel: String
         get() = str("jarvis_model").ifBlank { "claude-sonnet-5-5" }
         set(v) = put("jarvis_model", v)
+
+    // ---- Jarvis voice (spoken lines; see Voice.kt) ----
+    /** The speech service key. Shared with linked TVs (HouseSync, additive: an older TV's copy never erases it). */
+    var voiceKey: String
+        get() = str("voice_key")
+        set(v) = put("voice_key", v)
+
+    /**
+     * The voice: a public voice library id (reference_id), not a secret and not tied to the account.
+     * Default: the voice J picked on November 23, 2026. Replaced from the Control page; shared with linked TVs.
+     */
+    var voiceId: String
+        get() = str("voice_id").ifBlank { DEFAULT_VOICE_ID }
+        set(v) = put("voice_id", v)
+
+    /** The backup voice, used when the service no longer finds [voiceId]. Blank until J makes one. */
+    var voiceIdBackup: String
+        get() = str("voice_id_backup")
+        set(v) = put("voice_id_backup", v)
+
+    /** The speech model. */
+    var voiceModel: String
+        get() = str("voice_model").ifBlank { FishTts.DEFAULT_MODEL }
+        set(v) = put("voice_model", v)
+
+    /** Jarvis voice on this TV (master switch, this TV only). */
+    var voiceOn: Boolean
+        get() = sp.getBoolean("voice_on", true)
+        set(v) = sp.edit().putBoolean("voice_on", v).apply()
+
+    /** Uses switched off on this TV (VoiceKind keys, comma separated). Every use is on by default. */
+    var voiceUsesOff: Set<String>
+        get() = VoicePolicy.parseOff(str("voice_uses_off"))
+        set(v) = sp.edit().putString("voice_uses_off", VoicePolicy.encodeOff(v)).apply()
+
+    /** "soft", "normal" (default) or "loud": the speech player's volume on this TV. Never re-bills a line. */
+    var voiceVolume: String
+        get() = str("voice_volume").takeIf { it in VOICE_VOLUMES } ?: "normal"
+        set(v) = put("voice_volume", v)
+
+    /** Morning briefing time on the Wall, minutes after midnight (default 7:00). This TV only. */
+    var voiceBriefAt: Int
+        get() = sp.getInt("voice_brief_at", 7 * 60).coerceIn(5 * 60, 11 * 60)
+        set(v) = sp.edit().putInt("voice_brief_at", v).apply()
 
     // ---- Jarvis Wall (calendar and photo frame) ----
     /** Address of the jarvis-wall Netlify site (default: the family's site). Shared with linked TVs. */
@@ -424,7 +472,7 @@ object Prefs {
     private val localOnly = setOf("server_url", "account_token", "account_name", "last_sync_at", "relay_id", "relay_key", "relay_since", "qa_mode", "jarvis_key",
         "house_id", "house_key", "house_since", "house_stamp", "device_id", "active_profile", "sync_peers", "sync_budget", "sync_pause",
         "tv_link_sig", "tv_link_at", "rd_last_add", "tv_label", "wall_mode", "wall_cycle", "wall_start", "wall_cache",
-        "update_check", "recent_errors", "voice_key")
+        "update_check", "recent_errors", "voice_key", "voice_on", "voice_uses_off", "voice_volume", "voice_brief_at", "voice_wall_said")
 
     // ---- Internet setup link (ntfy relay) ----
     var relayId: String

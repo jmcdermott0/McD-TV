@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -351,6 +352,55 @@ private fun ThisTvCategory(ctx: SettingsCtx, changed: () -> Unit) {
         else "On from November 1 to January 6. Off the rest of the year.",
         Prefs.holidayMode,
     ) { Prefs.holidayMode = it }
+    // Jarvis voice (data/Voice.kt): spoken lines, every one also shown on screen. Silent with no key.
+    // The key is replace-only: the dialog starts empty, and an empty Done keeps the saved key.
+    SettingsSection("Jarvis voice")
+    val voiceStatus by com.mcd.tv.data.Voice.status.collectAsState()
+    LaunchedEffect(Unit) { com.mcd.tv.data.Voice.statusNow() }
+    InfoRow("Status", voiceStatus.ifBlank { "Ready." })
+    DialogRow(
+        ctx, ctx.row(), "Jarvis voice key",
+        if (Prefs.voiceKey.isNotBlank()) "Jarvis voice key set. OK to replace it." else "Not set. Easier to paste on the Control page.",
+        RowEnd.Edit,
+    ) {
+        SettingsDialog.Edit(
+            "Replace the Jarvis voice key", "Paste or type the new key, then Done. Leave it empty to keep the saved key.", "", 200,
+        ) { t ->
+            if (t.isNotBlank()) { Prefs.voiceKey = t.trim(); com.mcd.tv.data.Voice.statusNow() }
+            changed()
+        }
+    }
+    ToggleRow(ctx.row(), "Jarvis voice on this TV", "Spoken lines. Each one also shows on screen. Quiet from 11 PM to 6 AM.", Prefs.voiceOn) {
+        Prefs.voiceOn = it
+        if (!it) com.mcd.tv.data.Voice.stop()
+        com.mcd.tv.data.Voice.statusNow()
+    }
+    com.mcd.tv.data.VoiceKind.entries.filter { it.switchable }.forEach { k ->
+        ToggleRow(ctx.row(), k.label, null, k.key !in Prefs.voiceUsesOff) { on ->
+            Prefs.voiceUsesOff = if (on) Prefs.voiceUsesOff - k.key else Prefs.voiceUsesOff + k.key
+        }
+    }
+    val volumes = listOf("Soft", "Normal", "Loud")
+    DialogRow(ctx, ctx.row(), "Volume", volumes[Prefs.VOICE_VOLUMES.indexOf(Prefs.voiceVolume).coerceAtLeast(0)], RowEnd.Change) {
+        SettingsDialog.Choice("Jarvis voice volume", volumes, Prefs.VOICE_VOLUMES.indexOf(Prefs.voiceVolume).coerceAtLeast(0)) { i ->
+            Prefs.voiceVolume = Prefs.VOICE_VOLUMES[i]
+            changed()
+        }
+    }
+    val briefTimes = (12..22).map { it * 30 } // 6:00 to 11:00
+    fun briefLabel(m: Int) = "${m / 60}:${(m % 60).toString().padStart(2, '0')} AM"
+    DialogRow(ctx, ctx.row(), "Morning briefing time", briefLabel(Prefs.voiceBriefAt) + " on the Wall", RowEnd.Change) {
+        SettingsDialog.Choice("Morning briefing time", briefTimes.map(::briefLabel), briefTimes.indexOf(Prefs.voiceBriefAt).coerceAtLeast(0)) { i ->
+            Prefs.voiceBriefAt = briefTimes[i]
+            changed()
+        }
+    }
+    SettingsRow(
+        "Test Jarvis voice", { com.mcd.tv.data.Voice.test() }, ctx.row().modifier,
+        value = if (Prefs.voiceKey.isNotBlank()) "Plays: \"${com.mcd.tv.data.VoiceLines.test(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))}\""
+        else "Needs the Jarvis voice key first.",
+    )
+    SettingsNote("The key, the voice and the backup voice are set on the Control page. Lines are saved on this TV, so each one is paid for once.")
 }
 
 @Composable

@@ -204,6 +204,8 @@ class MainActivity : ComponentActivity() {
         }
         ScreenAwake.guard.attach(keepOnWindow)
         Prefs.init(this)
+        // Jarvis voice: silent until a key is set; never blocks or crashes start-up.
+        runCatching { com.mcd.tv.data.Voice.init(this) }
         // Why the Wall stopped last time (sleep, the screensaver, a crash, Android ending Jarvis), and whether to
         // open it again because Jarvis ended while the Wall was in front. See WallWatch.
         com.mcd.tv.data.WallRecorder.installCrashHook()

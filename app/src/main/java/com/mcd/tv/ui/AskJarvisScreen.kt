@@ -241,6 +241,10 @@ internal fun JarvisThinking() {
 
 @Composable
 internal fun JarvisResults(a: JarvisAnswer, onOpen: (JarvisMatch) -> Unit) {
+    // Jarvis voice reads the answer line shown just below (silent with no key; never twice in 10 minutes).
+    androidx.compose.runtime.LaunchedEffect(a.clarify) {
+        if (a.clarify.isNotBlank()) com.mcd.tv.data.Voice.say(com.mcd.tv.data.VoiceKind.ASK, a.clarify)
+    }
     if (a.clarify.isNotBlank()) JarvisLine(a.clarify)
     if (a.matches.isEmpty()) {
         if (a.clarify.isBlank()) JarvisLine("I'm afraid that one eludes me, sir. An actor, a year or a scene would help.")

@@ -242,7 +242,9 @@ fun PlayerScreen(
     var sleepRev by remember { mutableIntStateOf(0) }
     DisposableEffect(Unit) {
         sleep.onPlayerStart()
-        onDispose { sleep.onPlayerLeave() }
+        // Jarvis voice: while a video is open only the in-movie lines may speak (Still watching, sleep timer).
+        com.mcd.tv.data.Voice.videoOpened()
+        onDispose { sleep.onPlayerLeave(); com.mcd.tv.data.Voice.videoClosed() }
     }
     var sleepToast by remember { mutableStateOf<String?>(null) }
     var sleepToastTick by remember { mutableIntStateOf(0) }
@@ -980,6 +982,11 @@ fun PlayerScreen(
         }
     }
 
+    // Jarvis voice: this video is quieter while a line plays (this player's own volume; the TV's is untouched).
+    LaunchedEffect(player) {
+        com.mcd.tv.data.Voice.ducking.collect { d -> runCatching { player.volume = if (d) 0.3f else 1f } }
+    }
+
     // Sleep timer countdown (restarts whenever the setting changes).
     LaunchedEffect(sleepRev) {
         if (live) return@LaunchedEffect // the timer is for videos, as before; Live TV leaves it as it is
@@ -991,7 +998,14 @@ fun PlayerScreen(
         }
         val left = sleep.remainingMs()
         if (left >= 0) {
-            delay(left)
+            // One minute before: a note on screen, and Jarvis voice says the same (silent with no key).
+            if (left > 65_000) {
+                delay(left - 60_000)
+                sleepToast = com.mcd.tv.data.VoiceLines.SLEEP_WARNING
+                sleepToastTick++
+                com.mcd.tv.data.Voice.say(com.mcd.tv.data.VoiceKind.SLEEP, com.mcd.tv.data.VoiceLines.SLEEP_WARNING)
+            }
+            delay(sleep.remainingMs().coerceAtLeast(0L))
             sleep.fired()
             sleepRev++
             player.pause()
@@ -1003,7 +1017,7 @@ fun PlayerScreen(
     // Hide the "Sleep timer: ..." note 2.5 s after the last MENU press.
     LaunchedEffect(sleepToastTick) {
         if (sleepToast != null) {
-            delay(2_500)
+            delay(if (sleepToast == com.mcd.tv.data.VoiceLines.SLEEP_WARNING) 8_000 else 2_500)
             sleepToast = null
         }
     }
