@@ -77,7 +77,7 @@ object VoiceLines {
         val parts = mutableListOf(greeting(hourOfDay))
         feed?.weather?.let { w ->
             val day = w.days.firstOrNull { it.day == today }
-            val sky = Wall.weatherLabel(w.code).lowercase()
+            val sky = sky(w.code)
             var s = "It is ${w.now} degrees" + (if (sky.isNotEmpty()) " and $sky" else "")
             if (day != null) s += ", with a high of ${day.hi}"
             parts += "$s."
@@ -99,6 +99,27 @@ object VoiceLines {
             }
         }
         return clean(parts.joinToString(" "))
+    }
+
+    /**
+     * Spoken words for Open-Meteo weather codes. Same groups as Wall.weatherLabel, kept here so this file never
+     * touches the Wall object (its start-up reads Prefs, which unit tests do not have).
+     */
+    fun sky(code: Int): String = when (code) {
+        0 -> "clear"
+        1 -> "mostly clear"
+        2 -> "partly cloudy"
+        3 -> "cloudy"
+        45, 48 -> "foggy"
+        51, 53, 55, 56, 57 -> "drizzling"
+        61, 63, 66 -> "raining"
+        65, 67 -> "raining hard"
+        71, 73, 75, 77 -> "snowing"
+        80, 81 -> "showery"
+        82 -> "stormy with heavy showers"
+        85, 86 -> "snowy"
+        95, 96, 99 -> "stormy"
+        else -> ""
     }
 
     /** "a", "a and b", "a, b and c". */
