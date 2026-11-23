@@ -162,6 +162,11 @@ a{color:var(--accent)}
     <div style="margin-top:12px"><span id="jarvisState"></span></div>
     <label>Jarvis key</label><input id="jarvisKey" type="password" placeholder="Paste to replace" autocomplete="off">
     <p class="hint">Powers Ask Jarvis. Create a key at console.anthropic.com &gt; API keys, then paste it here.</p>
+    <div style="margin-top:12px"><span id="voiceState"></span></div>
+    <label>Jarvis voice key</label><input id="voiceKey" type="password" placeholder="Paste to replace" autocomplete="off">
+    <label>Jarvis voice ID. Leave blank to keep the current voice.</label><input id="voiceId" placeholder="Voice ID" autocomplete="off">
+    <label>Backup voice ID (used if the main voice is gone). Leave blank to keep it.</label><input id="voiceBackup" placeholder="Not set" autocomplete="off">
+    <p class="hint">Jarvis voice speaks Ask Jarvis answers, the Wall's morning briefing and reminders, and a few lines in the player. Every line also shows on screen. Create a key at fish.audio/app/api-keys, then paste it here. Linked TVs share it.</p>
   </div>
 
   <h2>Preferences</h2>
@@ -180,7 +185,7 @@ a{color:var(--accent)}
   <h2>This link</h2>
   <div class="card row">
     <button onclick="copyLink()">Copy link (open on another device)</button>
-    <span class="hint">Anyone with this link can change your TV's setup. Make a new link on the TV to cut off old devices. Page version 2026-10-19.2.</span>
+    <span class="hint">Anyone with this link can change your TV's setup. Make a new link on the TV to cut off old devices. Page version 2026-11-23.1.</span>
   </div>
 
   <h2>Your other TVs</h2>
@@ -296,6 +301,8 @@ function render() {
   drawCycle();
   $("wallUrl").value = state.wall_url || ""; $("wallStart").checked = !!state.wall_start; $("wallDue").value = state.wall_due || ""; $("wallBaby").value = state.wall_baby || "";
   $("jarvisState").innerHTML = state.jarvis_set ? '<span class="pill ok">Jarvis key set</span>' : '<span class="pill no">No Jarvis key</span>';
+  $("voiceState").innerHTML = state.voice_set ? '<span class="pill ok">Jarvis voice key set</span>' : '<span class="pill no">No Jarvis voice key</span>';
+  $("voiceId").placeholder = state.voice_id || "Voice ID"; $("voiceBackup").placeholder = state.voice_backup_set ? "Backup voice set" : "Not set";
   $("m3u").value = state.m3u_url || ""; $("stream").value = state.custom_stream_url || "";
   $("origin").value = state.origin_filter || "no_asia";
   $("usOnly").checked = !!state.us_only; $("slow").checked = !!state.slow_connection; $("intro").checked = state.play_intro !== false;
@@ -324,7 +331,7 @@ function removeAddon(i) { addons.splice(i, 1); drawAddons(); dirty(true); save()
 function moveAddon(i, d) { const [a] = addons.splice(i, 1); addons.splice(i + d, 0, a); drawAddons(); dirty(true); save(); }
 function dirty(on) { dirtyFlag = on; $("saveBtn").disabled = !on; if (on) { $("saveMsg").className = "msg"; $("saveMsg").textContent = "Unsaved changes"; } }
 $("addonIn").addEventListener("keydown", (e) => { if (e.key === "Enter") addAddon(); });
-["m3u", "stream", "tmdb", "mdb", "jarvisKey", "wallUrl", "wallKey", "wallBaby", "tvLabel"].forEach((id) => $(id).addEventListener("input", () => dirty(true)));
+["m3u", "stream", "tmdb", "mdb", "jarvisKey", "voiceKey", "voiceId", "voiceBackup", "wallUrl", "wallKey", "wallBaby", "tvLabel"].forEach((id) => $(id).addEventListener("input", () => dirty(true)));
 ["origin", "usOnly", "slow", "intro", "wallStart", "wallDue", "wallMode", "wallEvery", "wallStays"].forEach((id) => $(id).addEventListener("change", () => dirty(true)));
 ["wallMode", "wallEvery", "wallStays"].forEach((id) => $(id).addEventListener("change", drawCycle));
 setTimeout(drawCycle);
@@ -381,9 +388,13 @@ async function save() {
   if ($("tmdb").value.trim()) data.tmdb_key = $("tmdb").value.trim();
   if ($("mdb").value.trim()) data.mdblist_key = $("mdb").value.trim();
   if ($("jarvisKey").value.trim()) data.jarvis_key = $("jarvisKey").value.trim();
+  // Jarvis voice: replace-only. Blank keeps what the TV has (the TV ignores a blank value too).
+  if ($("voiceKey").value.trim()) data.voice_key = $("voiceKey").value.trim();
+  if ($("voiceId").value.trim()) data.voice_id = $("voiceId").value.trim();
+  if ($("voiceBackup").value.trim()) data.voice_id_backup = $("voiceBackup").value.trim();
   try {
     await send({ cmd: "set", data });
-    $("tmdb").value = ""; $("mdb").value = ""; $("jarvisKey").value = ""; $("wallKey").value = ""; dirtyFlag = false; $("saveBtn").disabled = true;
+    $("tmdb").value = ""; $("mdb").value = ""; $("jarvisKey").value = ""; $("voiceKey").value = ""; $("voiceId").value = ""; $("voiceBackup").value = ""; $("wallKey").value = ""; dirtyFlag = false; $("saveBtn").disabled = true;
     $("saveMsg").className = "msg"; $("saveMsg").textContent = "Sent. Waiting for the TV to confirm…";
   } catch (e) { $("saveMsg").className = "err"; $("saveMsg").textContent = e.message; }
 }

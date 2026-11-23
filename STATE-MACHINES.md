@@ -56,6 +56,8 @@ Status values:
 | Resume push | `data/ResumeCloud.kt` | Idle, Scheduled, Pushing | open: a failed "stopped" push is not retried | `ProgressMergeTest` |
 | Profile sync scheduler | `data/sync/ProfileSync.kt` | many timers | open (policies explicit: FlushPolicy, Backoff) | `SyncPolicyTest` |
 | Wall evidence | `data/WallRecorder.kt`, `WallWatch.kt` | `wall_left` "", "screen on", "screen off" | explicit core; values are wire strings | `WallWatchTest` |
+| Jarvis voice speaker | `data/VoiceMachine.kt` (transitions), `data/Voice.kt` (carries out actions) | Idle, Fetching(gen), Playing(gen); queue of up to 3; Resting until a time (1, 5, 15 min backoff); Blocked (key, credit, voice) | explicit (11-23): one `VoiceMachine.State`, one pure `reduce`. Every fetch and play carries a generation; Stop bumps it, so a late answer is dropped. A block is noted once in Recent errors and clears when the key or voice changes. While resting, cached lines still play and others are dropped (their text is on screen). | `VoiceMachineTest` |
+| Jarvis voice on the Wall | `data/WallVoice.kt` (pure), `data/WallSpeaker.kt` | per line: Upcoming, Frozen (text fixed, audio fetched up to 6 min ahead), Said (pref `voice_wall_said`) | explicit (11-23): `WallVoice.step` decides; a frozen line speaks once inside its window or not at all | `WallVoiceTest` |
 
 ### TV screens
 

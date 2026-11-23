@@ -264,6 +264,8 @@ private fun UpNextCard(meta: PlayMeta, label: String, onNext: () -> Unit, onCanc
     val cancel by rememberUpdatedState(onCancel)
     // Read once: the answer stays put while the card is up.
     val ask = remember { StillWatching.counter.shouldAsk() }
+    // Jarvis voice asks the same question the card shows (silent with no key).
+    LaunchedEffect(ask) { if (ask) com.mcd.tv.data.Voice.say(com.mcd.tv.data.VoiceKind.STILL_WATCHING, com.mcd.tv.data.VoiceLines.STILL_WATCHING) }
 
     fun go(action: () -> Unit) {
         if (done) return

@@ -716,6 +716,10 @@ object Relay {
         d.optString("tmdb_key").takeIf { it.isNotBlank() }?.let { Prefs.tmdbKey = it }
         d.optString("mdblist_key").takeIf { it.isNotBlank() }?.let { Prefs.mdblistKey = it }
         d.optString("jarvis_key").takeIf { it.isNotBlank() }?.let { Prefs.jarvisKey = it }
+        // Jarvis voice: replace-only, like the other keys. A blank value is ignored, so `set` can never clear one.
+        d.optString("voice_key").takeIf { it.isNotBlank() }?.let { Prefs.voiceKey = it.trim() }
+        d.optString("voice_id").takeIf { it.isNotBlank() }?.let { Prefs.voiceId = it.trim() }
+        d.optString("voice_id_backup").takeIf { it.isNotBlank() }?.let { Prefs.voiceIdBackup = it.trim() }
         d.optString("origin_filter").takeIf { it.isNotBlank() }?.let { k ->
             OriginFilter.entries.firstOrNull { it.key == k }?.let { Prefs.origin = it }
         }
@@ -755,6 +759,10 @@ object Relay {
             .put("tmdb_set", Prefs.tmdbKey.isNotBlank())
             .put("mdblist_set", Prefs.mdblistKey.isNotBlank())
             .put("jarvis_set", Prefs.jarvisKey.isNotBlank())
+            // Jarvis voice: status only. The key never leaves the TV; the voice ids are public library ids.
+            .put("voice_set", Prefs.voiceKey.isNotBlank())
+            .put("voice_id", Prefs.voiceId)
+            .put("voice_backup_set", Prefs.voiceIdBackup.isNotBlank())
             .put("origin_filter", Prefs.origin.key)
             .put("us_only", Prefs.usOnly)
             .put("slow_connection", Prefs.slowConnection)

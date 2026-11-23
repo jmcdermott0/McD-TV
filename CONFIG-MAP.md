@@ -126,3 +126,19 @@ Added: `picks_daily@p1` to `@p3` on the TV (device only, not in HouseSync's `SHA
 ## House copy rule for new shared keys (November 23, 2026)
 
 `HouseKeys.ADDITIVE` (`voice_key`, `voice_id`, `voice_id_backup`, `voice_model`): a house copy that leaves one of these out keeps this TV's value; only a copy that holds the key overwrites it. Before, `Prefs.importKeys` removed every shared key missing from a copy, so a TV still on an older Jarvis would have erased a key it never knew. Every older shared key keeps the old rule. Add any future shared key to `ADDITIVE` too. No storage key was renamed or removed.
+
+## Jarvis voice (November 23, 2026)
+
+Spoken lines: Ask Jarvis answers, the Wall's morning briefing and reminders, "Still watching?" and the sleep timer warning. Every spoken line also shows on screen. With no key, Jarvis is silent and behaves as before. Code: `data/Voice.kt` and the pure files `VoicePolicy`, `VoiceLines`, `VoiceMachine`, `WallVoice`, `VoiceCache`, `FishTts`.
+
+| Setting | Entered on | Stored as | Synced by | Secret |
+|---|---|---|---|---|
+| Jarvis voice key | Control page > Keys (replace-only, blank ignored); TV Settings > This TV > Jarvis voice (replace-only dialog); TV home Wi-Fi page | `voice_key` | HouseSync (additive, see `HouseKeys`); not in Copy once; never in `web_init` or the house snapshot, so phones never get it. The Control page sees only `voice_set`. | yes |
+| Voice ID | Control page (blank keeps it) | `voice_id`; blank reads as the voice picked on Nov 23, 2026 (`Prefs.DEFAULT_VOICE_ID`, a public voice library id, not tied to the account) | HouseSync (additive) | no |
+| Backup voice ID | Control page (blank keeps it) | `voice_id_backup` (empty until J makes one) | HouseSync (additive) | no |
+| Voice model | none (default `s2.1-pro`) | `voice_model` | HouseSync (additive) | no |
+| Jarvis voice on this TV, uses, volume, briefing time | TV Settings > This TV > Jarvis voice | `voice_on` (default on), `voice_uses_off` (VoiceKind keys: `ask`, `briefing`, `reminders`, `still`, `sleep`; never rename), `voice_volume` (`soft`, `normal`, `loud`), `voice_brief_at` (minutes, default 420) | this TV only | no |
+| Wall lines already spoken | automatic | `voice_wall_said` (JSON key to yyyymmdd, today and yesterday) | this TV only | no |
+| Spoken audio | automatic | files in `filesDir/voice/<sha256>.mp3`, oldest first past 40 MB | this TV only; never in the repo or the APK | no |
+
+No existing key was renamed or removed. Relay `set` takes `voice_key`, `voice_id` and `voice_id_backup` only when not blank, so `set` can never clear them.

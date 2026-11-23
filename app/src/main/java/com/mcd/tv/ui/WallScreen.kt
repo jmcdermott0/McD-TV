@@ -160,6 +160,13 @@ fun WallScreen(nav: Nav) {
     val shown = manualView?.takeIf { minute - manualAt < MANUAL_HOLD_MS } ?: autoView
     val night = hour >= 23 || hour < 6
 
+    // Jarvis voice (data/WallSpeaker.kt): morning briefing, heads-ups and due soon. Silent with no key; each
+    // spoken line also shows as the caption below.
+    LaunchedEffect(minute, feed, wallMode) {
+        if (Wall.configured && wallMode != "photos") runCatching { com.mcd.tv.data.WallSpeaker.tick(feed, minute) }
+    }
+    val spoken by com.mcd.tv.data.Voice.speaking.collectAsState()
+
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 
@@ -199,7 +206,24 @@ fun WallScreen(nav: Nav) {
                 }
             }
         }
+        spoken?.let { line -> VoiceCaption(line, Modifier.align(Alignment.BottomCenter)) }
         if (night) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f)))
+    }
+}
+
+/** The line Jarvis voice is speaking, on screen while it plays. */
+@Composable
+private fun VoiceCaption(line: String, modifier: Modifier) {
+    Column(
+        modifier
+            .padding(bottom = 28.dp)
+            .fillMaxWidth(0.7f)
+            .background(McdColors.Navy.copy(alpha = 0.92f), HudShapeSmall)
+            .border(1.dp, McdColors.Accent.copy(alpha = 0.7f), HudShapeSmall)
+            .padding(horizontal = 22.dp, vertical = 14.dp),
+    ) {
+        Text("JARVIS", color = McdColors.Accent, fontSize = 13.sp, letterSpacing = 2.sp)
+        Text(line, color = McdColors.White, fontSize = 22.sp, lineHeight = 30.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
     }
 }
 
