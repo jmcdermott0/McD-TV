@@ -55,7 +55,7 @@ object HouseSync {
         "tmdb_key", "mdblist_key", "jarvis_key", "jarvis_model", "wall_url", "wall_key", "wall_due", "wall_baby",
         "origin_filter", "us_only", "slow_connection", "play_intro", "max_movie_gb", "max_episode_gb",
         "rd_client_id", "rd_client_secret", "rd_access", "rd_refresh", "rd_expires",
-    )
+    ) + HouseKeys.VOICE_SHARED // Jarvis voice: additive keys, a copy without them never removes them (HouseKeys)
 
     private val SHARED_SET = SHARED.toHashSet()
 
@@ -326,8 +326,8 @@ object HouseSync {
         return ok
     }
 
-    /** Settings copied by "Copy once": everything shared except Real-Debrid, so the other person keeps their own. */
-    private val ONCE = SHARED.filterNot { it.startsWith("rd_") }
+    /** Settings copied by "Copy once": everything shared except Real-Debrid and the Jarvis voice key (HouseKeys.once). */
+    private val ONCE = HouseKeys.once(SHARED)
 
     /** True while waiting for a one-time copy (kept in settings, so it survives a restart). */
     private fun copyOnce(): Boolean = Prefs.json("house_once") == "1"

@@ -51,6 +51,8 @@ MAIN_FILES+=(Captions.kt)
 MAIN_FILES+=(Odds.kt)
 # Browse: the Explore tiles per profile (tests in BrowseHubsTest).
 MAIN_FILES+=(BrowseHubs.kt)
+# House copy rule: additive keys a copy without them never removes (tests in HouseKeysTest).
+MAIN_FILES+=(HouseKeys.kt)
 
 say() { echo "[unit-tests] $*" >&2; }
 die() { say "ERROR: $*"; exit 1; }

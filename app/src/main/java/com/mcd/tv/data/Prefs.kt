@@ -424,7 +424,7 @@ object Prefs {
     private val localOnly = setOf("server_url", "account_token", "account_name", "last_sync_at", "relay_id", "relay_key", "relay_since", "qa_mode", "jarvis_key",
         "house_id", "house_key", "house_since", "house_stamp", "device_id", "active_profile", "sync_peers", "sync_budget", "sync_pause",
         "tv_link_sig", "tv_link_at", "rd_last_add", "tv_label", "wall_mode", "wall_cycle", "wall_start", "wall_cache",
-        "update_check", "recent_errors")
+        "update_check", "recent_errors", "voice_key")
 
     // ---- Internet setup link (ntfy relay) ----
     var relayId: String
@@ -480,12 +480,17 @@ object Prefs {
         o
     }
 
-    /** Sets the given settings to [o]'s copy: keys in [o] are written, the other [keys] are removed. */
+    /**
+     * Sets the given settings to [o]'s copy: keys in [o] are written, the other [keys] are removed, except the
+     * additive keys in [HouseKeys.ADDITIVE], which a copy without them never removes (rules in [HouseKeys.plan]).
+     */
     fun importKeys(keys: List<String>, o: org.json.JSONObject) = synchronized(listLock) {
         val e = sp.edit()
-        keys.forEach { k ->
-            val item = o.optJSONObject(k)
-            if (item == null) e.remove(k) else putTyped(e, k, item)
+        HouseKeys.plan(keys, o).forEach { op ->
+            when (op) {
+                is HouseKeys.Op.Write -> putTyped(e, op.key, op.item)
+                is HouseKeys.Op.Remove -> e.remove(op.key)
+            }
         }
         e.apply()
     }
